@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://api.fontshare.com" />
   <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700,800&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.1/dist/apexcharts.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <style>
@@ -1878,6 +1878,26 @@
     .cmdk-trigger{ display:flex; align-items:center; gap:9px; margin:2px 14px 8px; padding:9px 12px; border-radius:12px; background:var(--surface-2); border:1px solid var(--border); color:var(--text-3); font-size:12.5px; font-weight:500; cursor:pointer; transition:.2s; }
     .cmdk-trigger:hover{ color:var(--text-2); border-color:var(--border-strong); }
     .cmdk-trigger svg{ width:15px; height:15px; } .cmdk-trigger .k{ margin-left:auto; }
+
+    /* ══ AUDIT FIXES ══ */
+    /* C1 · IBM Plex Mono tabular figures on every number */
+    .nb-kpi-v, .nb-d, .nb-big, .rev-big, .rev-kpi-num, .stat-num, .okpi-val, .m-num, .rt-num, .dl-num,
+    .nb-rank-v, .nb-rank-c, .nb-txwhen, .nb-updated, .tab-badge, .cmdk-kbd, .price, .kpi-val, .big, .rev-kpi-sub{
+      font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,monospace!important; font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
+    .nb-kpi-l, .nb-ai-v, .nb-ai-k, .nb-rank-l, .ov-sub, .nb-note, .nb-kpi-sub{ font-family:'General Sans',system-ui,sans-serif; }
+    /* F1 · glass with saturate — keeps colour alive through the blur */
+    :root, html[data-theme="dark"]{ --glass-blur:blur(24px) saturate(1.7); }
+    /* D2 · action hierarchy — Refresh demotes to ghost; the AI 'Do next' is the one filled action */
+    .btn-secondary{ background:var(--surface-2)!important; color:var(--text-2)!important; border:1px solid var(--border)!important; box-shadow:none!important; }
+    .btn-secondary:hover:not(:disabled){ color:var(--text)!important; background:var(--hover)!important; }
+    .nb-ai-cta{ background:var(--violet)!important; color:#fff!important; border-color:transparent!important; box-shadow:0 10px 24px -12px var(--violet)!important; }
+    .nb-ai-cta:hover{ filter:brightness(1.08); transform:translateX(3px); }
+    /* C2 · one caps token */
+    .nav-label, .nav-label.nl-gtm, .nav-label.nl-prod, .nav-label.nl-rev, .nav-label.nl-crm, .nb-ai-k, .cmdk-sec{
+      font-size:10px!important; font-weight:700!important; letter-spacing:.14em!important; text-transform:uppercase!important; }
+    /* keyboard focus visible (F3) */
+    a:focus-visible, button:focus-visible, .tab:focus-visible, input:focus-visible, .nb-kpi:focus-visible, .cmdk-i:focus-visible{
+      outline:2px solid var(--blue); outline-offset:2px; }
 
     /* ============ Orca polish for other screens ============ */
     /* Revenue / KPI tiles */
@@ -4765,20 +4785,20 @@
     const topShare = chTotal ? (topCh.value/chTotal*100) : 0;
 
     const sDelta=(cur,prev)=>{ if(!prev) return ''; const p=(cur-prev)/prev*100,up=p>=0; return `<span class="nb-d ${up?'up':'down'}">${up?'↑':'↓'} ${Math.abs(p).toFixed(1)}%</span>`; };
-    const kpi=(label,value,delta,sub,spk,tgt,tip)=>`<div class="okpi nb-kpi${tgt?' nb-clk':''}" ${tgt?`onclick="switchTab('${tgt}')"`:''} ${tip?`title="${h(tip)}"`:''}>
+    const kpi=(label,value,delta,sub,tgt,tip)=>`<div class="okpi nb-kpi${tgt?' nb-clk':''}" ${tgt?`onclick="switchTab('${tgt}')"`:''} tabindex="0" role="button" ${tip?`title="${h(tip)}"`:''}>
         <div class="nb-kpi-h"><span class="nb-kpi-l">${label}</span>${delta||''}</div>
-        <div class="nb-kpi-v">${value}</div><div id="${spk||''}" class="nb-spk"></div>
+        <div class="nb-kpi-v">${value}</div>
         <div class="nb-kpi-sub">${sub}</div>${tgt?'<span class="nb-clk-arrow">→</span>':''}</div>`;
     const kpis2=[
-      kpi('New signups', rangeSignups.toLocaleString('en-IN'), sDelta(newWeek,newWeekPrev), `+${Math.max(0,newWeek-newWeekPrev).toLocaleString('en-IN')} vs previous 7 days`, 'spkSign', 'acquire', 'Unique users who completed signup in this range. Click to see acquisition channels.'),
-      kpi('Gross revenue · 7d', inrTotal(revInr,revUsd), revUsd>0?`<span class="nb-d up">+$${Math.round(revUsd)}</span>`:'', `₹${Math.round(revInr).toLocaleString('en-IN')} INR billed`, 'spkRev', 'revenue', 'Completed Pro payments in this range (USD converted to INR). Click for revenue analytics.'),
-      kpi('Active Pro subscribers', activePro.toLocaleString('en-IN'), '', `${convPct.toFixed(2)}% of ${usersShort} total users`, '', 'pro', 'Users on an active Pro subscription right now. Click to see the list.'),
-      kpi('Free → Pro conversion', convPct.toFixed(2)+'%', '', `<span class="nb-warn">${gapPts.toFixed(2)} pts below 5% goal</span>`, '', 'insights', 'Active Pro ÷ total users. Click to see the signup → Pro funnel.'),
+      kpi('New signups', rangeSignups.toLocaleString('en-IN'), sDelta(newWeek,newWeekPrev), 'vs previous period', 'acquire', 'Unique users who completed signup in this range. Click for acquisition channels.'),
+      kpi('Gross revenue', inrTotal(revInr,revUsd), '', revUsd>0?`incl. $${Math.round(revUsd).toLocaleString('en-US')} at ₹${USD_TO_INR}/$`:'completed Pro payments', 'revenue', 'Completed Pro payments in this range, all shown in INR. Click for revenue analytics.'),
+      kpi('Active Pro subscribers', activePro.toLocaleString('en-IN'), '', `${convPct.toFixed(2)}% of ${usersShort} users`, 'pro', 'Users on an active Pro subscription right now. Click for the list.'),
+      kpi('Total users', newProduct.toLocaleString('en-IN'), '', 'since 1 May 2026', 'search', 'All signed-up users since the relaunch. Click to search contacts.'),
     ].join('');
 
     const aiCard=`<div class="nb-card nb-ai"><div class="nb-ai-badge">✦ Key opportunities</div>
       <div class="nb-ai-sec"><span class="nb-ai-k perf">Top performer</span><span class="nb-ai-v"><b>${h(topCh.label)}</b> drove <b>${(topCh.value||0).toLocaleString('en-IN')}</b> signups, ${topShare.toFixed(0)}% of acquisition.</span></div>
-      <div class="nb-ai-sec"><span class="nb-ai-k risk">Risk</span><span class="nb-ai-v">Free→Pro conversion is <b>${convPct.toFixed(2)}%</b>, ${gapPts.toFixed(1)} pts below the 5% target.</span></div>
+      <div class="nb-ai-sec"><span class="nb-ai-k risk">Risk</span><span class="nb-ai-v">Free→Pro conversion is <b>${convPct.toFixed(2)}%</b>, ${gapPts.toFixed(2)} pts below the 5% target.</span></div>
       <div class="nb-ai-sec"><span class="nb-ai-k act">Do next</span><span class="nb-ai-v">Scale <b>${h(topCh.label)}</b> and test the Pro upgrade flow. About <b>${upgradesNeeded.toLocaleString('en-IN')}</b> more upgrades reach the goal.</span></div>
       <button class="nb-ai-cta" onclick="switchTab('acquire')">View source breakdown →</button></div>`;
 
@@ -4809,7 +4829,7 @@
        <div class="nb-grid2">${aiCard}${gaugeCard}</div>
        ${lineCard}
        <div class="nb-grid2">${acqCard}${txCard}</div>`;
-    { const up=document.getElementById('ovUpdated'); if(up) up.innerHTML='<i></i> Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+    { const up=document.getElementById('ovUpdated'); if(up) up.innerHTML='<i></i> Live · updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
 
     // render live ApexCharts
     (window._ovCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}}); window._ovCharts=[];
@@ -4819,12 +4839,12 @@
       const BLUE=DK?'#5f8bff':'#3b63e6', GRN=DK?'#37e0a6':'#12b981';
       const AX={chart:{toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:DK?'rgba(240,243,250,.55)':'rgba(17,23,38,.66)',animations:{enabled:true,speed:900}},grid:{borderColor:DK?'rgba(255,255,255,.06)':'rgba(28,40,75,.08)',strokeDashArray:4},tooltip:{theme:DK?'dark':'light'}};
       const push=(sel,opt)=>{const el=document.querySelector(sel);if(!el)return;const ch=new ApexCharts(el,opt);ch.render();window._ovCharts.push(ch);};
-      const spark=(sel,data,color)=>push(sel,{chart:{type:'area',height:46,sparkline:{enabled:true},animations:{enabled:true,speed:800}},series:[{name:'',data}],stroke:{curve:'smooth',width:2.4,colors:[color]},fill:{type:'gradient',gradient:{opacityFrom:.4,opacityTo:0}},colors:[color],tooltip:{enabled:false}});
-      spark('#spkSign',dailyVals,BLUE);
-      spark('#spkRev', revDaily.some(v=>v>0)?revDaily:dailyVals, GRN);
-      const gcol = convPct>=5?GRN:(convPct>=2.5?(DK?'#f7cf7a':'#b9791a'):(DK?'#ffb27a':'#c9651a'));
-      push('#nbGauge',{chart:{type:'radialBar',height:210,fontFamily:'General Sans',animations:{enabled:true,speed:1100}},series:[goalPct],plotOptions:{radialBar:{startAngle:-120,endAngle:120,hollow:{size:'60%'},track:{background:DK?'rgba(255,255,255,.08)':'rgba(28,40,75,.08)'},dataLabels:{name:{show:true,offsetY:20,color:DK?'rgba(238,241,248,.5)':'rgba(20,26,40,.5)',fontSize:'11px'},value:{offsetY:-12,fontSize:'26px',fontWeight:700,color:gcol,formatter:()=>convPct.toFixed(2)+'%'}}}},colors:[BLUE],stroke:{lineCap:'round'},labels:['vs 5% goal']});
-      push('#nbLine',{...AX,chart:{...AX.chart,type:'area',height:230},series:[{name:'Signups',data:dailyVals}],stroke:{curve:'smooth',width:3,colors:[BLUE]},fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.32,opacityTo:0,stops:[0,95]}},colors:[BLUE],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},xaxis:{categories:dailyCats,axisBorder:{show:false},axisTicks:{show:false},labels:{style:{fontSize:'11px'}}},yaxis:{labels:{formatter:v=>v>=1000?(v/1000).toFixed(1)+'k':v,style:{fontSize:'11px'}}}});
+      // gauge — the whole element carries the state: amber arc + amber value when below goal (B2)
+      const below = convPct < 5;
+      const stateCol = !below ? GRN : (DK?'#f0b552':'#c98212');
+      push('#nbGauge',{chart:{type:'radialBar',height:210,fontFamily:'IBM Plex Mono',animations:{enabled:true,speed:1100}},series:[goalPct],plotOptions:{radialBar:{startAngle:-120,endAngle:120,hollow:{size:'60%'},track:{background:DK?'rgba(255,255,255,.08)':'rgba(28,40,75,.08)'},dataLabels:{name:{show:true,offsetY:20,color:DK?'rgba(238,241,248,.5)':'rgba(20,26,40,.5)',fontSize:'11px',fontFamily:'General Sans'},value:{offsetY:-12,fontSize:'26px',fontWeight:700,color:stateCol,formatter:()=>convPct.toFixed(2)+'%'}}}},colors:[stateCol],stroke:{lineCap:'round'},labels:['vs 5% goal']});
+      // daily line — zero-baseline y-axis so the chart doesn't dramatise (A3)
+      push('#nbLine',{...AX,chart:{...AX.chart,type:'area',height:230},series:[{name:'Signups',data:dailyVals}],stroke:{curve:'smooth',width:3,colors:[BLUE]},fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.32,opacityTo:0,stops:[0,95]}},colors:[BLUE],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},xaxis:{categories:dailyCats,axisBorder:{show:false},axisTicks:{show:false},labels:{style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}}},yaxis:{min:0,labels:{formatter:v=>v>=1000?(v/1000).toFixed(1)+'k':Math.round(v),style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}}}});
     }, 30);
   }
 
