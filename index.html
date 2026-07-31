@@ -3133,20 +3133,20 @@
     <div id="qualityArea"><div class="state-box"><div class="spinner sp-blue"></div><p>Loading quality…</p></div></div>
   </section>
   <section class="page" id="page-weekly">
-    <div class="nn-wrap"><div class="nn-card">
-      <div class="nn-ico"><svg><use href="#i-calendar"/></svg></div>
-      <div class="nn-title">Weekly Report</div>
-      <div class="nn-sub">This-week-vs-last-week scorecard: signups, activations, new Pro, revenue, top channel, top feature — plus a 12-week trend strip.</div>
-      <span class="nn-pill">Building — Phase 4</span>
-    </div></div>
+    <div class="ov-head">
+      <div><div class="home-title" style="margin:0 0 3px;">Weekly Report</div>
+        <div class="ov-sub">This week vs last week · 12-week trend</div></div>
+      <button class="btn btn-secondary" onclick="_wkLoaded=false;fetchWeekly()"><svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh</button>
+    </div>
+    <div id="weeklyArea"><div class="state-box"><div class="spinner sp-blue"></div><p>Loading weekly report…</p></div></div>
   </section>
   <section class="page" id="page-monthly">
-    <div class="nn-wrap"><div class="nn-card">
-      <div class="nn-ico"><svg><use href="#i-calendar"/></svg></div>
-      <div class="nn-title">Monthly Report</div>
-      <div class="nn-sub">Month-over-month scorecard with MRR, new Pro, churn and a 12-month trend. Derived from subscription &amp; payment events.</div>
-      <span class="nn-pill">Building — Phase 4</span>
-    </div></div>
+    <div class="ov-head">
+      <div><div class="home-title" style="margin:0 0 3px;">Monthly Report</div>
+        <div class="ov-sub">This month vs last month · 12-month trend</div></div>
+      <button class="btn btn-secondary" onclick="_moLoaded=false;fetchMonthly()"><svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh</button>
+    </div>
+    <div id="monthlyArea"><div class="state-box"><div class="spinner sp-blue"></div><p>Loading monthly report…</p></div></div>
   </section>
 
   </div><!-- /.app-body -->
@@ -3365,6 +3365,8 @@
     if (name === 'referrals' && !_refLoaded)  { fetchReferrals(); return; }
     if (name === 'features'  && !_featLoaded) { fetchFeatures();  return; }
     if (name === 'quality'   && !_qualLoaded) { fetchQuality();   return; }
+    if (name === 'weekly'    && !_wkLoaded)   { fetchWeekly();    return; }
+    if (name === 'monthly'   && !_moLoaded)   { fetchMonthly();   return; }
     if (name === 'credits' && !_creditsLoaded) {
       if (!tcRestore('credits', r=>{_allRows=r;_creditsLoaded=true;}, 'creditsTabBadge', updateCreditsStats, creditsApply,
           [['creditsFilter','block'],['creditsSortWrap','flex'],['statsBar','flex'],['creditsFilterBar','flex']],
@@ -8763,6 +8765,76 @@
       <div class="ov2">
         <div class="ocard"><div class="ocard-h"><div class="ocard-t">Exceptions — daily</div><div class="ocard-note">last 14 days</div></div><div class="obars" style="height:190px;">${bars}</div></div>
         <div class="orc">${friction}</div></div>`;
+  }
+
+  /* ---- WEEKLY / MONTHLY REPORTS (shared) ---- */
+  function oKpiDelta(pct){ if(!isFinite(pct)) return ''; const up=pct>=0; return `<div class="okpi-delta ${up?'up':'down'}">${up?'▲':'▼'} ${Math.abs(pct).toFixed(0)}% vs prev</div>`; }
+  function _inrShort(n){ n=Math.round(n||0); return n>=100000 ? '₹'+(n/100000).toFixed(2)+'L' : '₹'+_nf(n); }
+  var _wkLoaded=false,_wkData=null,_moLoaded=false,_moData=null;
+  function fetchWeekly(){ return fetchReport({area:'weeklyArea',name:'weekly report',interval:'84 DAY',grain:'week',bucket:"toStartOfWeek(toTimeZone(#,'Asia/Kolkata'),1)",curLabel:'this week',get:()=>_wkData,set:d=>{_wkData=d;_wkLoaded=true;}}); }
+  function fetchMonthly(){ return fetchReport({area:'monthlyArea',name:'monthly report',interval:'400 DAY',grain:'month',bucket:"toStartOfMonth(toTimeZone(#,'Asia/Kolkata'))",curLabel:'this month',get:()=>_moData,set:d=>{_moData=d;_moLoaded=true;}}); }
+  async function fetchReport(o){
+    const area=document.getElementById(o.area); if(!area) return;
+    if(!cfg('apiKey')){ area.innerHTML=stateBox(null,'Add your PostHog key in Settings.','sp-blue'); return; }
+    if(!o.get()) area.innerHTML=stateBox(null,'Loading '+o.name+'…','sp-blue');
+    try{
+      const bEv=o.bucket.replace('#','timestamp'), bPay=o.bucket.replace('#','created_at');
+      const [ev,pay]=await Promise.all([
+        runHogQL(`
+          SELECT toString(${bEv}) AS p,
+            uniqIf(person_id, event='signup_complete')      AS signups,
+            uniqIf(person_id, event='onboarding_complete')  AS activations,
+            uniqIf(person_id, event='subscription_activated') AS newpro
+          FROM events
+          WHERE event IN ('signup_complete','onboarding_complete','subscription_activated')
+            AND timestamp > now() - INTERVAL ${o.interval}
+            AND ${_EXCL}
+          GROUP BY p ORDER BY p`),
+        runHogQL(`
+          SELECT toString(${bPay}) AS p,
+            sumIf(amount, currency='INR') + sumIf(amount, currency='USD')*${USD_TO_INR} AS rev,
+            count() AS pays
+          FROM postgres.payments
+          WHERE status='completed' AND created_at > now() - INTERVAL ${o.interval}
+            AND user_email NOT LIKE '%@nextraise.ai' AND user_email NOT LIKE '%@creditdharma.in' AND lower(user_email) NOT LIKE '%test%'
+          GROUP BY p ORDER BY p`).catch(()=>({results:[]}))
+      ]);
+      o.set({ev:ev.results||[], pay:pay.results||[]}); renderReport(o);
+    }catch(e){ area.innerHTML=errorBox('Could not load '+o.name+' — '+e.message); }
+  }
+  function renderReport(o){
+    const area=document.getElementById(o.area); const d=o.get(); if(!area||!d) return;
+    const m={};
+    for(const r of d.ev){ (m[r[0]]=m[r[0]]||{}).signups=+r[1]||0; m[r[0]].activations=+r[2]||0; m[r[0]].newpro=+r[3]||0; }
+    for(const r of d.pay){ (m[r[0]]=m[r[0]]||{}).rev=Math.round(+r[1]||0); m[r[0]].pays=+r[2]||0; }
+    const ps=Object.keys(m).sort();
+    if(!ps.length){ area.innerHTML=stateBox(null,'No data yet.','sp-blue'); return; }
+    const cur=m[ps[ps.length-1]]||{}, prev=m[ps[ps.length-2]]||{};
+    const g=(x,k)=>+((x&&x[k])||0);
+    const kpis=[
+      oKpi('i-users','var(--blue)','Signups',o.curLabel,_nf(g(cur,'signups')),oKpiDelta((g(cur,'signups')-g(prev,'signups'))/(g(prev,'signups')||1)*100)),
+      oKpi('i-check-circle','var(--amber)','Activations',o.curLabel,_nf(g(cur,'activations')),oKpiDelta((g(cur,'activations')-g(prev,'activations'))/(g(prev,'activations')||1)*100)),
+      oKpi('i-star','var(--violet)','New Pro',o.curLabel,_nf(g(cur,'newpro')),oKpiDelta((g(cur,'newpro')-g(prev,'newpro'))/(g(prev,'newpro')||1)*100)),
+      oKpi('i-coins','var(--green)','Revenue',o.curLabel,_inrShort(g(cur,'rev')),oKpiDelta((g(cur,'rev')-g(prev,'rev'))/(g(prev,'rev')||1)*100)),
+    ].join('');
+    const lbl=p=>{ const dt=new Date(p); if(isNaN(dt.getTime())) return p.slice(5);
+      return o.grain==='month' ? dt.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}) : dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}); };
+    const max=Math.max(1,...ps.map(p=>g(m[p],'signups')));
+    const bars=ps.map((p,i)=>{ const v=g(m[p],'signups');
+      return `<div class="obar-col"><div class="obar-track"><div class="obar-fill" style="height:${Math.max(3,Math.round(v/max*100))}%;${i===ps.length-1?'opacity:1':'opacity:.82'}"><b>${_nf(v)}</b></div></div><div class="obar-x">${lbl(p)}</div></div>`;
+    }).join('');
+    const rows=[...ps].reverse().slice(0,8).map(p=>{ const x=m[p];
+      return `<tr><td style="font-weight:700">${lbl(p)}</td>
+        <td style="text-align:right;font-weight:700">${_nf(g(x,'signups'))}</td>
+        <td style="text-align:right">${_nf(g(x,'activations'))}</td>
+        <td style="text-align:right">${_nf(g(x,'newpro'))}</td>
+        <td style="text-align:right;font-weight:700;color:var(--green-text)">${_inrShort(g(x,'rev'))}</td></tr>`;
+    }).join('');
+    area.innerHTML=`<div class="okpis">${kpis}</div>
+      <div class="ocard"><div class="ocard-h"><div class="ocard-t">Signups — ${o.grain==='month'?'12 months':'12 weeks'}</div><div class="ocard-note">most recent ${o.grain} highlighted</div></div>
+        <div class="obars" style="height:200px;">${bars}</div></div>
+      <div class="ocard" style="margin-top:16px;"><div class="ocard-h"><div class="ocard-t">Breakdown</div></div>
+        <div style="padding:8px 20px 16px;"><table style="width:100%"><thead><tr><th style="text-align:left">${o.grain==='month'?'Month':'Week'}</th><th style="text-align:right">Signups</th><th style="text-align:right">Activations</th><th style="text-align:right">New Pro</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   }
 </script>
 </body>
