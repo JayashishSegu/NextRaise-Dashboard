@@ -1851,6 +1851,11 @@
     /* last-updated pill */
     .nb-updated{ display:inline-flex; align-items:center; gap:7px; font-size:11.5px; font-weight:600; color:var(--text-3); white-space:nowrap; }
     .nb-updated i{ width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 0 3px var(--green-soft); }
+    /* glass skeleton loaders */
+    @keyframes nbShimmer{ 100%{ transform:translateX(100%) } }
+    .nb-skel{ position:relative; overflow:hidden; background:var(--surface); border:1px solid var(--border); border-radius:22px; }
+    .nb-skel::after{ content:""; position:absolute; inset:0; transform:translateX(-100%); background:linear-gradient(90deg,transparent, color-mix(in oklch, var(--text) 7%, transparent), transparent); animation:nbShimmer 1.5s ease-in-out infinite; }
+    .nb-skel-kpi{ height:132px; } .nb-skel-md{ height:230px; } .nb-skel-lg{ height:290px; }
 
     /* ── ⌘K command palette ── */
     .cmdk-ov{ position:fixed; inset:0; z-index:10000; display:none; align-items:flex-start; justify-content:center; padding-top:13vh; background:rgba(4,7,14,.5); backdrop-filter:blur(8px); }
@@ -2099,7 +2104,11 @@
       </button>
     </div>
     <div id="overviewArea">
-      <div class="state-box"><div class="spinner sp-blue"></div><p>Loading overview…</p></div>
+      <div class="nb-skelwrap">
+        <div class="okpis"><div class="nb-skel nb-skel-kpi"></div><div class="nb-skel nb-skel-kpi"></div><div class="nb-skel nb-skel-kpi"></div><div class="nb-skel nb-skel-kpi"></div></div>
+        <div class="nb-grid2"><div class="nb-skel nb-skel-md"></div><div class="nb-skel nb-skel-md"></div></div>
+        <div class="nb-skel nb-skel-lg" style="margin-top:16px"></div>
+      </div>
     </div>
   </div>
 
