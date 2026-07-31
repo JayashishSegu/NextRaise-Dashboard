@@ -1,5 +1,6 @@
 source-live.html
 concept-overview.html
 concept-orca.html
-.playwright-mcp/
-.vercel
+docs/
+nr-*.png
+.git/
