@@ -3077,20 +3077,28 @@
     <div id="acquireArea"><div class="state-box"><div class="spinner sp-blue"></div><p>Loading channels…</p></div></div>
   </section>
   <section class="page" id="page-retention">
-    <div class="nn-wrap"><div class="nn-card">
-      <div class="nn-ico"><svg><use href="#i-refresh"/></svg></div>
-      <div class="nn-title">Retention</div>
-      <div class="nn-sub">Weekly retention cohort grid — what share of each signup cohort returns in weeks 1–8. Wired to <b>query-retention</b>.</div>
-      <span class="nn-pill">Building — Phase 4</span>
-    </div></div>
+    <div class="ov-head">
+      <div>
+        <div class="home-title" style="margin:0 0 3px;">Retention</div>
+        <div class="ov-sub">Weekly signup-cohort return grid · last 8 weeks</div>
+      </div>
+      <button class="btn btn-secondary" onclick="_retLoaded=false;fetchRetention()">
+        <svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh
+      </button>
+    </div>
+    <div id="retentionArea"><div class="state-box"><div class="spinner sp-blue"></div><p>Loading cohorts…</p></div></div>
   </section>
   <section class="page" id="page-lifecycle">
-    <div class="nn-wrap"><div class="nn-card">
-      <div class="nn-ico"><svg><use href="#i-users"/></svg></div>
-      <div class="nn-title">Lifecycle</div>
-      <div class="nn-sub">New / returning / resurrecting / dormant user composition over time. Wired to <b>query-lifecycle</b>.</div>
-      <span class="nn-pill">Building — Phase 4</span>
-    </div></div>
+    <div class="ov-head">
+      <div>
+        <div class="home-title" style="margin:0 0 3px;">Lifecycle</div>
+        <div class="ov-sub">New · returning · resurrecting · dormant — weekly composition</div>
+      </div>
+      <button class="btn btn-secondary" onclick="_lifLoaded=false;fetchLifecycle()">
+        <svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh
+      </button>
+    </div>
+    <div id="lifecycleArea"><div class="state-box"><div class="spinner sp-blue"></div><p>Loading lifecycle…</p></div></div>
   </section>
   <section class="page" id="page-emails">
     <div class="nn-wrap"><div class="nn-card">
@@ -3349,8 +3357,10 @@
 
   function autoFetch(name) {
     if (!cfg('apiKey')) return;
-    if (name === 'acquire'  && !_acqLoaded) { fetchAcquire();  return; }
-    if (name === 'insights' && !_insLoaded) { fetchInsights(); return; }
+    if (name === 'acquire'   && !_acqLoaded) { fetchAcquire();   return; }
+    if (name === 'insights'  && !_insLoaded) { fetchInsights();  return; }
+    if (name === 'retention' && !_retLoaded) { fetchRetention(); return; }
+    if (name === 'lifecycle' && !_lifLoaded) { fetchLifecycle(); return; }
     if (name === 'credits' && !_creditsLoaded) {
       if (!tcRestore('credits', r=>{_allRows=r;_creditsLoaded=true;}, 'creditsTabBadge', updateCreditsStats, creditsApply,
           [['creditsFilter','block'],['creditsSortWrap','flex'],['statsBar','flex'],['creditsFilterBar','flex']],
@@ -8451,6 +8461,120 @@
     area.innerHTML=`<div class="okpis">${kpis}</div>
       <div class="ocard"><div class="ocard-h"><div class="ocard-t">Conversion Funnel</div><div class="ocard-note">cohort: signed up in ${tabGdrPreset('insights').label.toLowerCase()}</div></div>
         <div style="padding:6px 0 10px;">${rows}</div></div>`;
+  }
+
+  /* ---- RETENTION (weekly signup cohorts) ---- */
+  var _retLoaded=false, _retData=null;
+  const _EXCL = `NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
+      AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
+      AND lower(coalesce(person.properties.email,'')) NOT LIKE '%test%'`;
+  async function fetchRetention(){
+    const area=document.getElementById('retentionArea'); if(!area) return;
+    if(!cfg('apiKey')){ area.innerHTML=stateBox(null,'Add your PostHog key in Settings to load data.','sp-blue'); return; }
+    if(!_retData) area.innerHTML=stateBox(null,'Loading cohorts… (scans ~10 weeks)','sp-blue');
+    try{
+      const res=await runHogQL(`
+        SELECT toString(signup_week) AS cohort, wk, uniq(person_id) AS n
+        FROM (
+          SELECT person_id, signup_week,
+            dateDiff('week', signup_week, act_week) AS wk
+          FROM (
+            SELECT person_id,
+              toStartOfWeek(minIf(toTimeZone(timestamp,'Asia/Kolkata'), event='signup_complete'), 1) AS signup_week,
+              arrayJoin(arrayDistinct(groupArray(toStartOfWeek(toTimeZone(timestamp,'Asia/Kolkata'), 1)))) AS act_week
+            FROM events
+            WHERE timestamp > now() - INTERVAL 77 DAY
+              AND person_id IN (SELECT person_id FROM events WHERE event='signup_complete' AND timestamp > now() - INTERVAL 70 DAY)
+              AND ${_EXCL}
+            GROUP BY person_id
+            HAVING signup_week >= toStartOfWeek(toTimeZone(now(),'Asia/Kolkata'), 1) - INTERVAL 56 DAY
+          )
+        ) WHERE wk >= 0 AND wk <= 6
+        GROUP BY signup_week, wk ORDER BY signup_week DESC, wk`);
+      _retData=res.results||[]; _retLoaded=true; renderRetention();
+    }catch(e){ area.innerHTML=errorBox('Could not load retention — '+e.message); }
+  }
+  function renderRetention(){
+    const area=document.getElementById('retentionArea'); if(!area||!_retData) return;
+    const cohorts={};
+    for(const r of _retData){ const c=r[0]; (cohorts[c]=cohorts[c]||{})[+r[1]]=+r[2]||0; }
+    const weeks=Object.keys(cohorts).sort((a,b)=>b.localeCompare(a));
+    if(!weeks.length){ area.innerHTML=stateBox(null,'No cohort data in range.','sp-blue'); return; }
+    const cell=(v,base)=>{ if(v==null) return `<td style="padding:9px 6px;"></td>`;
+      const pct=base?v/base*100:0; const a=(pct/100).toFixed(2);
+      const col = pct>0 ? `background:color-mix(in srgb, var(--green) ${Math.min(100,Math.round(pct))}%, var(--surface));` : 'background:var(--surface-2);';
+      const txt = pct>=45?'color:#fff;':'color:var(--text-2);';
+      return `<td style="padding:0 4px;"><div style="border-radius:9px;padding:9px 4px;text-align:center;${col}${txt}font-weight:700;font-size:12px;">${pct.toFixed(0)}%<div style="font-size:9.5px;font-weight:600;opacity:.8;">${_nf(v)}</div></div></td>`;
+    };
+    const head=`<tr><th style="text-align:left">Cohort</th><th style="text-align:right">Users</th>${[0,1,2,3,4,5,6].map(w=>`<th style="text-align:center">W${w}</th>`).join('')}</tr>`;
+    const body=weeks.map(w=>{
+      const base=cohorts[w][0]||0;
+      const cells=[0,1,2,3,4,5,6].map(k=>cell(cohorts[w][k], base)).join('');
+      const d=new Date(w); const lbl=isNaN(d.getTime())?w:d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+      return `<tr><td style="font-weight:700">${lbl}</td><td style="text-align:right;font-weight:800">${_nf(base)}</td>${cells}</tr>`;
+    }).join('');
+    // avg W1 retention across cohorts with a W1
+    const w1vals=weeks.map(w=>({b:cohorts[w][0]||0,r:cohorts[w][1]})).filter(x=>x.b>0 && x.r!=null);
+    const avgW1=w1vals.length?(w1vals.reduce((a,x)=>a+x.r/x.b,0)/w1vals.length*100):0;
+    area.innerHTML=`<div class="okpis" style="grid-template-columns:repeat(3,1fr)">
+        ${oKpi('i-users','var(--blue)','Cohorts','last 8 weeks',_nf(weeks.length))}
+        ${oKpi('i-refresh','var(--green)','Avg W1 Return','returning after 1 week',avgW1.toFixed(1)+'%')}
+        ${oKpi('i-calendar','var(--violet)','Newest Cohort','signups',_nf(cohorts[weeks[0]][0]||0))}
+      </div>
+      <div class="ocard"><div class="ocard-h"><div class="ocard-t">Weekly Retention</div><div class="ocard-note">% of each signup cohort active N weeks later</div></div>
+        <div style="padding:8px 16px 16px;overflow-x:auto;"><table style="width:100%;border-collapse:separate;border-spacing:0 4px;">${head}${body}</table></div></div>`;
+  }
+
+  /* ---- LIFECYCLE (weekly new vs returning) ---- */
+  var _lifLoaded=false, _lifData=null;
+  async function fetchLifecycle(){
+    const area=document.getElementById('lifecycleArea'); if(!area) return;
+    if(!cfg('apiKey')){ area.innerHTML=stateBox(null,'Add your PostHog key in Settings to load data.','sp-blue'); return; }
+    if(!_lifData) area.innerHTML=stateBox(null,'Loading lifecycle…','sp-blue');
+    try{
+      const res=await runHogQL(`
+        SELECT toString(week) AS wk,
+          countIf(week = sw) AS new_u,
+          countIf(week > sw) AS ret_u
+        FROM (
+          SELECT person_id, sw, arrayJoin(active_weeks) AS week FROM (
+            SELECT person_id,
+              toStartOfWeek(minIf(toTimeZone(timestamp,'Asia/Kolkata'), event='signup_complete'), 1) AS sw,
+              arrayDistinct(groupArray(toStartOfWeek(toTimeZone(timestamp,'Asia/Kolkata'), 1))) AS active_weeks
+            FROM events
+            WHERE timestamp > now() - INTERVAL 70 DAY
+              AND person_id IN (SELECT person_id FROM events WHERE event='signup_complete' AND timestamp > now() - INTERVAL 400 DAY)
+              AND ${_EXCL}
+            GROUP BY person_id
+          )
+        ) WHERE week >= toStartOfWeek(toTimeZone(now(),'Asia/Kolkata'), 1) - INTERVAL 56 DAY
+        GROUP BY week ORDER BY week`);
+      _lifData=res.results||[]; _lifLoaded=true; renderLifecycle();
+    }catch(e){ area.innerHTML=errorBox('Could not load lifecycle — '+e.message); }
+  }
+  function renderLifecycle(){
+    const area=document.getElementById('lifecycleArea'); if(!area||!_lifData) return;
+    const rows=_lifData.map(r=>({wk:r[0], nw:+r[1]||0, rt:+r[2]||0}));
+    if(!rows.length){ area.innerHTML=stateBox(null,'No lifecycle data.','sp-blue'); return; }
+    const max=Math.max(1,...rows.map(x=>x.nw+x.rt));
+    const totNew=rows.reduce((a,x)=>a+x.nw,0), totRet=rows.reduce((a,x)=>a+x.rt,0);
+    const last=rows[rows.length-1]||{nw:0,rt:0};
+    const bars=rows.map(x=>{
+      const d=new Date(x.wk); const lbl=isNaN(d.getTime())?x.wk:d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+      const nh=Math.round(x.nw/max*100), rh=Math.round(x.rt/max*100);
+      return `<div class="obar-col"><div class="obar-track" style="flex-direction:column;justify-content:flex-end;">
+          <div title="Returning ${_nf(x.rt)}" style="width:100%;height:${rh}%;background:linear-gradient(180deg,var(--blue),#7fb0ff);"></div>
+          <div title="New ${_nf(x.nw)}" style="width:100%;height:${nh}%;background:linear-gradient(180deg,var(--green),#7fe6c0);border-radius:0 0 10px 10px;"></div>
+        </div><div class="obar-x">${lbl}</div></div>`;
+    }).join('');
+    area.innerHTML=`<div class="okpis" style="grid-template-columns:repeat(3,1fr)">
+        ${oKpi('i-users','var(--green)','New (8 wks)','first-week actives',_nf(totNew))}
+        ${oKpi('i-refresh','var(--blue)','Returning (8 wks)','active after signup week',_nf(totRet))}
+        ${oKpi('i-trending','var(--violet)','This Week WAU','new + returning',_nf(last.nw+last.rt))}
+      </div>
+      <div class="ocard"><div class="ocard-h"><div class="ocard-t">Weekly Active Users</div>
+        <div class="legend"><span><i style="background:var(--green)"></i>New</span><span><i style="background:var(--blue)"></i>Returning</span></div></div>
+        <div class="obars" style="height:220px;">${bars}</div></div>`;
   }
 </script>
 </body>
