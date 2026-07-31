@@ -1702,6 +1702,32 @@
     .nb-date{ font-size:9.5px; letter-spacing:.1em; color:var(--text-3); font-weight:600; text-transform:uppercase; text-align:right; max-width:110px; }
     .nb-hi{ font-size:18px; font-weight:700; letter-spacing:-.02em; line-height:1.2; margin-top:12px; color:var(--text); }
 
+    /* NeuroBank Overview concept grid */
+    .nb-grid{ display:grid; grid-template-columns:1.15fr 1.15fr 1fr; gap:16px; margin-top:16px; }
+    @media(max-width:1100px){ .nb-grid{ grid-template-columns:1fr 1fr } .nb-span2,.nb-full{ grid-column:1/-1 } }
+    .nb-card{ background:var(--surface); border:1px solid var(--border); border-radius:22px; padding:20px; box-shadow:var(--shadow-md); backdrop-filter:var(--glass-blur); }
+    .nb-span2{ grid-column:span 2 } .nb-full{ grid-column:1/-1 }
+    .nb-cardh{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px; }
+    .nb-t{ font-size:16px; font-weight:600; letter-spacing:-.01em; color:var(--text); }
+    .nb-note{ font-size:12px; color:var(--text-3); font-weight:500; }
+    .nb-bigrow{ display:flex; align-items:baseline; gap:10px; }
+    .nb-big{ font-size:28px; font-weight:700; letter-spacing:-.03em; color:var(--text); }
+    .nb-chgs{ font-size:12.5px; font-weight:600 } .nb-chgs.up{ color:var(--green) } .nb-chgs.mut{ color:var(--text-3) }
+    .nb-tags{ display:flex; gap:9px; margin:12px 0 4px; }
+    .nb-tag{ font-size:12px; color:var(--text-2); background:rgba(255,255,255,.04); border:1px solid var(--border); border-radius:11px; padding:7px 11px; font-weight:500; }
+    .nb-ai{ position:relative; overflow:hidden; background:linear-gradient(135deg,rgba(79,124,255,.16),rgba(139,92,255,.06)); display:flex; flex-direction:column; min-height:160px; }
+    .nb-ai::before{ content:""; position:absolute; right:-40px; top:-40px; width:210px; height:210px; border-radius:50%; background:radial-gradient(circle,rgba(79,124,255,.35),transparent 70%); }
+    .nb-ai-badge{ align-self:flex-start; font-size:12px; font-weight:600; color:var(--text); background:rgba(255,255,255,.06); border:1px solid var(--border); border-radius:10px; padding:6px 11px; position:relative; }
+    .nb-ai-big{ font-size:19px; font-weight:600; line-height:1.35; margin-top:auto; position:relative; color:var(--text); }
+    .nb-ai-big b{ background:linear-gradient(90deg,#8fb0ff,#c3abff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+    .nb-tx{ display:flex; align-items:center; gap:13px; padding:11px 0; }
+    .nb-tx+.nb-tx{ border-top:1px solid rgba(255,255,255,.05); }
+    .nb-txlogo{ width:38px; height:38px; border-radius:12px; display:grid; place-items:center; font-weight:700; color:#fff; font-size:12px; flex:none; }
+    .nb-txname{ font-weight:600; font-size:14px; color:var(--text); } .nb-txsub{ font-size:12px; color:var(--text-3); }
+    .nb-txwhen{ margin-left:auto; font-weight:600; font-size:13px; color:var(--text-2); }
+    .nb-glegend{ display:flex; justify-content:center; gap:18px; margin-top:2px; font-size:12px; color:var(--text-2); }
+    .nb-glegend i{ width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px; }
+
     /* ============ Orca polish for other screens ============ */
     /* Revenue / KPI tiles */
     .rev-kpi{ border-radius:22px; padding:20px; background:var(--surface); border:1px solid var(--border); box-shadow:var(--shadow-md); }
@@ -4562,10 +4588,45 @@
     const recentSignups = `<div class="ocard"><div class="ocard-h"><div class="ocard-t">Recent Signups</div><div class="ocard-note">latest 5</div></div>${sigList}</div>`;
     const recentPayments = `<div class="ov-card" style="padding:0;overflow:hidden;"><div class="panel-head"><svg class="ic-sm"><use href="#i-coins"/></svg> Recent Payments</div>${paymentRows}</div>`;
 
+    // ═══ NeuroBank concept layout + live ApexCharts ═══
+    const topCh = chItems[0] || {label:'—', value:0};
+    const dailyCats = growthSeries.map(x=>{ const d=new Date(x.d); return isNaN(d.getTime())?String(x.d).slice(5):String(d.getDate()); });
+    const dailyVals = growthSeries.map(x=>x.v);
+    const goalPct = Math.min(100, Math.round(convPct/5*100));
+
+    const aiCard = `<div class="nb-card nb-ai"><div class="nb-ai-badge">✦ AI Insights</div>
+      <div class="nb-ai-big">Your top channel is <b>${h(topCh.label)}</b>, driving <b>${(topCh.value||0).toLocaleString('en-IN')}</b> signups this period. Pro conversion sits at <b>${convPct.toFixed(2)}%</b>.</div></div>`;
+    const revCard = `<div class="nb-card"><div class="nb-cardh"><div class="nb-t">Revenue Overview</div></div>
+      <div class="nb-bigrow"><span class="nb-big">${inrTotal(revInr,revUsd)}</span>${revUsd>0?`<span class="nb-chgs up">▲ +$${Math.round(revUsd).toLocaleString('en-US')}</span>`:''}</div>
+      <div class="nb-tags"><span class="nb-tag">${_ovData.payments.length} recent</span><span class="nb-tag">${activePro.toLocaleString('en-IN')} paying</span></div>
+      <div id="nbRev" style="margin:4px -8px -8px"></div></div>`;
+    const gaugeCard = `<div class="nb-card"><div class="nb-cardh"><div class="nb-t">Pro Conversion</div></div>
+      <div id="nbGauge" style="margin-top:-2px"></div>
+      <div class="nb-glegend"><span><i style="background:var(--blue)"></i>Converted</span><span><i style="background:rgba(255,255,255,.18)"></i>Goal 5%</span></div></div>`;
+    const txRows = _ovData.signups.slice(0,5).map(r=>{ const nm=r[1]||r[0]; const isPro=/pro/i.test(r[2]||'');
+      return `<div class="nb-tx"><div class="nb-txlogo" style="background:${isPro?'linear-gradient(135deg,#8b5cff,#b79bff)':'linear-gradient(135deg,#4f7cff,#6a5cff)'}">${initials(nm)}</div>
+        <div><div class="nb-txname">${h(nm)}</div><div class="nb-txsub">${h(r[0])}</div></div>
+        <span class="plan-badge ${planClass(r[2]||'')}" style="margin-left:18px">${h(planLabel(r[2]||''))}</span>
+        <span class="nb-txwhen">${fmtDate(r[3])||''}</span></div>`; }).join('') || `<div class="panel-empty">No recent signups</div>`;
+    const txCard = `<div class="nb-card nb-span2"><div class="nb-cardh"><div class="nb-t">Recent Signups</div></div>${txRows}</div>`;
+    const acqCard = `<div class="nb-card"><div class="nb-cardh"><div><div class="nb-t">Acquisition</div><div class="nb-note">by channel</div></div></div><div id="nbAcq" style="margin:2px -6px -8px"></div></div>`;
+    const lineCard = `<div class="nb-card nb-full"><div class="nb-cardh"><div><div class="nb-t">Daily Signups</div><div class="nb-note">${growthTotal.toLocaleString('en-IN')} · ${rangeLabel}</div></div></div><div id="nbLine" style="margin:4px -6px -8px"></div></div>`;
+
     document.getElementById('overviewArea').innerHTML =
       `<div class="okpis">${kpis}</div>
-       <div class="ov2">${growthCard}<div class="orc">${recentSignups}${revenueCard}</div></div>
-       <div class="ov-grid">${sourcesCard}${planCard}${influencerCard}${recentPayments}</div>`;
+       <div class="nb-grid">${aiCard}${revCard}${gaugeCard}${txCard}${acqCard}${lineCard}</div>`;
+
+    // render live ApexCharts
+    (window._ovCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}}); window._ovCharts=[];
+    setTimeout(()=>{
+      if(!window.ApexCharts) return;
+      const AX={chart:{toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:'rgba(238,241,248,.4)',animations:{enabled:true,speed:1000,animateGradually:{enabled:true,delay:100}}},grid:{borderColor:'rgba(255,255,255,.06)',strokeDashArray:4},tooltip:{theme:'dark'}};
+      const push=(sel,opt)=>{const el=document.querySelector(sel);if(!el)return;const ch=new ApexCharts(el,opt);ch.render();window._ovCharts.push(ch);};
+      push('#nbRev',{...AX,chart:{...AX.chart,type:'area',height:150},series:[{name:'Signups',data:dailyVals}],stroke:{curve:'smooth',width:3,colors:['#6a8bff']},fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.45,opacityTo:0,stops:[0,95]}},colors:['#4f7cff'],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},xaxis:{categories:dailyCats,labels:{show:false},axisBorder:{show:false},axisTicks:{show:false}},yaxis:{show:false}});
+      push('#nbGauge',{chart:{type:'radialBar',height:214,fontFamily:'General Sans',animations:{enabled:true,speed:1100}},series:[goalPct],plotOptions:{radialBar:{startAngle:-120,endAngle:120,hollow:{size:'60%'},track:{background:'rgba(255,255,255,.07)'},dataLabels:{name:{show:true,offsetY:20,color:'rgba(238,241,248,.5)',fontSize:'11px'},value:{offsetY:-12,fontSize:'26px',fontWeight:700,color:'#fff',formatter:()=>convPct.toFixed(2)+'%'}}}},fill:{type:'gradient',gradient:{shade:'dark',type:'horizontal',gradientToColors:['#8b5cff'],stops:[0,100]}},colors:['#4f7cff'],stroke:{lineCap:'round'},labels:['vs 5% goal']});
+      push('#nbAcq',{...AX,chart:{...AX.chart,type:'bar',height:180},series:[{name:'Signups',data:chItems.slice(0,5).map(i=>i.value)}],plotOptions:{bar:{borderRadius:8,columnWidth:'48%',distributed:true}},colors:['#4f7cff','#6a5cff','#8b5cff','#37e0a6','#f7b955'],dataLabels:{enabled:false},legend:{show:false},grid:{...AX.grid,show:false},xaxis:{categories:chItems.slice(0,5).map(i=>i.label.length>7?i.label.slice(0,6):i.label),axisBorder:{show:false},axisTicks:{show:false},labels:{style:{fontSize:'10px'}}},yaxis:{show:false},fill:{type:'gradient',gradient:{shadeIntensity:.6,opacityFrom:1,opacityTo:.75}}});
+      push('#nbLine',{...AX,chart:{...AX.chart,type:'area',height:220},series:[{name:'Signups',data:dailyVals}],stroke:{curve:'smooth',width:3,colors:['#37e0a6']},fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.35,opacityTo:0,stops:[0,95]}},colors:['#37e0a6'],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},xaxis:{categories:dailyCats,axisBorder:{show:false},axisTicks:{show:false},labels:{style:{fontSize:'11px'}}},yaxis:{labels:{formatter:v=>v>=1000?(v/1000).toFixed(1)+'k':v,style:{fontSize:'11px'}}}});
+    }, 30);
   }
 
   // ── Search ────────────────────────────────────────────────────────
