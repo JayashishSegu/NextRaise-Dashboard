@@ -3043,20 +3043,38 @@
 
   <!-- ============ NET-NEW SCREENS (Phase 4 — wired to real PostHog) ============ -->
   <section class="page" id="page-insights">
-    <div class="nn-wrap"><div class="nn-card">
-      <div class="nn-ico"><svg><use href="#i-pie"/></svg></div>
-      <div class="nn-title">Insights</div>
-      <div class="nn-sub">Signup → onboarding → activation → Pro conversion funnel, with week-over-week deltas on every saved metric. Wired to <b>query-funnel</b> over your real events.</div>
-      <span class="nn-pill">Building — Phase 4</span>
-    </div></div>
+    <div class="ov-head">
+      <div>
+        <div class="home-title" style="margin:0 0 3px;">Insights</div>
+        <div class="ov-sub">Signup → Onboarding → Activation → Pro · conversion funnel</div>
+        <button class="gdr-btn" id="gdrTabBtn-insights" onclick="openTabGdr(event,'insights')" style="margin-top:8px;">
+          <svg class="ic-sm"><use href="#i-calendar"/></svg>
+          <span class="gdr-tab-label">Last 7 days</span>
+          <svg class="gdr-chevron"><use href="#i-chevron-down"/></svg>
+        </button>
+      </div>
+      <button class="btn btn-secondary" onclick="_insLoaded=false;fetchInsights()">
+        <svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh
+      </button>
+    </div>
+    <div id="insightsArea"><div class="state-box"><div class="spinner sp-blue"></div><p>Loading funnel…</p></div></div>
   </section>
   <section class="page" id="page-acquire">
-    <div class="nn-wrap"><div class="nn-card">
-      <div class="nn-ico"><svg><use href="#i-globe"/></svg></div>
-      <div class="nn-title">Acquire</div>
-      <div class="nn-sub">Channel × medium acquisition table with paid-vs-organic split and influencer share. Real 7-day mix: Google Ads 826 · Direct 550 · Chrome Ext 277 · Meta Ads 217 · Influencer 46.</div>
-      <span class="nn-pill">Building — Phase 4</span>
-    </div></div>
+    <div class="ov-head">
+      <div>
+        <div class="home-title" style="margin:0 0 3px;">Acquire</div>
+        <div class="ov-sub">Acquisition channels &amp; source breakdown</div>
+        <button class="gdr-btn" id="gdrTabBtn-acquire" onclick="openTabGdr(event,'acquire')" style="margin-top:8px;">
+          <svg class="ic-sm"><use href="#i-calendar"/></svg>
+          <span class="gdr-tab-label">Last 7 days</span>
+          <svg class="gdr-chevron"><use href="#i-chevron-down"/></svg>
+        </button>
+      </div>
+      <button class="btn btn-secondary" onclick="_acqLoaded=false;fetchAcquire()">
+        <svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh
+      </button>
+    </div>
+    <div id="acquireArea"><div class="state-box"><div class="spinner sp-blue"></div><p>Loading channels…</p></div></div>
   </section>
   <section class="page" id="page-retention">
     <div class="nn-wrap"><div class="nn-card">
@@ -3331,6 +3349,8 @@
 
   function autoFetch(name) {
     if (!cfg('apiKey')) return;
+    if (name === 'acquire'  && !_acqLoaded) { fetchAcquire();  return; }
+    if (name === 'insights' && !_insLoaded) { fetchInsights(); return; }
     if (name === 'credits' && !_creditsLoaded) {
       if (!tcRestore('credits', r=>{_allRows=r;_creditsLoaded=true;}, 'creditsTabBadge', updateCreditsStats, creditsApply,
           [['creditsFilter','block'],['creditsSortWrap','flex'],['statsBar','flex'],['creditsFilterBar','flex']],
@@ -3774,6 +3794,7 @@
   const _tabRanges = {
     overview: '7d', revenue: 'all', activation: 'all',
     pro: 'all', power: '7d', influencers: 'all', abandoned: 'thisMonth', uninstalled: 'thisMonth',
+    acquire: '7d', insights: '7d',
   };
   const _tabCustom = {};   // tab -> { from:'YYYY-MM-DD', to:'YYYY-MM-DD' }
   let _activeGdrTab = null;
@@ -3873,6 +3894,8 @@
       case 'influencers': _inflLoaded = false; fetchInfluencers(); break;
       case 'abandoned':   _abandLoaded = false; fetchAbandoned(); break;
       case 'uninstalled': _uninstLoaded = false; fetchUninstalled(); break;
+      case 'acquire':     _acqLoaded = false; fetchAcquire(); break;
+      case 'insights':    _insLoaded = false; fetchInsights(); break;
     }
   }
 
@@ -8290,5 +8313,145 @@
   </button>
 </nav>
 <div id="chartTooltip" class="chart-tooltip"></div>
+
+<script>
+  /* ===== Net-new screen render helpers (Orca) ===== */
+  function _nf(n){ return Number(n||0).toLocaleString('en-IN'); }
+  function oKpi(icoUse, bg, label, sub, value, delta){
+    return `<div class="okpi"><div class="okpi-top">
+      <div class="okpi-chip" style="background:${bg}"><svg class="ic-sm"><use href="#${icoUse}"/></svg></div>
+      <div class="okpi-lbl">${label}<small>${sub||''}</small></div></div>
+      ${delta||''}<div class="okpi-val">${value}</div></div>`;
+  }
+
+  /* ---- ACQUIRE ---- */
+  var _acqLoaded=false, _acqData=null;
+  async function fetchAcquire(){
+    const area=document.getElementById('acquireArea'); if(!area) return;
+    if(typeof updateTabGdrBtn==='function') updateTabGdrBtn('acquire');
+    if(!cfg('apiKey')){ area.innerHTML=stateBox(null,'Add your PostHog key in Settings to load data.','sp-blue'); return; }
+    if(!_acqData) area.innerHTML=stateBox(null,'Loading channels…','sp-blue');
+    try{
+      const start=tabGdrStartDate('acquire'), end=tabGdrEndDate('acquire');
+      const res=await runHogQL(`
+        SELECT source, medium, count() AS c,
+               countIf(plan LIKE '%pro%' AND status='active') AS conv
+        FROM (
+          SELECT person_id,
+            argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='') AS source,
+            argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='') AS medium,
+            argMaxIf(toString(person.properties.plan), timestamp, person.properties.plan!='') AS plan,
+            argMaxIf(toString(person.properties.subscription_status), timestamp, person.properties.subscription_status!='') AS status,
+            minIf(toDate(toTimeZone(timestamp,'Asia/Kolkata')), event IN ('signup_complete','onboarding_start')) AS su
+          FROM events
+          WHERE timestamp > now() - INTERVAL 400 DAY
+            AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
+            AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
+            AND lower(coalesce(person.properties.email,'')) NOT LIKE '%test%'
+          GROUP BY person_id
+          HAVING su >= toDate('${start}') AND su < toDate('${end}')
+        ) GROUP BY source, medium ORDER BY c DESC LIMIT 300`);
+      _acqData=res.results||[]; _acqLoaded=true; renderAcquire();
+    }catch(e){ area.innerHTML=errorBox('Could not load acquisition — '+e.message); }
+  }
+  function renderAcquire(){
+    const area=document.getElementById('acquireArea'); if(!area||!_acqData) return;
+    const chMap={}, chConv={};
+    for(const r of _acqData){ const ch=channelOf(r[0],r[1]); chMap[ch]=(chMap[ch]||0)+(+r[2]||0); chConv[ch]=(chConv[ch]||0)+(+r[3]||0); }
+    const items=Object.entries(chMap).map(([label,value])=>({label,value,conv:chConv[label]||0})).sort((a,b)=>b.value-a.value);
+    const total=items.reduce((a,i)=>a+i.value,0)||1;
+    const totalConv=items.reduce((a,i)=>a+i.conv,0);
+    const paidSet=new Set(['Paid Search','Paid Social']);
+    const paid=items.filter(i=>paidSet.has(i.label)).reduce((a,i)=>a+i.value,0);
+    const organic=Math.max(0,total-paid);
+    const infl=items.find(i=>i.label==='Influencer'); const inflV=infl?infl.value:0;
+    const top=items[0]||{label:'—',value:0};
+    const CHIP={ 'Paid Search':'var(--blue)','Paid Social':'var(--rose)','Extension':'var(--teal)','Direct':'var(--text-3)','Influencer':'var(--violet)','Organic Social':'var(--amber)','Email':'var(--green)','Other':'var(--orange)' };
+    const kpis=[
+      oKpi('i-users','var(--blue)','Total Signups',tabGdrPreset('acquire').label,_nf(total)),
+      oKpi('i-globe','var(--teal)','Top Channel',top.label,_nf(top.value)),
+      oKpi('i-megaphone','var(--rose)','Paid vs Organic',`${(paid/total*100).toFixed(0)}% paid`,`${_nf(paid)} / ${_nf(organic)}`),
+      oKpi('i-share','var(--violet)','Influencer Share',`${(inflV/total*100).toFixed(1)}% of signups`,_nf(inflV)),
+    ].join('');
+    const max=Math.max(1,...items.map(i=>i.value));
+    const rows=items.map(i=>`
+      <tr><td><div style="display:flex;align-items:center;gap:10px;">
+        <span style="width:10px;height:10px;border-radius:3px;background:${CHIP[i.label]||'var(--text-3)'}"></span>
+        <b style="font-weight:700">${h(i.label)}</b></div></td>
+        <td style="width:44%"><div class="bar-track" style="height:9px;"><div style="width:${Math.round(i.value/max*100)}%;height:9px;border-radius:8px;background:${CHIP[i.label]||'var(--text-3)'};"></div></div></td>
+        <td style="text-align:right;font-weight:800">${_nf(i.value)}</td>
+        <td style="text-align:right;color:var(--text-3);font-weight:600">${(i.value/total*100).toFixed(1)}%</td>
+        <td style="text-align:right;color:var(--green-text);font-weight:700">${i.conv?((i.conv/i.value*100).toFixed(1)+'%'):'—'}</td>
+      </tr>`).join('');
+    area.innerHTML=`<div class="okpis">${kpis}</div>
+      <div class="ocard"><div class="ocard-h"><div class="ocard-t">Channels</div><div class="ocard-note">${_nf(total)} signups · ${_nf(totalConv)} → Pro</div></div>
+        <div style="padding:8px 20px 16px;"><table style="width:100%"><thead><tr>
+          <th style="text-align:left">Channel</th><th></th><th style="text-align:right">Signups</th><th style="text-align:right">Share</th><th style="text-align:right">→ Pro</th>
+        </tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  }
+
+  /* ---- INSIGHTS (funnel) ---- */
+  var _insLoaded=false, _insData=null;
+  async function fetchInsights(){
+    const area=document.getElementById('insightsArea'); if(!area) return;
+    if(typeof updateTabGdrBtn==='function') updateTabGdrBtn('insights');
+    if(!cfg('apiKey')){ area.innerHTML=stateBox(null,'Add your PostHog key in Settings to load data.','sp-blue'); return; }
+    if(!_insData) area.innerHTML=stateBox(null,'Loading funnel…','sp-blue');
+    try{
+      const start=tabGdrStartDate('insights'), end=tabGdrEndDate('insights');
+      const res=await runHogQL(`
+        SELECT
+          uniqIf(person_id, event='signup_complete')      AS signed,
+          uniqIf(person_id, event='onboarding_start')     AS onb_start,
+          uniqIf(person_id, event='onboarding_complete')  AS onb_done,
+          uniqIf(person_id, event='payment_completed')    AS paid
+        FROM events
+        WHERE timestamp > now() - INTERVAL 400 DAY
+          AND person_id IN (
+            SELECT person_id FROM events
+            WHERE event='signup_complete'
+              AND toDate(toTimeZone(timestamp,'Asia/Kolkata')) >= toDate('${start}')
+              AND toDate(toTimeZone(timestamp,'Asia/Kolkata')) < toDate('${end}')
+          )
+          AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
+          AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
+          AND lower(coalesce(person.properties.email,'')) NOT LIKE '%test%'`);
+      _insData=(res.results||[])[0]||[0,0,0,0]; _insLoaded=true; renderInsights();
+    }catch(e){ area.innerHTML=errorBox('Could not load funnel — '+e.message); }
+  }
+  function renderInsights(){
+    const area=document.getElementById('insightsArea'); if(!area||!_insData) return;
+    const [signed, onbStart, onbDone, paid] = _insData.map(x=>+x||0);
+    const steps=[
+      {label:'Signed up',           v:signed,   c:'var(--blue)'},
+      {label:'Onboarding started',  v:onbStart, c:'var(--teal)'},
+      {label:'Onboarding complete', v:onbDone,  c:'var(--amber)'},
+      {label:'Paid (Pro)',          v:paid,     c:'var(--green)'},
+    ];
+    const base=signed||1;
+    const kpis=[
+      oKpi('i-users','var(--blue)','Signed Up',tabGdrPreset('insights').label,_nf(signed)),
+      oKpi('i-check-circle','var(--amber)','Activated',`${(onbDone/base*100).toFixed(1)}% of signups`,_nf(onbDone)),
+      oKpi('i-star','var(--green)','Paid (Pro)',`${(paid/base*100).toFixed(2)}% of signups`,_nf(paid)),
+      oKpi('i-pie','var(--violet)','Overall Conv.','signup → Pro',`${(paid/base*100).toFixed(2)}%`),
+    ].join('');
+    const rows=steps.map((s,i)=>{
+      const pctOfBase=(s.v/base*100);
+      const stepPct=i===0?100:(steps[i-1].v?(s.v/steps[i-1].v*100):0);
+      return `<div style="padding:12px 20px;${i?'border-top:1px solid var(--border);':''}">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:10px;height:10px;border-radius:3px;background:${s.c}"></span>
+            <b style="font-weight:700;font-size:13.5px">${s.label}</b></div>
+          <div style="font-weight:800;font-size:14px">${_nf(s.v)} <span style="color:var(--text-3);font-weight:600;font-size:12px">· ${pctOfBase.toFixed(1)}%</span></div>
+        </div>
+        <div class="bar-track" style="height:12px;"><div style="width:${Math.max(2,pctOfBase)}%;height:12px;border-radius:8px;background:linear-gradient(90deg,${s.c},color-mix(in srgb,${s.c} 55%,white));"></div></div>
+        ${i?`<div style="font-size:11px;color:var(--text-3);font-weight:600;margin-top:5px;">${stepPct.toFixed(1)}% from previous step</div>`:''}
+      </div>`;
+    }).join('');
+    area.innerHTML=`<div class="okpis">${kpis}</div>
+      <div class="ocard"><div class="ocard-h"><div class="ocard-t">Conversion Funnel</div><div class="ocard-note">cohort: signed up in ${tabGdrPreset('insights').label.toLowerCase()}</div></div>
+        <div style="padding:6px 0 10px;">${rows}</div></div>`;
+  }
+</script>
 </body>
 </html>
