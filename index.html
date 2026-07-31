@@ -8997,22 +8997,28 @@
     const max=Math.max(1,...rows.map(x=>x.nw+x.rt));
     const totNew=rows.reduce((a,x)=>a+x.nw,0), totRet=rows.reduce((a,x)=>a+x.rt,0);
     const last=rows[rows.length-1]||{nw:0,rt:0};
-    const bars=rows.map(x=>{
-      const d=new Date(x.wk); const lbl=isNaN(d.getTime())?x.wk:d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
-      const nh=Math.round(x.nw/max*100), rh=Math.round(x.rt/max*100);
-      return `<div class="obar-col"><div class="obar-track" style="flex-direction:column;justify-content:flex-end;">
-          <div title="Returning ${_nf(x.rt)}" style="width:100%;height:${rh}%;background:linear-gradient(180deg,var(--blue),#7fb0ff);"></div>
-          <div title="New ${_nf(x.nw)}" style="width:100%;height:${nh}%;background:linear-gradient(180deg,var(--green),#7fe6c0);border-radius:0 0 10px 10px;"></div>
-        </div><div class="obar-x">${lbl}</div></div>`;
-    }).join('');
+    const lLbls=rows.map(x=>{ const d=new Date(x.wk); return isNaN(d.getTime())?x.wk:d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}); });
+    const lNew=rows.map(x=>x.nw), lRet=rows.map(x=>x.rt);
     area.innerHTML=`<div class="okpis" style="grid-template-columns:repeat(3,1fr)">
         ${oKpi('i-users','var(--green)','New (8 wks)','first-week actives',_nf(totNew))}
         ${oKpi('i-refresh','var(--blue)','Returning (8 wks)','active after signup week',_nf(totRet))}
-        ${oKpi('i-trending','var(--violet)','This Week WAU','new + returning',_nf(last.nw+last.rt))}
+        ${oKpi('i-trending','var(--violet)','This week WAU','new + returning',_nf(last.nw+last.rt))}
       </div>
-      <div class="ocard"><div class="ocard-h"><div class="ocard-t">Weekly Active Users</div>
-        <div class="legend"><span><i style="background:var(--green)"></i>New</span><span><i style="background:var(--blue)"></i>Returning</span></div></div>
-        <div class="obars" style="height:220px;">${bars}</div></div>`;
+      <div class="ocard"><div class="ocard-h"><div class="ocard-t">Weekly active users</div>
+        <div class="nb-leg"><span><i style="background:var(--green)"></i>New</span><span><i style="background:var(--blue)"></i>Returning</span></div></div>
+        <div id="lifeChart" style="margin:6px -6px -8px"></div></div>`;
+    (window._lifCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}}); window._lifCharts=[];
+    setTimeout(()=>{ if(!window.ApexCharts) return; const el=document.querySelector('#lifeChart'); if(!el) return;
+      const DK=document.documentElement.dataset.theme==='dark', BLUE=DK?'#5f8bff':'#3b63e6', GRN=DK?'#37e0a6':'#12b981';
+      const ch=new ApexCharts(el,{chart:{type:'bar',height:240,stacked:true,toolbar:{show:false},fontFamily:'General Sans',foreColor:DK?'rgba(240,243,250,.55)':'rgba(17,23,38,.66)',animations:{enabled:true,speed:900}},
+        series:[{name:'New',data:lNew},{name:'Returning',data:lRet}],colors:[GRN,BLUE],
+        plotOptions:{bar:{borderRadius:6,columnWidth:'56%',borderRadiusApplication:'end'}},dataLabels:{enabled:false},legend:{show:false},
+        grid:{borderColor:DK?'rgba(255,255,255,.06)':'rgba(28,40,75,.08)',strokeDashArray:4},tooltip:{theme:DK?'dark':'light'},
+        fill:{type:'gradient',gradient:{shadeIntensity:.5,opacityFrom:1,opacityTo:.85}},
+        xaxis:{categories:lLbls,axisBorder:{show:false},axisTicks:{show:false},labels:{style:{fontSize:'11px'}}},
+        yaxis:{labels:{formatter:v=>v>=1000?(v/1000).toFixed(1)+'k':v,style:{fontSize:'11px'}}}});
+      ch.render(); window._lifCharts.push(ch);
+    },30);
   }
 
   /* ---- shared funnel renderer ---- */
