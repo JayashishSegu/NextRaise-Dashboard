@@ -12,7 +12,11 @@
   <link rel="preconnect" href="https://open.er-api.com" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://api.fontshare.com" />
+  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700,800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.1/dist/apexcharts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <style>
     :root {
       color-scheme: light;
@@ -1598,6 +1602,106 @@
     .ov2{ align-items:start; }
     .obars{ min-height:200px; }
 
+    /* ============================================================
+       NEUROBANK  ·  dark glassmorphism override (wins by cascade)
+       ============================================================ */
+    :root, html[data-theme="dark"]{
+      --canvas:#080b14; --bg:transparent;
+      --surface:rgba(255,255,255,.04); --surface-2:rgba(255,255,255,.055);
+      --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.14);
+      --table-head:rgba(255,255,255,.03); --table-head-2:rgba(255,255,255,.06); --row-border:rgba(255,255,255,.055);
+      --text:#eef1f8; --text-2:rgba(238,241,248,.62); --text-3:rgba(238,241,248,.40); --ink:#eef1f8;
+      --blue:#4f7cff; --blue-dark:#3b63e0; --blue-soft:rgba(79,124,255,.16); --blue-text:#9db4ff;
+      --violet:#8b5cff; --violet-soft:rgba(139,92,255,.16); --violet-text:#c3abff;
+      --green:#37e0a6; --green-soft:rgba(55,224,166,.14); --green-text:#5ceabb;
+      --teal:#2dd4c4; --teal-soft:rgba(45,212,196,.14); --teal-text:#6fe6db;
+      --red:#fb7185; --red-soft:rgba(251,113,133,.14); --red-text:#ff9aa8; --red-border:rgba(251,113,133,.3);
+      --amber:#f7b955; --amber-soft:rgba(247,185,85,.14); --amber-text:#ffce7d;
+      --orange:#ff9d5c; --orange-soft:rgba(255,157,92,.14); --orange-text:#ffb987;
+      --rose:#fb7185; --rose-soft:rgba(251,113,133,.14); --rose-text:#ff9aa8;
+      --pro3-soft:rgba(139,92,255,.16); --pro3-text:#c3abff;
+      --radius:16px; --radius-lg:22px;
+      --shadow-md:0 24px 50px -30px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.05);
+      --shadow-lg:0 30px 70px -30px rgba(0,0,0,.85);
+      --shadow-blue:0 10px 30px -10px rgba(79,124,255,.6);
+      --glass-blur:blur(22px) saturate(1.25);
+    }
+    body, .app-layout, .app-body, input, select, textarea, button{ font-family:'General Sans','Poppins',-apple-system,system-ui,sans-serif; }
+
+    /* Canvas: dark with gradient glows + faint grid */
+    body{ background:var(--canvas); color:var(--text); padding:0;
+      background-image:
+        radial-gradient(900px 520px at 84% -8%, rgba(79,124,255,.20), transparent 60%),
+        radial-gradient(760px 520px at 4% 26%, rgba(139,92,255,.13), transparent 60%),
+        radial-gradient(760px 700px at 98% 98%, rgba(55,224,166,.05), transparent 60%),
+        linear-gradient(180deg,#0a0e1a,#080b14); background-attachment:fixed; }
+    body::after{ content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.5;
+      background-image:linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
+      background-size:46px 46px; mask-image:radial-gradient(130% 120% at 50% 0%,#000,transparent 78%); }
+    .app-layout{ position:relative; z-index:1; background:transparent!important; box-shadow:none!important; border-radius:0!important; height:100vh; }
+    .app-body{ background:transparent!important; }
+
+    /* Sidebar */
+    .sidebar{ background:rgba(255,255,255,.025)!important; border-right:1px solid var(--border)!important; backdrop-filter:var(--glass-blur); }
+    .sidebar-brand .logo{ color:var(--text); }
+    .sidebar-brand .logo span{ color:var(--blue); -webkit-text-fill-color:currentColor; }
+    .logo-sub{ color:var(--text-3); }
+    .nav-label{ color:var(--text-3); }
+    .nav-sep{ background:var(--border); }
+    .tab{ color:var(--text-2); border-radius:14px; }
+    .tab:hover{ color:var(--text); background:rgba(255,255,255,.05); }
+    .tab.active, .tab.tab-green.active, .tab.tab-blue.active, .tab.tab-purple.active,
+    .tab.tab-orange.active, .tab.tab-rose.active, .tab.tab-amber.active, .tab.tab-teal.active{
+      color:#fff!important; background:rgba(255,255,255,.08)!important; border:1px solid var(--border)!important; box-shadow:none!important; }
+    .tab.active .ic-sm{ color:var(--blue)!important; }
+    .tab-badge{ background:rgba(255,255,255,.06); border-color:var(--border); color:var(--text-2); }
+    .sidebar-footer{ border-top:1px solid var(--border); }
+    .icon-btn, .settings-btn{ background:rgba(255,255,255,.05); border-color:var(--border); color:var(--text-2); }
+
+    /* Glass cards — every surface family */
+    .panel, .result-card, .ov-card, .rev-tile, .infl-card, .search-tip-card, .home-panels,
+    .table-wrap, .state-box, .error-box, .rev-kpi, .search-box, .okpi, .ocard, .stat-pill, .kpi, .modal, .nn-card{
+      background:var(--surface)!important; border:1px solid var(--border)!important; box-shadow:var(--shadow-md)!important;
+      backdrop-filter:var(--glass-blur); }
+    .okpi, .ocard, .ov-card, .rev-kpi{ border-radius:var(--radius-lg)!important; }
+    .rev-tile{ background:rgba(255,255,255,.03)!important; }
+
+    /* Text + tables */
+    .home-title, .ov-sub, .card-t, .okpi-val, .rev-kpi-num, .stat-num{ color:var(--text); }
+    .ov-sub, .ocard-note, .panel-sub{ color:var(--text-3); }
+    table thead th, .sno-th{ color:var(--text-3); background:transparent; border-bottom:1px solid var(--border); }
+    table tbody td{ border-bottom:1px solid var(--row-border); color:var(--text); }
+    table tbody tr:hover{ background:rgba(255,255,255,.03); }
+    .u-name, .otx-name, .rf-value, .result-name{ color:var(--text); }
+    .u-mail, .otx-sub, .rf-label{ color:var(--text-3); }
+
+    /* KPI chips glow, bars glow */
+    .okpi-chip{ box-shadow:0 8px 20px -8px rgba(79,124,255,.6); }
+    .obar-fill{ box-shadow:0 0 20px -4px rgba(55,224,166,.55); }
+    .obar-track{ background:rgba(255,255,255,.05); }
+
+    /* Buttons / inputs / chips */
+    .btn{ background:rgba(255,255,255,.05); border-color:var(--border); color:var(--text); }
+    .btn:hover:not(:disabled){ background:rgba(79,124,255,.14); border-color:transparent; color:#fff; }
+    .btn-secondary, .btn-primary{ background:linear-gradient(135deg,var(--blue),var(--violet))!important; color:#fff!important; border:0!important; box-shadow:var(--shadow-blue)!important; }
+    .gdr-btn{ background:rgba(255,255,255,.05); border:1px solid var(--border); color:var(--text-2); }
+    .search-input, .toolbar-input, .field-input, .date-input, .sort-select{ background:rgba(255,255,255,.04)!important; border-color:var(--border)!important; color:var(--text)!important; }
+    .chip{ background:rgba(255,255,255,.05); border-color:var(--border); color:var(--text-2); }
+    .chip.on, .chip.active-blue, .chip.active-orange, .chip.active-purple, .chip.active-rose, .chip.active-teal, .chip.active-amber{
+      background:rgba(255,255,255,.12); color:#fff; border-color:var(--border-strong); }
+    #gdrSharedDrop{ background:rgba(20,26,40,.9)!important; border-color:var(--border)!important; backdrop-filter:var(--glass-blur); }
+    .gdr-opt{ color:var(--text); } .gdr-opt:hover{ background:rgba(255,255,255,.06); }
+    .badge, .plan-badge{ background:rgba(255,255,255,.06); }
+    .modal-overlay{ background:rgba(4,7,14,.72)!important; backdrop-filter:blur(6px); }
+    .spinner{ border-top-color:var(--blue)!important; }
+
+    /* Sidebar profile card */
+    .nb-profile{ margin:2px 14px 6px; padding:14px; border-radius:18px; background:var(--surface); border:1px solid var(--border); backdrop-filter:var(--glass-blur); }
+    .nb-prof-top{ display:flex; align-items:center; justify-content:space-between; }
+    .nb-av{ width:42px; height:42px; border-radius:13px; display:grid; place-items:center; font-weight:700; color:#fff; font-size:14px; background:linear-gradient(135deg,var(--blue),var(--violet)); box-shadow:var(--shadow-blue); }
+    .nb-date{ font-size:9.5px; letter-spacing:.1em; color:var(--text-3); font-weight:600; text-transform:uppercase; text-align:right; max-width:110px; }
+    .nb-hi{ font-size:18px; font-weight:700; letter-spacing:-.02em; line-height:1.2; margin-top:12px; color:var(--text); }
+
     /* ============ Orca polish for other screens ============ */
     /* Revenue / KPI tiles */
     .rev-kpi{ border-radius:22px; padding:20px; background:var(--surface); border:1px solid var(--border); box-shadow:var(--shadow-md); }
@@ -1726,6 +1830,13 @@
         <div class="logo">Next<span>Raise</span></div>
         <span class="logo-sub">ANALYTICS</span>
       </div>
+    </div>
+    <div class="nb-profile">
+      <div class="nb-prof-top">
+        <div class="nb-av">JS</div>
+        <div class="nb-date" id="nbDate">Today</div>
+      </div>
+      <div class="nb-hi">Welcome back,<br>Jayashish!</div>
     </div>
     <nav class="sidebar-nav">
       <div class="nav-label">Overview</div>
@@ -8292,6 +8403,23 @@
   </button>
 </nav>
 <div id="chartTooltip" class="chart-tooltip"></div>
+
+<script>
+  /* ===== NeuroBank entrance motion — animate cards as they render ===== */
+  (function(){
+    const seen = new WeakSet();
+    function anim(){
+      if(!window.gsap) return;
+      const els=[...document.querySelectorAll('.okpi,.ocard,.ov-card,.rev-kpi,.stat-pill,.table-wrap,.infl-card')].filter(el=>!seen.has(el) && el.offsetParent!==null);
+      els.forEach(el=>seen.add(el));
+      if(els.length) window.gsap.fromTo(els,{opacity:0,y:18},{opacity:1,y:0,duration:.55,stagger:.045,ease:'power3.out'});
+    }
+    let t; const mo=new MutationObserver(()=>{ clearTimeout(t); t=setTimeout(anim,30); });
+    if(document.body) mo.observe(document.body,{childList:true,subtree:true});
+    window.addEventListener('load',()=>{ setTimeout(anim,200);
+      const d=document.getElementById('nbDate'); if(d) d.textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}); });
+  })();
+</script>
 
 <script>
   /* ===== Net-new screen render helpers (Orca) ===== */
