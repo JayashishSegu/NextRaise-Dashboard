@@ -1844,6 +1844,28 @@
     /* calmer transaction avatars (semantic restraint) */
     .nb-txlogo{ background:var(--blue-soft)!important; color:var(--blue-text)!important; }
 
+    /* ── ⌘K command palette ── */
+    .cmdk-ov{ position:fixed; inset:0; z-index:10000; display:none; align-items:flex-start; justify-content:center; padding-top:13vh; background:rgba(4,7,14,.5); backdrop-filter:blur(8px); }
+    .cmdk-ov.open{ display:flex; }
+    .cmdk{ width:min(580px,92vw); background:var(--pop); border:1px solid var(--border-strong); border-radius:18px; overflow:hidden; box-shadow:var(--shadow-lg); backdrop-filter:var(--glass-blur); animation:cmdkIn .28s cubic-bezier(.16,1,.3,1); }
+    @keyframes cmdkIn{ from{ opacity:0; transform:translateY(-12px) scale(.98) } to{ opacity:1; transform:none } }
+    .cmdk-in{ display:flex; align-items:center; gap:12px; padding:16px 18px; border-bottom:1px solid var(--border); }
+    .cmdk-in svg{ width:18px; height:18px; color:var(--text-3); flex:none; }
+    .cmdk-in input{ flex:1; background:transparent; border:0; outline:0; color:var(--text); font-size:15px; font-family:inherit; }
+    .cmdk-in input::placeholder{ color:var(--text-3); }
+    .cmdk-list{ max-height:56vh; overflow-y:auto; padding:8px; }
+    .cmdk-sec{ font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-3); padding:10px 12px 4px; }
+    .cmdk-i{ display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:12px; cursor:pointer; }
+    .cmdk-i svg{ width:17px; height:17px; opacity:.8; color:var(--text-2); flex:none; }
+    .cmdk-i .lbl{ font-size:13.5px; font-weight:500; color:var(--text); }
+    .cmdk-i .hint{ margin-left:auto; font-size:11px; color:var(--text-3); }
+    .cmdk-i.sel{ background:var(--blue-soft); } .cmdk-i.sel .lbl{ color:var(--blue-text); } .cmdk-i.sel svg{ color:var(--blue); opacity:1; }
+    .cmdk-empty{ padding:26px; text-align:center; color:var(--text-3); font-size:13px; }
+    .cmdk-kbd{ font-size:10.5px; font-weight:600; color:var(--text-3); background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:2px 7px; }
+    .cmdk-trigger{ display:flex; align-items:center; gap:9px; margin:2px 14px 8px; padding:9px 12px; border-radius:12px; background:var(--surface-2); border:1px solid var(--border); color:var(--text-3); font-size:12.5px; font-weight:500; cursor:pointer; transition:.2s; }
+    .cmdk-trigger:hover{ color:var(--text-2); border-color:var(--border-strong); }
+    .cmdk-trigger svg{ width:15px; height:15px; } .cmdk-trigger .k{ margin-left:auto; }
+
     /* ============ Orca polish for other screens ============ */
     /* Revenue / KPI tiles */
     .rev-kpi{ border-radius:22px; padding:20px; background:var(--surface); border:1px solid var(--border); box-shadow:var(--shadow-md); }
@@ -1979,6 +2001,10 @@
         <div class="nb-date" id="nbDate">Today</div>
       </div>
       <div class="nb-hi">Welcome back,<br>Jayashish!</div>
+    </div>
+    <div class="cmdk-trigger" onclick="window.__cmdk&&window.__cmdk()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+      Search or jump to…<span class="k cmdk-kbd">⌘K</span>
     </div>
     <nav class="sidebar-nav">
       <div class="nav-label">Overview</div>
@@ -8616,6 +8642,70 @@
   </button>
 </nav>
 <div id="chartTooltip" class="chart-tooltip"></div>
+
+<div class="cmdk-ov" id="cmdkOv">
+  <div class="cmdk" role="dialog" aria-label="Command palette">
+    <div class="cmdk-in">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+      <input id="cmdkInput" placeholder="Search screens or run a command…" autocomplete="off" spellcheck="false" />
+      <span class="cmdk-kbd">Esc</span>
+    </div>
+    <div class="cmdk-list" id="cmdkList"></div>
+  </div>
+</div>
+
+<script>
+  /* ===== ⌘K command palette ===== */
+  (function(){
+    const CMDS=[
+      {g:'Go to',l:'Growth performance',t:'overview',i:'i-grid'},
+      {g:'Go to',l:'Daily metrics',t:'daily',i:'i-calendar'},
+      {g:'Go to',l:'Insights · funnel',t:'insights',i:'i-pie'},
+      {g:'Go to',l:'Search contacts',t:'search',i:'i-search'},
+      {g:'Go to',l:'Acquire · channels',t:'acquire',i:'i-globe'},
+      {g:'Go to',l:'Activate',t:'activation',i:'i-zap'},
+      {g:'Go to',l:'Monetization · revenue',t:'revenue',i:'i-coins'},
+      {g:'Go to',l:'Retention',t:'retention',i:'i-refresh'},
+      {g:'Go to',l:'Lifecycle',t:'lifecycle',i:'i-users'},
+      {g:'Go to',l:'Emails',t:'emails',i:'i-check-circle'},
+      {g:'Go to',l:'Referrals',t:'referrals',i:'i-share'},
+      {g:'Go to',l:'Influencers',t:'influencers',i:'i-megaphone'},
+      {g:'Go to',l:'Pro users',t:'pro',i:'i-star'},
+      {g:'Actions',l:'Toggle light / dark theme',fn:()=>{try{toggleTheme()}catch(_){}} ,i:'i-sun'},
+      {g:'Actions',l:'Open settings (API key)',fn:()=>{try{openSettings()}catch(_){}},i:'i-gear'},
+      {g:'Actions',l:'Refresh dashboard',fn:()=>{try{location.reload()}catch(_){}},i:'i-refresh'},
+    ];
+    const ov=document.getElementById('cmdkOv'), inp=document.getElementById('cmdkInput'), list=document.getElementById('cmdkList');
+    if(!ov||!inp||!list) return;
+    let filtered=CMDS, sel=0;
+    function render(){
+      const q=inp.value.trim().toLowerCase();
+      filtered=CMDS.filter(c=>!q||c.l.toLowerCase().includes(q)||(c.t||'').includes(q));
+      sel=0;
+      if(!filtered.length){ list.innerHTML='<div class="cmdk-empty">No matches for that.</div>'; return; }
+      let lastG='', html='';
+      filtered.forEach((c,idx)=>{ if(c.g!==lastG){ html+='<div class="cmdk-sec">'+c.g+'</div>'; lastG=c.g; }
+        html+='<div class="cmdk-i'+(idx===sel?' sel':'')+'" data-i="'+idx+'"><svg><use href="#'+c.i+'"/></svg><span class="lbl">'+c.l+'</span><span class="hint">'+(c.t?'jump ↵':'run ↵')+'</span></div>'; });
+      list.innerHTML=html;
+    }
+    function upd(){ [...list.querySelectorAll('.cmdk-i')].forEach(el=>el.classList.toggle('sel',+el.dataset.i===sel)); const s=list.querySelector('.cmdk-i.sel'); if(s) s.scrollIntoView({block:'nearest'}); }
+    function exec(c){ close(); if(!c) return; if(c.fn) c.fn(); else if(c.t && typeof switchTab==='function') switchTab(c.t); }
+    function open(){ ov.classList.add('open'); inp.value=''; render(); setTimeout(()=>inp.focus(),10); }
+    function close(){ ov.classList.remove('open'); }
+    window.__cmdk=open;
+    document.addEventListener('keydown',e=>{
+      if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){ e.preventDefault(); ov.classList.contains('open')?close():open(); return; }
+      if(!ov.classList.contains('open')) return;
+      if(e.key==='Escape'){ e.preventDefault(); close(); }
+      else if(e.key==='ArrowDown'){ e.preventDefault(); sel=Math.min(filtered.length-1,sel+1); upd(); }
+      else if(e.key==='ArrowUp'){ e.preventDefault(); sel=Math.max(0,sel-1); upd(); }
+      else if(e.key==='Enter'){ e.preventDefault(); exec(filtered[sel]); }
+    });
+    inp.addEventListener('input',render);
+    list.addEventListener('click',e=>{ const it=e.target.closest('.cmdk-i'); if(it) exec(filtered[+it.dataset.i]); });
+    ov.addEventListener('click',e=>{ if(e.target===ov) close(); });
+  })();
+</script>
 
 <script>
   /* ===== NeuroBank entrance motion — animate cards as they render ===== */
