@@ -1611,8 +1611,8 @@
       --border:rgba(28,40,75,.09); --border-strong:rgba(28,40,75,.16);
       --hover:rgba(28,40,75,.045); --sep:rgba(28,40,75,.07); --pop:#ffffff;
       --table-head:rgba(28,40,75,.03); --table-head-2:rgba(28,40,75,.06); --row-border:rgba(28,40,75,.06);
-      --text:#141a28; --text-2:rgba(20,26,40,.62); --text-3:rgba(20,26,40,.42); --ink:#141a28;
-      --blue:#3b63e6; --blue-dark:#2f52c8; --blue-soft:rgba(59,99,230,.12); --blue-text:#3157cf;
+      --text:#0f1524; --text-2:rgba(17,23,38,.78); --text-3:rgba(17,23,38,.56); --ink:#0f1524;
+      --blue:#3b63e6; --blue-dark:#2f52c8; --blue-soft:rgba(59,99,230,.12); --blue-text:#2a4fc4;
       --violet:#7c4dff; --violet-soft:rgba(124,77,255,.12); --violet-text:#6a3fe0;
       --green:#12b981; --green-soft:rgba(18,185,129,.13); --green-text:#0f9d6e;
       --teal:#0fb5b0; --teal-soft:rgba(15,181,176,.12); --teal-text:#0c9a95;
@@ -1635,8 +1635,8 @@
       --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.14);
       --hover:rgba(255,255,255,.045); --sep:rgba(255,255,255,.06); --pop:rgba(18,24,38,.96);
       --table-head:rgba(255,255,255,.03); --table-head-2:rgba(255,255,255,.06); --row-border:rgba(255,255,255,.055);
-      --text:#eef1f8; --text-2:rgba(238,241,248,.62); --text-3:rgba(238,241,248,.40); --ink:#eef1f8;
-      --blue:#4f7cff; --blue-dark:#3b63e0; --blue-soft:rgba(79,124,255,.18); --blue-text:#9db4ff;
+      --text:#f4f6fb; --text-2:rgba(240,243,250,.74); --text-3:rgba(240,243,250,.52); --ink:#f4f6fb;
+      --blue:#4f7cff; --blue-dark:#3b63e0; --blue-soft:rgba(79,124,255,.18); --blue-text:#a8c0ff;
       --violet:#8b5cff; --violet-soft:rgba(139,92,255,.18); --violet-text:#c3abff;
       --green:#37e0a6; --green-soft:rgba(55,224,166,.14); --green-text:#5ceabb;
       --teal:#2dd4c4; --teal-soft:rgba(45,212,196,.14); --teal-text:#6fe6db;
@@ -1739,7 +1739,8 @@
     .nb-ai::before{ content:""; position:absolute; right:-40px; top:-40px; width:210px; height:210px; border-radius:50%; background:radial-gradient(circle,rgba(79,124,255,.35),transparent 70%); }
     .nb-ai-badge{ align-self:flex-start; font-size:12px; font-weight:600; color:var(--text); background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:6px 11px; position:relative; }
     .nb-ai-big{ font-size:19px; font-weight:600; line-height:1.35; margin-top:auto; position:relative; color:var(--text); }
-    .nb-ai-big b{ background:linear-gradient(90deg,#8fb0ff,#c3abff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+    .nb-ai-big b{ color:var(--blue-text); font-weight:700; }
+    html[data-theme="dark"] .nb-ai-big b{ background:linear-gradient(90deg,#9db4ff,#c3abff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
     .nb-tx{ display:flex; align-items:center; gap:13px; padding:11px 0; }
     .nb-tx+.nb-tx{ border-top:1px solid var(--sep); }
     .nb-txlogo{ width:38px; height:38px; border-radius:12px; display:grid; place-items:center; font-weight:700; color:#fff; font-size:12px; flex:none; }
@@ -4645,7 +4646,7 @@
     setTimeout(()=>{
       if(!window.ApexCharts) return;
       const DK=document.documentElement.dataset.theme==='dark';
-      const AX={chart:{toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:DK?'rgba(238,241,248,.4)':'rgba(20,26,40,.5)',animations:{enabled:true,speed:1000,animateGradually:{enabled:true,delay:100}}},grid:{borderColor:DK?'rgba(255,255,255,.06)':'rgba(28,40,75,.08)',strokeDashArray:4},tooltip:{theme:DK?'dark':'light'}};
+      const AX={chart:{toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:DK?'rgba(240,243,250,.55)':'rgba(17,23,38,.66)',animations:{enabled:true,speed:1000,animateGradually:{enabled:true,delay:100}}},grid:{borderColor:DK?'rgba(255,255,255,.06)':'rgba(28,40,75,.08)',strokeDashArray:4},tooltip:{theme:DK?'dark':'light'}};
       const push=(sel,opt)=>{const el=document.querySelector(sel);if(!el)return;const ch=new ApexCharts(el,opt);ch.render();window._ovCharts.push(ch);};
       push('#nbRev',{...AX,chart:{...AX.chart,type:'area',height:150},series:[{name:'Signups',data:dailyVals}],stroke:{curve:'smooth',width:3,colors:['#6a8bff']},fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.45,opacityTo:0,stops:[0,95]}},colors:['#4f7cff'],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},xaxis:{categories:dailyCats,labels:{show:false},axisBorder:{show:false},axisTicks:{show:false}},yaxis:{show:false}});
       push('#nbGauge',{chart:{type:'radialBar',height:214,fontFamily:'General Sans',animations:{enabled:true,speed:1100}},series:[goalPct],plotOptions:{radialBar:{startAngle:-120,endAngle:120,hollow:{size:'60%'},track:{background:DK?'rgba(255,255,255,.07)':'rgba(28,40,75,.08)'},dataLabels:{name:{show:true,offsetY:20,color:DK?'rgba(238,241,248,.5)':'rgba(20,26,40,.5)',fontSize:'11px'},value:{offsetY:-12,fontSize:'26px',fontWeight:700,color:DK?'#fff':'#141a28',formatter:()=>convPct.toFixed(2)+'%'}}}},fill:{type:'gradient',gradient:{shade:'dark',type:'horizontal',gradientToColors:['#8b5cff'],stops:[0,100]}},colors:['#4f7cff'],stroke:{lineCap:'round'},labels:['vs 5% goal']});
