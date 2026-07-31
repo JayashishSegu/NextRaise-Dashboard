@@ -3020,17 +3020,25 @@
 
   <!-- ── Shared floating date-range dropdown (per-tab, positioned via JS) ── -->
   <div id="gdrSharedDrop" style="display:none;position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);min-width:180px;padding:5px 0;animation:gdrFade .12s ease;">
-    <div class="gdr-opt" data-key="today"  onclick="gdrOptClick('today')">Today</div>
-    <div class="gdr-opt" data-key="yest"   onclick="gdrOptClick('yest')">Yesterday</div>
-    <div class="gdr-opt" data-key="24h"    onclick="gdrOptClick('24h')">Last 24 hours</div>
+    <div class="gdr-opt" data-key="today"     onclick="gdrOptClick('today')">Today</div>
+    <div class="gdr-opt" data-key="yest"      onclick="gdrOptClick('yest')">Yesterday</div>
     <div class="gdr-sep"></div>
-    <div class="gdr-opt" data-key="7d"    onclick="gdrOptClick('7d')">Last 7 days</div>
-    <div class="gdr-opt" data-key="14d"   onclick="gdrOptClick('14d')">Last 14 days</div>
-    <div class="gdr-opt" data-key="30d"   onclick="gdrOptClick('30d')">Last 30 days</div>
-    <div class="gdr-opt" data-key="90d"   onclick="gdrOptClick('90d')">Last 90 days</div>
-    <div class="gdr-opt" data-key="180d"  onclick="gdrOptClick('180d')">Last 180 days</div>
+    <div class="gdr-opt" data-key="7d"        onclick="gdrOptClick('7d')">Last 7 days</div>
+    <div class="gdr-opt" data-key="14d"       onclick="gdrOptClick('14d')">Last 14 days</div>
     <div class="gdr-sep"></div>
-    <div class="gdr-opt" data-key="all"   onclick="gdrOptClick('all')">All time</div>
+    <div class="gdr-opt" data-key="thisMonth" onclick="gdrOptClick('thisMonth')">This month</div>
+    <div class="gdr-opt" data-key="lastMonth" onclick="gdrOptClick('lastMonth')">Last month</div>
+    <div class="gdr-sep"></div>
+    <div class="gdr-opt" data-key="all"       onclick="gdrOptClick('all')">All time</div>
+    <div class="gdr-opt" data-key="custom"    onclick="gdrCustomToggle(event)">Custom…</div>
+    <div id="gdrCustomRow" style="display:none;padding:8px 12px 4px;border-top:1px solid var(--border);margin-top:4px;">
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input type="date" id="gdrCustFrom" class="date-input" style="flex:1;min-width:0;font-size:12px;padding:6px 8px;" />
+        <span style="color:var(--text-3);font-size:12px;">→</span>
+        <input type="date" id="gdrCustTo" class="date-input" style="flex:1;min-width:0;font-size:12px;padding:6px 8px;" />
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;padding:7px;font-size:12.5px;justify-content:center;" onclick="gdrCustomApply()">Apply range</button>
+    </div>
   </div>
 
   <!-- ============ NET-NEW SCREENS (Phase 4 — wired to real PostHog) ============ -->
@@ -3753,32 +3761,70 @@
 
   // ── Per-tab date-range filter ────────────────────────────────────
   const GDR_PRESETS = [
-    { key: 'today', label: 'Today',          sql: `now() - INTERVAL 1 DAY`,               days: 1   },
-    { key: 'yest',  label: 'Yesterday',       sql: `now() - INTERVAL 2 DAY`,               days: 2   },
-    { key: '24h',   label: 'Last 24 hours',   sql: `now() - INTERVAL 1 DAY`,               days: 1   },
-    { key: '7d',    label: 'Last 7 days',     sql: `now() - INTERVAL 7 DAY`,               days: 7   },
-    { key: '14d',   label: 'Last 14 days',    sql: `now() - INTERVAL 14 DAY`,              days: 14  },
-    { key: '30d',   label: 'Last 30 days',    sql: `now() - INTERVAL 30 DAY`,              days: 30  },
-    { key: '90d',   label: 'Last 90 days',    sql: `now() - INTERVAL 90 DAY`,              days: 90  },
-    { key: '180d',  label: 'Last 180 days',   sql: `now() - INTERVAL 180 DAY`,             days: 180 },
-    { key: 'all',   label: 'All time',        sql: `toDateTime('2026-05-01 00:00:00')`,    days: 400 },
+    { key: 'today',     label: 'Today'      },
+    { key: 'yest',      label: 'Yesterday'  },
+    { key: '7d',        label: 'Last 7 days'  },
+    { key: '14d',       label: 'Last 14 days' },
+    { key: 'thisMonth', label: 'This month'   },
+    { key: 'lastMonth', label: 'Last month'   },
+    { key: 'all',       label: 'All time'     },
+    { key: 'custom',    label: 'Custom'       },
   ];
   // Independent date range per tab — changing one tab never touches others
   const _tabRanges = {
     overview: '7d', revenue: 'all', activation: 'all',
-    pro: 'all', power: '7d', influencers: 'all', abandoned: '30d', uninstalled: '30d',
+    pro: 'all', power: '7d', influencers: 'all', abandoned: 'thisMonth', uninstalled: 'thisMonth',
   };
+  const _tabCustom = {};   // tab -> { from:'YYYY-MM-DD', to:'YYYY-MM-DD' }
   let _activeGdrTab = null;
 
+  // ── IST-aware range boundaries (start inclusive, end exclusive) ──
+  const _IST_MS = 5.5 * 3600000;
+  const _istMidUtc = (y,m,d) => Date.UTC(y, m, d) - _IST_MS;               // UTC ms of an IST midnight
+  const _dstr = ms => new Date(ms + _IST_MS).toISOString().slice(0,10);    // IST date string of a UTC ms
+  function gdrBounds(key, cust) {
+    const DAY = 86400000, now = Date.now();
+    const t = new Date(now + _IST_MS);
+    const Y = t.getUTCFullYear(), M = t.getUTCMonth(), D = t.getUTCDate();
+    const tm = _istMidUtc(Y, M, D);   // today 00:00 IST
+    let s, e;
+    switch (key) {
+      case 'today':     s = tm;                  e = tm + DAY; break;
+      case 'yest':      s = tm - DAY;            e = tm;       break;
+      case '7d':        s = tm - 6*DAY;          e = tm + DAY; break;
+      case '14d':       s = tm - 13*DAY;         e = tm + DAY; break;
+      case 'thisMonth': s = _istMidUtc(Y, M, 1); e = _istMidUtc(Y, M+1, 1); break;
+      case 'lastMonth': s = _istMidUtc(Y, M-1, 1); e = _istMidUtc(Y, M, 1); break;
+      case 'all':       s = _istMidUtc(2026, 4, 1); e = tm + DAY; break;
+      case 'custom': {
+        const f = (cust && cust.from) ? cust.from : _dstr(tm);
+        const to = (cust && cust.to) ? cust.to : _dstr(tm);
+        const fp = f.split('-').map(Number), tp = to.split('-').map(Number);
+        s = _istMidUtc(fp[0], fp[1]-1, fp[2]);
+        e = _istMidUtc(tp[0], tp[1]-1, tp[2]) + DAY;   // end-inclusive day
+        break;
+      }
+      default:          s = tm - 6*DAY;          e = tm + DAY;
+    }
+    return { startDate: _dstr(s), endDate: _dstr(e),
+             days: Math.max(1, Math.round((e - s) / DAY)),
+             scanDays: Math.max(2, Math.ceil((now - s) / DAY) + 2) };
+  }
+
+  function tabGdrKey(tab) { return _tabRanges[tab] || '7d'; }
   function tabGdrPreset(tab) {
-    return GDR_PRESETS.find(p => p.key === (_tabRanges[tab] || '7d')) || GDR_PRESETS[3];
+    const key = tabGdrKey(tab);
+    const meta = GDR_PRESETS.find(p => p.key === key) || GDR_PRESETS[2];
+    const b = gdrBounds(key, _tabCustom[tab]);
+    let label = meta.label;
+    if (key === 'custom' && _tabCustom[tab]) label = `${_tabCustom[tab].from} → ${_tabCustom[tab].to}`;
+    return { key, label, ...b };
   }
-  function tabGdrStart(tab)     { return tabGdrPreset(tab).sql; }
-  function tabGdrStartDate(tab) {
-    const p = tabGdrPreset(tab);
-    if (p.key === 'all') return '2026-05-01';
-    const d = new Date(); d.setDate(d.getDate() - p.days); return d.toISOString().slice(0,10);
-  }
+  function tabGdrStartDate(tab) { return tabGdrPreset(tab).startDate; }
+  function tabGdrEndDate(tab)   { return tabGdrPreset(tab).endDate; }
+  // Start / end datetime SQL (kept for existing `<col> >= tabGdrStart` call sites)
+  function tabGdrStart(tab) { return `toDateTime('${tabGdrStartDate(tab)} 00:00:00')`; }
+  function tabGdrEnd(tab)   { return `toDateTime('${tabGdrEndDate(tab)} 00:00:00')`; }
 
   function openTabGdr(evt, tab) {
     const drop = document.getElementById('gdrSharedDrop');
@@ -3787,6 +3833,17 @@
     _activeGdrTab = tab;
     const currentKey = _tabRanges[tab] || '7d';
     drop.querySelectorAll('.gdr-opt').forEach(el => el.classList.toggle('active', el.dataset.key === currentKey));
+    // Custom row: show when active, prefill sensible defaults
+    const customRow = document.getElementById('gdrCustomRow');
+    if (customRow) {
+      customRow.style.display = currentKey === 'custom' ? 'block' : 'none';
+      const c = _tabCustom[tab];
+      const fEl = document.getElementById('gdrCustFrom'), tEl = document.getElementById('gdrCustTo');
+      const todayStr   = new Date(Date.now() + _IST_MS).toISOString().slice(0,10);
+      const weekAgoStr = new Date(Date.now() + _IST_MS - 6*86400000).toISOString().slice(0,10);
+      if (fEl) fEl.value = (c && c.from) || weekAgoStr;
+      if (tEl) tEl.value = (c && c.to)   || todayStr;
+    }
     const btn = evt.currentTarget;
     const rect = btn.getBoundingClientRect();
     drop.style.display = 'block';
@@ -3806,15 +3863,7 @@
     _activeGdrTab = null;
   }
 
-  function gdrOptClick(key) {
-    const tab = _activeGdrTab;
-    if (!tab) { closeTabGdr(); return; }
-    const p = GDR_PRESETS.find(x => x.key === key);
-    if (!p || _tabRanges[tab] === key) { closeTabGdr(); return; }
-    _tabRanges[tab] = key;
-    closeTabGdr();
-    updateTabGdrBtn(tab);
-    // Re-fetch only this tab — all other tabs are untouched
+  function _gdrRefetch(tab) {
     switch (tab) {
       case 'overview':    _ovData = null; loadOverview(); break;
       case 'revenue':     _revLoaded = false; _revData = null; fetchRevenue(); break;
@@ -3825,6 +3874,39 @@
       case 'abandoned':   _abandLoaded = false; fetchAbandoned(); break;
       case 'uninstalled': _uninstLoaded = false; fetchUninstalled(); break;
     }
+  }
+
+  function gdrOptClick(key) {
+    const tab = _activeGdrTab;
+    if (!tab) { closeTabGdr(); return; }
+    const p = GDR_PRESETS.find(x => x.key === key);
+    if (!p || _tabRanges[tab] === key) { closeTabGdr(); return; }
+    _tabRanges[tab] = key;
+    closeTabGdr();
+    updateTabGdrBtn(tab);
+    _gdrRefetch(tab);
+  }
+
+  // Custom range: reveal the date inputs inside the dropdown (don't close it)
+  function gdrCustomToggle(evt) {
+    if (evt) evt.stopPropagation();
+    const row = document.getElementById('gdrCustomRow');
+    if (row) row.style.display = row.style.display === 'none' ? 'block' : 'none';
+    document.querySelectorAll('#gdrSharedDrop .gdr-opt').forEach(el =>
+      el.classList.toggle('active', el.dataset.key === 'custom'));
+  }
+  function gdrCustomApply() {
+    const tab = _activeGdrTab;
+    if (!tab) { closeTabGdr(); return; }
+    const fEl = document.getElementById('gdrCustFrom'), tEl = document.getElementById('gdrCustTo');
+    let from = fEl && fEl.value, to = tEl && tEl.value;
+    if (!from || !to) return;
+    if (from > to) { const t = from; from = to; to = t; }   // swap if reversed
+    _tabCustom[tab] = { from, to };
+    _tabRanges[tab] = 'custom';
+    closeTabGdr();
+    updateTabGdrBtn(tab);
+    _gdrRefetch(tab);
   }
 
   function updateTabGdrBtn(tab) {
@@ -4016,10 +4098,11 @@
     // Range-filter variables driven by this tab's independent date-range selector.
     const _ovGdr = tabGdrPreset('overview');
     const rangeDays = _ovGdr.days;
-    const rangeStart = _ovGdr.key === 'all' ? '2026-05-01' : new Date(istMidnightUtcMs - (rangeDays - 1) * 86400000).toISOString().slice(0, 10);
-    const pgRangeFilter = `created_at >= ${tabGdrStart('overview')}`;
-    const evRangeHaving = _ovGdr.key === 'all' ? `su >= toDate('2026-05-01')` : `su >= toDate(now() - INTERVAL ${rangeDays} DAY)`;
-    const evRangeInterval = _ovGdr.key === 'all' ? `400 DAY` : `${Math.max(rangeDays * 2, 60)} DAY`;
+    const rangeStart = _ovGdr.startDate;
+    const rangeEnd   = _ovGdr.endDate;   // end-exclusive IST date
+    const pgRangeFilter = `created_at >= ${tabGdrStart('overview')} AND created_at < ${tabGdrEnd('overview')}`;
+    const evRangeHaving = `su >= toDate('${rangeStart}') AND su < toDate('${rangeEnd}')`;
+    const evRangeInterval = `${_ovGdr.scanDays} DAY`;
     const subEl = document.getElementById('ovSub');
     if (subEl) subEl.textContent = _ovGdr.key === 'all' ? 'Since the NextRaise relaunch · 1 May 2026' : `${_ovGdr.label} · Growth, Revenue & Sources`;
     // Prior-period anchors for period-over-period deltas (CEO scorecard).
@@ -4124,6 +4207,7 @@
           FROM events
           WHERE event = 'signup_complete'
             AND toDate(toTimeZone(timestamp,'Asia/Kolkata')) >= toDate('${rangeStart}')
+            AND toDate(toTimeZone(timestamp,'Asia/Kolkata')) < toDate('${rangeEnd}')
             AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
             AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
             AND person_id NOT IN COHORT 278743
@@ -4263,8 +4347,9 @@
           <div class="okpi-lbl">${label}<small>${sub}</small></div></div>
         ${delta||''}<div class="okpi-val">${value}</div></div>`;
     const usersShort = newProduct>=1000 ? (newProduct/1000).toFixed(1)+'K' : String(newProduct);
+    const rangeSignups = (_ovData.growth||[]).reduce((a,r)=>a+(+r[1]||0),0);
     const kpis = [
-      okpi('i-users','var(--blue)','New Signups','Last 7 days', newWeek.toLocaleString('en-IN'), oDeltaPct(newWeek,newWeekPrev)),
+      okpi('i-users','var(--blue)','New Signups', rangeLabel, rangeSignups.toLocaleString('en-IN'), tabGdrKey('overview')==='7d' ? oDeltaPct(newWeek,newWeekPrev) : ''),
       okpi('i-star','var(--green)','Active Pro',`of ${usersShort} users`, activePro.toLocaleString('en-IN'), oDelta(true, convPct.toFixed(2)+'%')),
       okpi('i-coins','var(--violet)','Revenue', rangeLabel, inrTotal(revInr, revUsd), revUsd>0 ? oDelta(true,'+$'+Math.round(revUsd).toLocaleString('en-US')) : ''),
       okpi('i-check-circle','var(--amber)','Paying Users',`₹${arpu.toLocaleString('en-IN')} ARPU`, activePro.toLocaleString('en-IN'), ''),
@@ -5492,6 +5577,7 @@
     try {
       // ── Phase 1: postgres.users (fast — milliseconds vs 30s events scan) ──────
       const pgStartDate = tabGdrStartDate('pro');
+      const pgEndDate   = tabGdrEndDate('pro');
       const [pgUsersRes, pgPayRes] = await Promise.all([
         runHogQL(`
           SELECT lower(email) AS email, name, plan_cache AS plan, sub_status AS st,
@@ -5542,7 +5628,7 @@
       const PRODUCT_LAUNCH_DATE = '2026-05-01';
       const r1 = r1raw.filter(u => {
         const s = u[5];
-        return s && s >= PRODUCT_LAUNCH_DATE && s >= pgStartDate;
+        return s && s >= PRODUCT_LAUNCH_DATE && s >= pgStartDate && s < pgEndDate;
       });
 
       const users = r1.filter(r=>r[0]);
@@ -5893,7 +5979,7 @@
                  max(timestamp) AS last_seen
           FROM events
           WHERE event IN (${evList})
-            AND timestamp >= ${tabGdrStart('power')}
+            AND timestamp >= ${tabGdrStart('power')} AND timestamp < ${tabGdrEnd('power')}
             AND person.properties.email != '' AND person.properties.email IS NOT NULL
           GROUP BY email
           HAVING actions >= ${POWER_MIN_ACTIONS}
@@ -6176,7 +6262,7 @@
             AND email NOT LIKE '%@nextraise.ai'
             AND email NOT LIKE '%@creditdharma.in'
             AND lower(email) NOT LIKE '%test%'
-            AND created_at >= ${tabGdrStart('influencers')}
+            AND created_at >= ${tabGdrStart('influencers')} AND created_at < ${tabGdrEnd('influencers')}
           ORDER BY created_at DESC`).catch(()=>({results:[]})),
         fetchAllPages(`
           SELECT refcode, email, name, plan, st, ends, signup
@@ -6615,7 +6701,7 @@
                if(first_install >= '2024-01-01 00:00:00', dateDiff('day', first_install, last_uninstall), -1) AS days_used,
                uninstall_count, plan
         FROM ev
-        WHERE last_uninstall >= ${tabGdrStart('uninstalled')}
+        WHERE last_uninstall >= ${tabGdrStart('uninstalled')} AND last_uninstall < ${tabGdrEnd('uninstalled')}
         AND (last_uninstall > first_install OR first_install < '2024-01-01 00:00:00')
         ORDER BY last_uninstall DESC`);
 
@@ -6821,7 +6907,7 @@
                orders, plan_tried, currency
         FROM pe
         WHERE orders > 0 AND last_order < now() - INTERVAL 24 HOUR AND last_act < last_order
-          AND last_order >= ${tabGdrStart('abandoned')}
+          AND last_order >= ${tabGdrStart('abandoned')} AND last_order < ${tabGdrEnd('abandoned')}
         ORDER BY last_order DESC`);
 
       const rows = r1.filter(r=>r[0]);
@@ -7326,7 +7412,7 @@
           argMax(properties.plan, timestamp) AS plan
           FROM events WHERE event='payment_completed' AND ${EW}
           AND person.properties.email != '' AND person.properties.email IS NOT NULL
-          AND timestamp >= ${tabGdrStart('revenue')}
+          AND timestamp >= ${tabGdrStart('revenue')} AND timestamp < ${tabGdrEnd('revenue')}
           GROUP BY email ORDER BY (coalesce(inr,0) + coalesce(usd,0)*${USD_TO_INR}) DESC LIMIT 20`).catch(()=>({results:[]})),
 
         // Revenue by plan: [plan, payments, payers, inr, usd]
@@ -7335,7 +7421,7 @@
           sumIf(toFloat64OrNull(properties.amount), properties.currency='INR') AS inr,
           sumIf(toFloat64OrNull(properties.amount), properties.currency='USD') AS usd
           FROM events WHERE event='payment_completed' AND ${EW}
-          AND timestamp >= ${tabGdrStart('revenue')}
+          AND timestamp >= ${tabGdrStart('revenue')} AND timestamp < ${tabGdrEnd('revenue')}
           GROUP BY plan ORDER BY (coalesce(inr,0) + coalesce(usd,0)*${USD_TO_INR}) DESC LIMIT 10`).catch(()=>({results:[]})),
 
         // Discount codes: [code, uses, payers, inr]
@@ -7344,7 +7430,7 @@
           sumIf(toFloat64OrNull(properties.amount), properties.currency='INR') AS inr
           FROM events WHERE event='payment_completed' AND ${EW}
           AND properties.discount_code IS NOT NULL AND properties.discount_code != ''
-          AND timestamp >= ${tabGdrStart('revenue')}
+          AND timestamp >= ${tabGdrStart('revenue')} AND timestamp < ${tabGdrEnd('revenue')}
           GROUP BY code ORDER BY uses DESC LIMIT 10`).catch(()=>({results:[]})),
 
         // Revenue by acquisition channel: [channel, payments, payers, inr, usd]
@@ -7355,13 +7441,13 @@
           sumIf(toFloat64OrNull(properties.amount), properties.currency='INR') AS inr,
           sumIf(toFloat64OrNull(properties.amount), properties.currency='USD') AS usd
           FROM events WHERE event='payment_completed' AND ${EW}
-          AND timestamp >= ${tabGdrStart('revenue')}
+          AND timestamp >= ${tabGdrStart('revenue')} AND timestamp < ${tabGdrEnd('revenue')}
           GROUP BY channel ORDER BY (coalesce(inr,0) + coalesce(usd,0)*${USD_TO_INR}) DESC LIMIT 10`).catch(()=>({results:[]})),
 
         // Resume uploaders in range (proxy for "used product")
         runHogQL(`SELECT count(DISTINCT person_id) AS n FROM events
           WHERE event='resume_upload_success' AND ${EW}
-          AND timestamp >= ${tabGdrStart('revenue')}`).catch(()=>({results:[[0]]})),
+          AND timestamp >= ${tabGdrStart('revenue')} AND timestamp < ${tabGdrEnd('revenue')}`).catch(()=>({results:[[0]]})),
       ]);
 
       _revData = {
@@ -7804,7 +7890,7 @@
             SELECT user_id, toString(min(created_at)) AS first_pay
             FROM postgres.payments
             WHERE status='completed' AND plan_key LIKE '%pro%'
-              AND created_at >= ${tabGdrStart('activation')}
+              AND created_at >= ${tabGdrStart('activation')} AND created_at < ${tabGdrEnd('activation')}
               AND user_email NOT LIKE '%@nextraise.ai'
               AND user_email NOT LIKE '%@creditdharma.in'
               AND lower(user_email) NOT LIKE '%test%'
@@ -7812,7 +7898,7 @@
           )
           SELECT toString(u.created_at) AS signup, fp.first_pay
           FROM fp INNER JOIN postgres.users u ON u.id = fp.user_id
-          WHERE u.created_at >= ${tabGdrStart('activation')}
+          WHERE u.created_at >= ${tabGdrStart('activation')} AND u.created_at < ${tabGdrEnd('activation')}
             AND u.email NOT LIKE '%@nextraise.ai'
             AND u.email NOT LIKE '%@creditdharma.in'
             AND lower(u.email) NOT LIKE '%test%'
