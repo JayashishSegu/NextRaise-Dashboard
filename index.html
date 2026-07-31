@@ -9317,8 +9317,9 @@
       oKpi('i-coins','var(--green)','Revenue · 30d',`${_nf(totPay)} payments`,_inrShort(totRev)),
     ].join('');
     const lbl=d=>{ const dt=new Date(d); return isNaN(dt.getTime())?d.slice(5):dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}); };
-    const max=Math.max(1,...ds.map(d=>g(m[d],'signups')));
-    const bars=ds.map((d,i)=>`<div class="obar-col"><div class="obar-track"><div class="obar-fill" style="height:${Math.max(3,Math.round(g(m[d],'signups')/max*100))}%;${i===ds.length-1?'opacity:1':'opacity:.82'}"><b>${_nf(g(m[d],'signups'))}</b></div></div><div class="obar-x">${new Date(d).getDate()||d.slice(8)}</div></div>`).join('');
+    const dLbls=ds.map(d=>{ const dt=new Date(d); return isNaN(dt.getTime())?d.slice(8):String(dt.getDate()); });
+    const dSign=ds.map(d=>g(m[d],'signups'));
+    const dAct=ds.map(d=>g(m[d],'activations'));
     const rows=[...ds].reverse().slice(0,14).map(d=>{ const x=m[d];
       return `<tr><td style="font-weight:700">${lbl(d)}</td>
         <td style="text-align:right;font-weight:700">${_nf(g(x,'signups'))}</td>
@@ -9327,10 +9328,22 @@
         <td style="text-align:right;font-weight:700;color:var(--green-text)">${_inrShort(g(x,'rev'))}</td></tr>`;
     }).join('');
     area.innerHTML=`<div class="okpis">${kpis}</div>
-      <div class="ocard"><div class="ocard-h"><div class="ocard-t">Daily Signups — 30 days</div><div class="ocard-note">${_nf(totSign)} total</div></div>
-        <div class="obars" style="height:200px;overflow-x:auto;">${bars}</div></div>
-      <div class="ocard" style="margin-top:16px;"><div class="ocard-h"><div class="ocard-t">Daily Breakdown</div></div>
+      <div class="ocard"><div class="ocard-h"><div><div class="ocard-t">Daily signups</div><div class="ocard-note">${_nf(totSign)} total · 30 days</div></div>
+        <div class="nb-leg"><span><i style="background:var(--blue)"></i>Signups</span><span><i style="background:var(--green)"></i>Activated</span></div></div>
+        <div id="dailyChart" style="margin:6px -6px -8px"></div></div>
+      <div class="ocard" style="margin-top:16px;"><div class="ocard-h"><div class="ocard-t">Daily breakdown</div></div>
         <div style="padding:8px 20px 16px;"><table style="width:100%"><thead><tr><th style="text-align:left">Day</th><th style="text-align:right">Signups</th><th style="text-align:right">Activations</th><th style="text-align:right">Payments</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+    (window._dlyCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}}); window._dlyCharts=[];
+    setTimeout(()=>{ if(!window.ApexCharts) return; const el=document.querySelector('#dailyChart'); if(!el) return;
+      const DK=document.documentElement.dataset.theme==='dark', BLUE=DK?'#5f8bff':'#3b63e6', GRN=DK?'#37e0a6':'#12b981';
+      const ch=new ApexCharts(el,{chart:{type:'area',height:260,toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:DK?'rgba(240,243,250,.55)':'rgba(17,23,38,.66)',animations:{enabled:true,speed:900}},
+        series:[{name:'Signups',data:dSign},{name:'Activated',data:dAct}],stroke:{curve:'smooth',width:[3,2.5],colors:[BLUE,GRN]},
+        fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.3,opacityTo:0,stops:[0,95]}},colors:[BLUE,GRN],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},legend:{show:false},
+        grid:{borderColor:DK?'rgba(255,255,255,.06)':'rgba(28,40,75,.08)',strokeDashArray:4},tooltip:{theme:DK?'dark':'light'},
+        xaxis:{categories:dLbls,tickAmount:10,axisBorder:{show:false},axisTicks:{show:false},labels:{style:{fontSize:'11px'}}},
+        yaxis:{labels:{formatter:v=>v>=1000?(v/1000).toFixed(1)+'k':v,style:{fontSize:'11px'}}}});
+      ch.render(); window._dlyCharts.push(ch);
+    },30);
   }
 </script>
 </body>
