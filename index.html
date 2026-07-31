@@ -6,7 +6,7 @@
   <title>NextRaise — Internal Tools</title>
   <meta name="description" content="NextRaise internal tools — contact lookup, exhausted credits, pro users" />
   <meta name="theme-color" content="#2563eb" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232563eb'/%3E%3Ctext x='16' y='23' font-family='-apple-system,Arial' font-size='19' font-weight='700' fill='white' text-anchor='middle'%3EN%3C/text%3E%3C/svg%3E" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' rx='61' fill='%230065F4'/%3E%3Cpath d='M135.74 93.2c0 18.2-.4 33.1-.8 33.1-.5 0-1.4-2.4-2.1-5.2-3.4-14.7-16-31.9-30.5-41.3-7.3-4.9-19-9.3-26.9-10.3-2.5-.3-5.9-.8-7.6-1.1l-3.3-.5-.2 16.1-.3 16.1-16 .3L32 100.6v19.8 19.7h16.3 16.3v-19.9-19.9l4.7.7c6 .8 15.5 5.4 21.3 10.5 5.6 4.9 11 15.4 11.9 23.1l.7 5.5h32.1 32l-.2-39.8-.3-39.7-15.5-.3-15.6-.3v33.2z' fill='white'/%3E%3C/svg%3E" />
   <!-- speed: pre-open TCP connections to APIs we always call on load -->
   <link rel="preconnect" href="https://us.posthog.com" />
   <link rel="preconnect" href="https://open.er-api.com" />
@@ -1463,8 +1463,10 @@
     /* ---- Sidebar ---- */
     .sidebar{ background:var(--surface); border-right:1px solid var(--border); }
     html[data-theme="dark"] .sidebar{ background:#0f1620; border-right-color:var(--border); }
-    .sidebar-brand{ padding:18px 20px 14px; background:none; }
-    .logo{ font-weight:800; font-size:16px; letter-spacing:-.02em; }
+    .sidebar-brand{ padding:18px 20px 14px; background:none; display:flex; align-items:center; gap:11px; }
+    .brand-logo{ width:34px; height:34px; border-radius:10px; flex:none; box-shadow:0 6px 16px -6px rgba(0,101,244,.65); }
+    .brand-text{ display:flex; flex-direction:column; min-width:0; }
+    .logo{ font-weight:800; font-size:16px; letter-spacing:-.02em; line-height:1.1; }
     .logo span{ background:linear-gradient(90deg,var(--blue),var(--violet)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
     .logo-sub{ font-size:8.5px; letter-spacing:.22em; font-weight:700; color:var(--text-3); }
     .sidebar-nav{ padding:4px 12px; }
@@ -1608,8 +1610,14 @@
   <!-- ── Sidebar ── -->
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="logo">Next<span>Raise</span></div>
-      <span class="logo-sub">ANALYTICS</span>
+      <svg class="brand-logo" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="NextRaise">
+        <rect width="200" height="200" rx="61" fill="#0065F4"/>
+        <path d="M135.74 93.1967C135.74 111.376 135.345 126.295 134.95 126.295C134.456 126.295 133.566 123.924 132.875 121.058C129.516 106.436 116.869 89.2447 102.346 79.7599C95.0344 74.9187 83.376 70.4727 75.472 69.4847C73.002 69.1883 69.544 68.6943 67.8644 68.3979L64.604 67.9039L64.4064 84.0083L64.11 100.113L48.1044 100.409L32 100.607V120.367V140.127H48.302H64.604V120.268V100.31L69.3464 101.002C75.3732 101.792 84.858 106.436 90.5884 111.475C96.22 116.415 101.654 126.888 102.543 134.594L103.235 140.127H135.345H167.356L167.158 100.31L166.862 60.5927L151.35 60.2963L135.74 59.9999V93.1967Z" fill="white"/>
+      </svg>
+      <div class="brand-text">
+        <div class="logo">Next<span>Raise</span></div>
+        <span class="logo-sub">ANALYTICS</span>
+      </div>
     </div>
     <nav class="sidebar-nav">
       <div class="nav-label">Overview</div>
