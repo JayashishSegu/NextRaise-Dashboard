@@ -1773,52 +1773,6 @@
         <svg class="ic-sm"><use href="#i-star"/></svg> Pro Users
         <span class="tab-badge" id="proTabBadge">—</span>
       </a>
-      <div class="nav-sep"></div>
-      <div class="nav-label nl-prod">Product</div>
-      <a class="tab" id="tab-features" onclick="switchTab('features')"href="#features" title="Feature usage leaderboard">
-        <svg class="ic-sm"><use href="#i-grid"/></svg> Features
-      </a>
-      <a class="tab" id="tab-quality" onclick="switchTab('quality')"href="#quality" title="Errors, exceptions & friction signals">
-        <svg class="ic-sm"><use href="#i-alert"/></svg> Quality
-      </a>
-      <div class="nav-sep"></div>
-      <div class="nav-label">Reports</div>
-      <a class="tab" id="tab-weekly" onclick="switchTab('weekly')"href="#weekly" title="Week-over-week scorecard">
-        <svg class="ic-sm"><use href="#i-calendar"/></svg> Weekly
-      </a>
-      <a class="tab" id="tab-monthly" onclick="switchTab('monthly')"href="#monthly" title="Month-over-month scorecard">
-        <svg class="ic-sm"><use href="#i-calendar"/></svg> Monthly
-      </a>
-      <div class="nav-sep"></div>
-      <div class="nav-label">Operations</div>
-      <a class="tab tab-orange" id="tab-credits" onclick="switchTab('credits')"href="#credits">
-        <svg class="ic-sm"><use href="#i-zap"/></svg> Exhausted Credits
-        <span class="tab-badge" id="creditsTabBadge">—</span>
-      </a>
-      <a class="tab tab-blue" id="tab-power" onclick="switchTab('power')"href="#power" title="Most engaged users by high-value product actions">
-        <svg class="ic-sm"><use href="#i-trophy"/></svg> Power Users
-        <span class="tab-badge" id="powerTabBadge">—</span>
-      </a>
-      <a class="tab tab-amber" id="tab-expiring" onclick="switchTab('expiring')"href="#expiring" title="Pro subscribers expiring in 30 days">
-        <svg class="ic-sm"><use href="#i-alert"/></svg> Expiring Soon
-        <span class="tab-badge" id="expiringTabBadge">—</span>
-      </a>
-      <a class="tab tab-amber" id="tab-abandoned" onclick="switchTab('abandoned')"href="#abandoned" title="Started checkout, didn't activate">
-        <svg class="ic-sm"><use href="#i-cart"/></svg> Abandoned
-        <span class="tab-badge" id="abandTabBadge">—</span>
-      </a>
-      <a class="tab tab-rose" id="tab-uninstalled" onclick="switchTab('uninstalled')"href="#uninstalled" title="Chrome extension uninstalled — re-engagement targets">
-        <svg class="ic-sm"><use href="#i-user-x"/></svg> Ext. Uninstalled
-        <span class="tab-badge" id="uninstTabBadge">—</span>
-      </a>
-      <a class="tab tab-teal" id="tab-salahkart" onclick="switchTab('salahkart')"href="#salahkart" title="Signed up before May 2026">
-        <svg class="ic-sm"><use href="#i-users"/></svg> Salahkart Users
-        <span class="tab-badge" id="skTabBadge">—</span>
-      </a>
-      <a class="tab tab-teal" id="tab-skpro" onclick="switchTab('skpro')"href="#skpro" title="Salahkart pro plan holders">
-        <svg class="ic-sm"><use href="#i-star"/></svg> Salahkart Pro
-        <span class="tab-badge" id="skProTabBadge">—</span>
-      </a>
     </nav>
     <div class="sidebar-footer">
       <button class="icon-btn" id="themeToggle" onclick="toggleTheme()" title="Toggle dark / light mode" aria-label="Toggle dark mode">
@@ -4131,7 +4085,7 @@
     const cached = loadOvCache();
     if (cached && !_ovData) {
       _ovData = cached;
-      document.getElementById('skTabBadge').textContent = _ovData.counts[1];
+      (document.getElementById('skTabBadge')||{}).textContent = _ovData.counts[1];
       renderOverview();
     }
     // MongoDB stores UTC timestamps, but "today" should follow IST (the project
@@ -4327,7 +4281,7 @@
       };
       saveOvCache(_ovData);
       // legacy count doubles as the Salahkart sidebar badge
-      document.getElementById('skTabBadge').textContent = _ovData.counts[1];
+      (document.getElementById('skTabBadge')||{}).textContent = _ovData.counts[1];
       renderOverview();
       // Warm all tabs in the background so sidebar badges fill in.
       // Staggered to avoid hammering PostHog simultaneously.
