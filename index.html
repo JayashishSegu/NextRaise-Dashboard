@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://open.er-api.com" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     :root {
       color-scheme: light;
@@ -1422,7 +1422,7 @@
       --blue:#0065f4; --blue-dark:#0052cc; --blue-soft:#eaf1ff; --blue-text:#0a55c8;
       --violet:#6366f1; --violet-soft:#eef0fe; --violet-text:#5457e5;
       --teal:#12b3a6; --teal-soft:#e2f6f4; --teal-text:#0b8378;
-      --green:#1bc98c; --green-soft:#e4f9f1; --green-text:#0b9c6a;
+      --green:#22c55e; --green-soft:#e5f9ea; --green-text:#16a34a;
       --red:#f0596a; --red-soft:#fdeef0; --red-border:#f8d4d9;
       --amber:#f5a524; --amber-soft:#fdf3e2; --amber-text:#b8760a;
       --orange:#f5883c; --orange-soft:#fdf0e6; --orange-text:#c96a1a;
@@ -1457,7 +1457,7 @@
     }
 
     body, .app-layout, .app-body, input, select, textarea, button{
-      font-family:'Plus Jakarta Sans','Inter',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+      font-family:'Poppins','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
       font-variant-numeric:tabular-nums;
     }
 
@@ -1592,6 +1592,51 @@
     .ocard > div:last-child{ overflow-x:auto; }
     .ocard table{ min-width:520px; }
 
+    /* ============ ORCA REFERENCE MATCH: icon rail + top bar ============ */
+    .app-layout{ flex-direction:column; }
+    .app-row{ display:flex; flex:1; min-height:0; }
+    /* full-width top bar */
+    .gtop{ display:flex; align-items:center; gap:14px; padding:13px 26px; flex:none; background:var(--surface); border-bottom:1px solid var(--border); }
+    .gsearch{ display:flex; align-items:center; gap:10px; background:var(--surface-2); border-radius:16px; padding:11px 16px; color:var(--text-3); font-weight:500; font-size:13.5px; cursor:pointer; min-width:280px; max-width:440px; }
+    .gsearch svg{ width:17px; height:17px; flex:none; } .gsearch span:first-of-type{ flex:1; }
+    .gkbd{ font-size:11px; font-weight:700; color:var(--text-3); background:var(--surface); border:1px solid var(--border); border-radius:7px; padding:2px 7px; }
+    .gspace{ flex:1; }
+    .gcirc{ width:44px; height:44px; border-radius:50%; background:var(--surface-2); border:0; display:grid; place-items:center; color:var(--text-2); flex:none; cursor:pointer; }
+    .gcirc:hover{ color:var(--green-text); }
+    .gcirc svg{ width:18px; height:18px; }
+    .guser{ display:flex; align-items:center; gap:10px; background:var(--surface-2); border-radius:40px; padding:5px 14px 5px 5px; cursor:pointer; }
+    .gav{ width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,var(--blue),var(--violet)); display:grid; place-items:center; color:#fff; font-weight:700; font-size:13px; flex:none; }
+    .guname{ font-weight:700; font-size:13px; line-height:1.1; } .gugreet{ font-size:10.5px; color:var(--text-3); font-weight:500; }
+
+    /* icon-only circular rail */
+    .sidebar{ width:86px; align-items:center; padding:18px 0 14px; }
+    .sidebar-brand{ padding:0 0 14px; justify-content:center; }
+    .brand-logo{ width:46px; height:46px; border-radius:50%; }
+    .brand-text{ display:none; }
+    .sidebar-nav{ padding:2px 0; width:100%; display:flex; flex-direction:column; align-items:center; }
+    .nav-label{ display:none; }
+    .nav-sep{ width:34px; margin:8px auto; }
+    .tab{ width:46px; height:46px; padding:0; margin:3px auto; border-radius:50%; justify-content:center; gap:0; font-size:0; }
+    .tab .ic-sm{ width:20px; height:20px; opacity:.72; }
+    .tab:hover{ background:var(--surface-2); }
+    .tab.active, .tab.tab-green.active, .tab.tab-orange.active, .tab.tab-purple.active,
+    .tab.tab-blue.active, .tab.tab-rose.active, .tab.tab-amber.active, .tab.tab-teal.active{ background:var(--ink); box-shadow:0 10px 20px -10px rgba(20,26,34,.55); }
+    .tab.active .ic-sm{ color:var(--surface); opacity:1; }
+    html[data-theme="dark"] .tab.active .ic-sm{ color:var(--canvas); }
+    .tab-badge{ display:none; }
+    .sidebar-footer{ flex-direction:column; border-top:0; padding:12px 0 0; gap:9px; align-items:center; }
+    .icon-btn, .settings-btn{ width:46px; height:46px; border-radius:50%; padding:0; justify-content:center; }
+    .settings-btn span{ display:none; }
+
+    /* circular green KPI chips (reference) */
+    .okpi-chip, .kpi-ico, .nn-ico{ border-radius:50% !important; }
+    .okpi-chip{ background:var(--green) !important; }
+
+    @media (max-width:900px){
+      .gtop{ display:none; }
+      .app-row{ flex-direction:column; }
+    }
+
     /* ============ Orca polish for other screens ============ */
     /* Revenue / KPI tiles */
     .rev-kpi{ border-radius:22px; padding:20px; background:var(--surface); border:1px solid var(--border); box-shadow:var(--shadow-md); }
@@ -1708,6 +1753,24 @@
 
   <!-- ── App layout ── -->
   <div class="app-layout">
+
+  <!-- ── Global top bar (reference) ── -->
+  <header class="gtop">
+    <div class="gsearch" onclick="switchTab('search')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+      <span>Search…</span>
+      <span class="gkbd">⌘ F</span>
+    </div>
+    <div class="gspace"></div>
+    <button class="gcirc" title="Help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.5-1 .9-1 1.7M12 17h.01"/></svg></button>
+    <button class="gcirc" title="Notifications" onclick="openSettings()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></button>
+    <div class="guser">
+      <div class="gav">JS</div>
+      <div><div class="gugreet">Good morning 👋</div><div class="guname">Jayashish</div></div>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--text-3)"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
+  </header>
+  <div class="app-row">
 
   <!-- ── Sidebar ── -->
   <aside class="sidebar">
@@ -3156,6 +3219,7 @@
   </section>
 
   </div><!-- /.app-body -->
+  </div><!-- /.app-row -->
   </div><!-- /.app-layout -->
 
   <!-- ── Settings Modal ── -->
