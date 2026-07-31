@@ -1590,6 +1590,51 @@
     .otx-sub{ font-size:11.5px; color:var(--text-3); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .otx-when{ margin-left:auto; font-size:11.5px; font-weight:800; color:var(--green-text); flex:none; }
     .otx .plan-badge, .otx .badge{ margin-left:auto; flex:none; }
+
+    /* ============ Orca polish for other screens ============ */
+    /* Revenue / KPI tiles */
+    .rev-kpi{ border-radius:22px; padding:20px; background:var(--surface); border:1px solid var(--border); box-shadow:var(--shadow-md); }
+    .rev-kpi-num{ font-size:26px; font-weight:800; letter-spacing:-.03em; }
+    .rev-kpi-label{ font-size:12.5px; font-weight:700; color:var(--text-2); margin-top:4px; }
+    .rev-kpi-sub{ font-size:11px; color:var(--text-3); font-weight:600; margin-top:4px; }
+    .rk-green .rev-kpi-num{ color:var(--green-text); } .rk-blue .rev-kpi-num{ color:var(--blue); }
+    .rk-violet .rev-kpi-num{ color:var(--violet); } .rk-teal .rev-kpi-num{ color:var(--teal-text); }
+    .rk-red .rev-kpi-num{ color:var(--red-text,var(--red)); } .rk-amber .rev-kpi-num{ color:var(--amber-text); }
+    .rev-tile{ border-radius:16px; background:var(--surface-2); border:1px solid var(--border); }
+    .rev-big{ font-size:30px; font-weight:800; letter-spacing:-.03em; color:var(--green-text); }
+
+    /* Monthly revenue chart bars → green gradient rounded */
+    .rev-mc-bar, .bar-fill, .fsbar-fill{ background:linear-gradient(180deg,var(--green),#7fe6c0) !important; border-radius:8px !important; }
+    .bar-track{ background:var(--surface-2); border-radius:8px; }
+    .bar-row .bar-fill{ border-radius:8px !important; }
+    /* channel/source bars keep blue for primary */
+    .c-blue .bar-fill{ background:linear-gradient(90deg,var(--blue),#5a9bff) !important; }
+
+    /* Funnel steps */
+    .funnel-step{ border-radius:16px; }
+    .fsbar{ border-radius:8px; background:var(--surface-2); }
+
+    /* Stat pills (used on credits/pro/etc filter bars) → rounded Orca chips */
+    .stat-pill{ border-radius:16px; border:1px solid var(--border); background:var(--surface); box-shadow:var(--shadow-sm); }
+    .stat-num{ font-weight:800; letter-spacing:-.02em; }
+    .stat-pill.hl-green .stat-num{ color:var(--green-text); } .stat-pill.hl-purple .stat-num{ color:var(--violet); }
+    .stat-pill.hl-amber .stat-num{ color:var(--amber-text); } .stat-pill.hl-teal .stat-num{ color:var(--teal-text); }
+    .stat-pill.hl-red .stat-num{ color:var(--red-text,var(--red)); } .stat-pill.hl-orange .stat-num{ color:var(--orange-text); }
+
+    /* Influencer cards */
+    .infl-card{ border-radius:20px; }
+    .infl-conv-fill{ background:linear-gradient(90deg,var(--green),#7fe6c0); }
+    .infl-conv-track{ border-radius:8px; }
+
+    /* Plan badges / tags → pills */
+    .plan-badge, .badge, .li-tag, .sugg-tag, .count-pill{ border-radius:20px; font-weight:700; }
+    .badge-paid{ background:var(--green-soft); color:var(--green-text); }
+
+    /* Segmented / toolbar toggles that use .gdr / date pills → rounded */
+    .gdr-btn, .days-chip, .search-shortcut{ border-radius:13px; }
+
+    /* Donut legend number weight */
+    .dl-num{ font-weight:800; }
   </style>
   <script>
     // Apply the saved (or system) theme before first paint to avoid a flash.
