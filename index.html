@@ -251,8 +251,6 @@
     .app-body { flex: 1; min-width: 0; overflow-y: auto; height: 100vh; }
     .page { display: none; padding: 28px 36px 52px; max-width: 1400px; margin: 0 auto; }
     .page.active { display: block; }
-    #page-daily { max-width: 100%; margin: 0; padding: 0; }
-    #daily-iframe { width: 100%; height: 100vh; border: none; display: block; }
 
     /* ── Search page ─────────────────────────────────────────────── */
     .search-box {
@@ -1590,6 +1588,9 @@
     .otx-sub{ font-size:11.5px; color:var(--text-3); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .otx-when{ margin-left:auto; font-size:11.5px; font-weight:800; color:var(--green-text); flex:none; }
     .otx .plan-badge, .otx .badge{ margin-left:auto; flex:none; }
+    /* wide tables scroll instead of clipping the last column */
+    .ocard > div:last-child{ overflow-x:auto; }
+    .ocard table{ min-width:520px; }
 
     /* ============ Orca polish for other screens ============ */
     /* Revenue / KPI tiles */
@@ -3015,7 +3016,12 @@
 
   <!-- ── Daily Dashboard page ── -->
   <div class="page" id="page-daily">
-    <iframe id="daily-iframe" src=""></iframe>
+    <div class="ov-head">
+      <div><div class="home-title" style="margin:0 0 3px;">Daily Metrics</div>
+        <div class="ov-sub">Signups · activations · payments · revenue — last 30 days</div></div>
+      <button class="btn btn-secondary" onclick="_dlyLoaded=false;fetchDaily()"><svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh</button>
+    </div>
+    <div id="dailyArea"><div class="state-box"><div class="spinner sp-blue"></div><p>Loading daily metrics…</p></div></div>
   </div>
 
   <!-- ── Shared floating date-range dropdown (per-tab, positioned via JS) ── -->
@@ -3257,10 +3263,6 @@
     const mbn = document.getElementById(mbnId);
     if (mbn) mbn.classList.add('active');
     syncMobBadges();
-    if (name === 'daily') {
-      const iframe = document.getElementById('daily-iframe');
-      if (!iframe.src.includes('/daily.html')) iframe.src = '/daily.html?embed=1';
-    }
     autoFetch(name);
   }
 
@@ -3367,6 +3369,7 @@
     if (name === 'quality'   && !_qualLoaded) { fetchQuality();   return; }
     if (name === 'weekly'    && !_wkLoaded)   { fetchWeekly();    return; }
     if (name === 'monthly'   && !_moLoaded)   { fetchMonthly();   return; }
+    if (name === 'daily'     && !_dlyLoaded)  { fetchDaily();     return; }
     if (name === 'credits' && !_creditsLoaded) {
       if (!tcRestore('credits', r=>{_allRows=r;_creditsLoaded=true;}, 'creditsTabBadge', updateCreditsStats, creditsApply,
           [['creditsFilter','block'],['creditsSortWrap','flex'],['statsBar','flex'],['creditsFilterBar','flex']],
@@ -8835,6 +8838,70 @@
         <div class="obars" style="height:200px;">${bars}</div></div>
       <div class="ocard" style="margin-top:16px;"><div class="ocard-h"><div class="ocard-t">Breakdown</div></div>
         <div style="padding:8px 20px 16px;"><table style="width:100%"><thead><tr><th style="text-align:left">${o.grain==='month'?'Month':'Week'}</th><th style="text-align:right">Signups</th><th style="text-align:right">Activations</th><th style="text-align:right">New Pro</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  }
+
+  /* ---- DAILY METRICS ---- */
+  var _dlyLoaded=false, _dlyData=null;
+  async function fetchDaily(){
+    const area=document.getElementById('dailyArea'); if(!area) return;
+    if(!cfg('apiKey')){ area.innerHTML=stateBox(null,'Add your PostHog key in Settings.','sp-blue'); return; }
+    if(!_dlyData) area.innerHTML=stateBox(null,'Loading daily metrics…','sp-blue');
+    try{
+      const [ev,pay]=await Promise.all([
+        runHogQL(`
+          SELECT toString(toDate(toTimeZone(timestamp,'Asia/Kolkata'))) AS d,
+            uniqIf(person_id, event='signup_complete')     AS signups,
+            uniqIf(person_id, event='onboarding_complete') AS activations
+          FROM events
+          WHERE event IN ('signup_complete','onboarding_complete')
+            AND toDate(toTimeZone(timestamp,'Asia/Kolkata')) >= toDate(toTimeZone(now(),'Asia/Kolkata')) - 30
+            AND ${_EXCL}
+          GROUP BY d ORDER BY d`),
+        runHogQL(`
+          SELECT toString(toDate(toTimeZone(created_at,'Asia/Kolkata'))) AS d,
+            sumIf(amount, currency='INR') + sumIf(amount, currency='USD')*${USD_TO_INR} AS rev,
+            count() AS pays
+          FROM postgres.payments
+          WHERE status='completed' AND created_at > now() - INTERVAL 31 DAY
+            AND user_email NOT LIKE '%@nextraise.ai' AND user_email NOT LIKE '%@creditdharma.in' AND lower(user_email) NOT LIKE '%test%'
+          GROUP BY d ORDER BY d`).catch(()=>({results:[]}))
+      ]);
+      _dlyData={ev:ev.results||[], pay:pay.results||[]}; _dlyLoaded=true; renderDaily();
+    }catch(e){ area.innerHTML=errorBox('Could not load daily — '+e.message); }
+  }
+  function renderDaily(){
+    const area=document.getElementById('dailyArea'); if(!area||!_dlyData) return;
+    const m={};
+    for(const r of _dlyData.ev){ (m[r[0]]=m[r[0]]||{}).signups=+r[1]||0; m[r[0]].activations=+r[2]||0; }
+    for(const r of _dlyData.pay){ (m[r[0]]=m[r[0]]||{}).rev=Math.round(+r[1]||0); m[r[0]].pays=+r[2]||0; }
+    const ds=Object.keys(m).sort();
+    if(!ds.length){ area.innerHTML=stateBox(null,'No data yet.','sp-blue'); return; }
+    const g=(x,k)=>+((x&&x[k])||0);
+    const cur=m[ds[ds.length-1]]||{}, prev=m[ds[ds.length-2]]||{};
+    const totSign=ds.reduce((a,d)=>a+g(m[d],'signups'),0);
+    const totRev=ds.reduce((a,d)=>a+g(m[d],'rev'),0);
+    const totPay=ds.reduce((a,d)=>a+g(m[d],'pays'),0);
+    const kpis=[
+      oKpi('i-users','var(--blue)','Signups Today','vs yesterday',_nf(g(cur,'signups')),oKpiDelta((g(cur,'signups')-g(prev,'signups'))/(g(prev,'signups')||1)*100)),
+      oKpi('i-check-circle','var(--amber)','Activations Today','vs yesterday',_nf(g(cur,'activations')),oKpiDelta((g(cur,'activations')-g(prev,'activations'))/(g(prev,'activations')||1)*100)),
+      oKpi('i-star','var(--blue)','Signups · 30d','total',_nf(totSign)),
+      oKpi('i-coins','var(--green)','Revenue · 30d',`${_nf(totPay)} payments`,_inrShort(totRev)),
+    ].join('');
+    const lbl=d=>{ const dt=new Date(d); return isNaN(dt.getTime())?d.slice(5):dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}); };
+    const max=Math.max(1,...ds.map(d=>g(m[d],'signups')));
+    const bars=ds.map((d,i)=>`<div class="obar-col"><div class="obar-track"><div class="obar-fill" style="height:${Math.max(3,Math.round(g(m[d],'signups')/max*100))}%;${i===ds.length-1?'opacity:1':'opacity:.82'}"><b>${_nf(g(m[d],'signups'))}</b></div></div><div class="obar-x">${new Date(d).getDate()||d.slice(8)}</div></div>`).join('');
+    const rows=[...ds].reverse().slice(0,14).map(d=>{ const x=m[d];
+      return `<tr><td style="font-weight:700">${lbl(d)}</td>
+        <td style="text-align:right;font-weight:700">${_nf(g(x,'signups'))}</td>
+        <td style="text-align:right">${_nf(g(x,'activations'))}</td>
+        <td style="text-align:right">${_nf(g(x,'pays'))}</td>
+        <td style="text-align:right;font-weight:700;color:var(--green-text)">${_inrShort(g(x,'rev'))}</td></tr>`;
+    }).join('');
+    area.innerHTML=`<div class="okpis">${kpis}</div>
+      <div class="ocard"><div class="ocard-h"><div class="ocard-t">Daily Signups — 30 days</div><div class="ocard-note">${_nf(totSign)} total</div></div>
+        <div class="obars" style="height:200px;overflow-x:auto;">${bars}</div></div>
+      <div class="ocard" style="margin-top:16px;"><div class="ocard-h"><div class="ocard-t">Daily Breakdown</div></div>
+        <div style="padding:8px 20px 16px;"><table style="width:100%"><thead><tr><th style="text-align:left">Day</th><th style="text-align:right">Signups</th><th style="text-align:right">Activations</th><th style="text-align:right">Payments</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   }
 </script>
 </body>
