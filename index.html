@@ -1775,8 +1775,8 @@
       --rose:oklch(0.72 0.175 20); --rose-soft:oklch(0.72 0.175 20 / .15); --rose-text:oklch(0.82 0.13 20);
       --accent-grad:linear-gradient(135deg, oklch(0.70 0.16 262), oklch(0.68 0.185 293));
     }
-    /* gradient CTAs use the harmonised accent gradient */
-    .btn-secondary, .btn-primary{ background:var(--accent-grad)!important; }
+    /* actions use brand blue (semantic); purple reserved for AI */
+    .btn-secondary, .btn-primary{ background:var(--blue)!important; box-shadow:0 8px 22px -12px var(--blue)!important; }
     .nb-av{ background:var(--accent-grad)!important; }
     .brand-mark{ background:var(--accent-grad); }
     /* no gradient text (ban) — solid accent emphasis */
@@ -1798,6 +1798,51 @@
     .tab, .nb-tx, .rowbtn, .gdr-btn, .pill{ transition:background .25s ease, color .25s ease, transform .25s cubic-bezier(.16,1,.3,1); }
     .nb-tx:hover{ background:var(--hover); border-radius:12px; }
     @media (prefers-reduced-motion:reduce){ *{ transition:none!important; animation:none!important } }
+
+    /* ── Phase-1 analytical components (per design review) ── */
+    /* Page title hierarchy: bigger, singular emphasis */
+    .home-title{ font-size:26px!important; font-weight:700!important; letter-spacing:-.03em; }
+    .ov-sub{ font-size:13px!important; }
+    /* KPI cards: data-forward, no icon chip, sparkline + context */
+    .nb-kpi{ padding:18px 20px 16px!important; display:flex; flex-direction:column; gap:2px; }
+    .nb-kpi-h{ display:flex; align-items:center; justify-content:space-between; }
+    .nb-kpi-l{ font-size:12.5px; font-weight:600; color:var(--text-2); }
+    .nb-kpi-v{ font-size:30px; font-weight:700; letter-spacing:-.03em; color:var(--text); margin-top:6px; }
+    .nb-kpi-sub{ font-size:11.5px; color:var(--text-3); font-weight:500; margin-top:4px; }
+    .nb-spk{ height:44px; margin:6px -4px 2px; }
+    .nb-d{ font-size:12px; font-weight:700; display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border-radius:20px; }
+    .nb-d.up{ color:var(--green-text); background:var(--green-soft); }
+    .nb-d.down{ color:var(--red-text); background:var(--red-soft); }
+    .nb-warn{ color:var(--amber-text); font-weight:600; }
+    .nb-grid2{ display:grid; grid-template-columns:1.5fr 1fr; gap:16px; margin-top:16px; }
+    .nb-grid2 + .nb-full, .nb-full + .nb-grid2{ margin-top:16px; }
+    @media(max-width:1000px){ .nb-grid2{ grid-template-columns:1fr } }
+    /* AI panel: structured, actionable, purple reserved */
+    .nb-ai .nb-ai-badge{ color:var(--violet-text); }
+    .nb-ai-sec{ display:flex; gap:12px; padding:11px 0; position:relative; align-items:baseline; }
+    .nb-ai-sec + .nb-ai-sec{ border-top:1px solid var(--sep); }
+    .nb-ai-k{ flex:none; width:96px; font-size:11px; font-weight:700; letter-spacing:.02em; text-transform:uppercase; }
+    .nb-ai-k.perf{ color:var(--green-text); } .nb-ai-k.risk{ color:var(--amber-text); } .nb-ai-k.act{ color:var(--violet-text); }
+    .nb-ai-v{ font-size:13.5px; line-height:1.5; color:var(--text-2); } .nb-ai-v b{ color:var(--text); font-weight:700; }
+    .nb-ai-cta{ margin-top:14px; align-self:flex-start; font-family:inherit; font-size:12.5px; font-weight:700; color:var(--violet-text);
+      background:var(--violet-soft); border:1px solid var(--border); border-radius:12px; padding:9px 14px; cursor:pointer; position:relative; transition:.2s; }
+    .nb-ai-cta:hover{ background:var(--violet-soft); filter:brightness(1.1); transform:translateX(2px); }
+    /* Ranked acquisition */
+    .nb-ranks{ display:flex; flex-direction:column; gap:2px; }
+    .nb-rank{ display:grid; grid-template-columns:120px 1fr 56px 78px; align-items:center; gap:12px; padding:10px 0; }
+    .nb-rank + .nb-rank{ border-top:1px solid var(--sep); }
+    .nb-rank-l{ font-size:13px; font-weight:600; color:var(--text); }
+    .nb-rank-bar{ height:8px; border-radius:6px; background:var(--surface-2); overflow:hidden; }
+    .nb-rank-bar i{ display:block; height:100%; border-radius:6px; background:var(--blue); transition:width .8s cubic-bezier(.16,1,.3,1); }
+    .nb-rank-v{ text-align:right; font-weight:700; font-size:13px; color:var(--text); }
+    .nb-rank-c{ text-align:right; font-size:12px; color:var(--green-text); font-weight:600; }
+    @media(max-width:640px){ .nb-rank{ grid-template-columns:1fr 48px } .nb-rank-bar,.nb-rank-c{ display:none } }
+    /* gauge context + legend */
+    .nb-gctx{ display:flex; justify-content:space-between; align-items:center; margin-top:2px; font-size:12px; }
+    .nb-leg{ display:flex; gap:14px; font-size:12px; color:var(--text-2); font-weight:600; }
+    .nb-leg i{ width:9px; height:9px; border-radius:3px; display:inline-block; margin-right:6px; vertical-align:middle; }
+    /* calmer transaction avatars (semantic restraint) */
+    .nb-txlogo{ background:var(--blue-soft)!important; color:var(--blue-text)!important; }
 
     /* ============ Orca polish for other screens ============ */
     /* Revenue / KPI tiles */
@@ -1999,8 +2044,8 @@
   <div class="page active" id="page-overview">
     <div class="ov-head">
       <div>
-        <div class="home-title" style="margin:0 0 3px;">Business Overview</div>
-        <div class="ov-sub" id="ovSub">Last 7 days · Growth, Revenue &amp; Sources</div>
+        <div class="home-title" style="margin:0 0 3px;">Growth performance</div>
+        <div class="ov-sub" id="ovSub">How the business is performing, and what to do next</div>
         <button class="gdr-btn" id="gdrTabBtn-overview" onclick="openTabGdr(event,'overview')" style="margin-top:8px;">
           <svg class="ic-sm"><use href="#i-calendar"/></svg>
           <span class="gdr-tab-label">Last 7 days</span>
@@ -4318,7 +4363,7 @@
     const evRangeHaving = `su >= toDate('${rangeStart}') AND su < toDate('${rangeEnd}')`;
     const evRangeInterval = `${_ovGdr.scanDays} DAY`;
     const subEl = document.getElementById('ovSub');
-    if (subEl) subEl.textContent = _ovGdr.key === 'all' ? 'Since the NextRaise relaunch · 1 May 2026' : `${_ovGdr.label} · Growth, Revenue & Sources`;
+    if (subEl) subEl.textContent = _ovGdr.key === 'all' ? 'Since the NextRaise relaunch · 1 May 2026' : 'How the business is performing, and what to do next';
     // Prior-period anchors for period-over-period deltas (CEO scorecard).
     const yesterdayIso    = new Date(istMidnightUtcMs - 86400000).toISOString().slice(0, 19);
     const weekPrevStartIso= new Date(istMidnightUtcMs - 13*86400000).toISOString().slice(0, 19);
@@ -4663,45 +4708,76 @@
     const recentSignups = `<div class="ocard"><div class="ocard-h"><div class="ocard-t">Recent Signups</div><div class="ocard-note">latest 5</div></div>${sigList}</div>`;
     const recentPayments = `<div class="ov-card" style="padding:0;overflow:hidden;"><div class="panel-head"><svg class="ic-sm"><use href="#i-coins"/></svg> Recent Payments</div>${paymentRows}</div>`;
 
-    // ═══ NeuroBank concept layout + live ApexCharts ═══
+    // ═══ Phase-1 analytical Overview (per design review) ═══
     const topCh = chItems[0] || {label:'—', value:0};
     const dailyCats = growthSeries.map(x=>{ const d=new Date(x.d); return isNaN(d.getTime())?String(x.d).slice(5):String(d.getDate()); });
     const dailyVals = growthSeries.map(x=>x.v);
+    const revDaily = growthSeries.map(x=>{ const p=payMap[x.d]; return p?Math.round((p.inr||0)+(p.usd||0)*USD_TO_INR):0; });
     const goalPct = Math.min(100, Math.round(convPct/5*100));
+    const gapPts = Math.max(0, 5 - convPct);
+    const upgradesNeeded = Math.max(0, Math.round(0.05*newProduct - activePro));
+    const topShare = chTotal ? (topCh.value/chTotal*100) : 0;
 
-    const aiCard = `<div class="nb-card nb-ai"><div class="nb-ai-badge">✦ AI Insights</div>
-      <div class="nb-ai-big">Your top channel is <b>${h(topCh.label)}</b>, driving <b>${(topCh.value||0).toLocaleString('en-IN')}</b> signups this period. Pro conversion sits at <b>${convPct.toFixed(2)}%</b>.</div></div>`;
-    const revCard = `<div class="nb-card"><div class="nb-cardh"><div class="nb-t">Revenue Overview</div></div>
-      <div class="nb-bigrow"><span class="nb-big">${inrTotal(revInr,revUsd)}</span>${revUsd>0?`<span class="nb-chgs up">▲ +$${Math.round(revUsd).toLocaleString('en-US')}</span>`:''}</div>
-      <div class="nb-tags"><span class="nb-tag">${_ovData.payments.length} recent</span><span class="nb-tag">${activePro.toLocaleString('en-IN')} paying</span></div>
-      <div id="nbRev" style="margin:4px -8px -8px"></div></div>`;
-    const gaugeCard = `<div class="nb-card"><div class="nb-cardh"><div class="nb-t">Pro Conversion</div></div>
-      <div id="nbGauge" style="margin-top:-2px"></div>
-      <div class="nb-glegend"><span><i style="background:var(--blue)"></i>Converted</span><span><i style="background:var(--border-strong)"></i>Goal 5%</span></div></div>`;
-    const txRows = _ovData.signups.slice(0,5).map(r=>{ const nm=r[1]||r[0]; const isPro=/pro/i.test(r[2]||'');
-      return `<div class="nb-tx"><div class="nb-txlogo" style="background:${isPro?'linear-gradient(135deg,#8b5cff,#b79bff)':'linear-gradient(135deg,#4f7cff,#6a5cff)'}">${initials(nm)}</div>
-        <div><div class="nb-txname">${h(nm)}</div><div class="nb-txsub">${h(r[0])}</div></div>
-        <span class="plan-badge ${planClass(r[2]||'')}" style="margin-left:18px">${h(planLabel(r[2]||''))}</span>
+    const sDelta=(cur,prev)=>{ if(!prev) return ''; const p=(cur-prev)/prev*100,up=p>=0; return `<span class="nb-d ${up?'up':'down'}">${up?'↑':'↓'} ${Math.abs(p).toFixed(1)}%</span>`; };
+    const kpi=(label,value,delta,sub,spk)=>`<div class="okpi nb-kpi">
+        <div class="nb-kpi-h"><span class="nb-kpi-l">${label}</span>${delta||''}</div>
+        <div class="nb-kpi-v">${value}</div><div id="${spk||''}" class="nb-spk"></div>
+        <div class="nb-kpi-sub">${sub}</div></div>`;
+    const kpis2=[
+      kpi('New signups', rangeSignups.toLocaleString('en-IN'), sDelta(newWeek,newWeekPrev), `+${Math.max(0,newWeek-newWeekPrev).toLocaleString('en-IN')} vs previous 7 days`, 'spkSign'),
+      kpi('Gross revenue · 7d', inrTotal(revInr,revUsd), revUsd>0?`<span class="nb-d up">+$${Math.round(revUsd)}</span>`:'', `₹${Math.round(revInr).toLocaleString('en-IN')} INR billed`, 'spkRev'),
+      kpi('Active Pro subscribers', activePro.toLocaleString('en-IN'), '', `${convPct.toFixed(2)}% of ${usersShort} total users`, ''),
+      kpi('Free → Pro conversion', convPct.toFixed(2)+'%', '', `<span class="nb-warn">${gapPts.toFixed(2)} pts below 5% goal</span>`, ''),
+    ].join('');
+
+    const aiCard=`<div class="nb-card nb-ai"><div class="nb-ai-badge">✦ Key opportunities</div>
+      <div class="nb-ai-sec"><span class="nb-ai-k perf">Top performer</span><span class="nb-ai-v"><b>${h(topCh.label)}</b> drove <b>${(topCh.value||0).toLocaleString('en-IN')}</b> signups, ${topShare.toFixed(0)}% of acquisition.</span></div>
+      <div class="nb-ai-sec"><span class="nb-ai-k risk">Risk</span><span class="nb-ai-v">Free→Pro conversion is <b>${convPct.toFixed(2)}%</b>, ${gapPts.toFixed(1)} pts below the 5% target.</span></div>
+      <div class="nb-ai-sec"><span class="nb-ai-k act">Do next</span><span class="nb-ai-v">Scale <b>${h(topCh.label)}</b> and test the Pro upgrade flow. About <b>${upgradesNeeded.toLocaleString('en-IN')}</b> more upgrades reach the goal.</span></div>
+      <button class="nb-ai-cta" onclick="switchTab('acquire')">View source breakdown →</button></div>`;
+
+    const gaugeCard=`<div class="nb-card"><div class="nb-cardh"><div class="nb-t">Free → Pro conversion</div></div>
+      <div id="nbGauge"></div>
+      <div class="nb-gctx"><span class="nb-warn">${gapPts.toFixed(2)} pts below goal</span><span class="nb-note">${upgradesNeeded.toLocaleString('en-IN')} upgrades → 5%</span></div></div>`;
+
+    const acqMax=Math.max(1,...chItems.map(i=>i.value));
+    const acqRows=chItems.slice(0,6).map(i=>{ const conv=chConv[i.label]||0, cp=i.value?(conv/i.value*100):0;
+      return `<div class="nb-rank"><span class="nb-rank-l">${h(i.label)}</span>
+        <span class="nb-rank-bar"><i style="width:${Math.round(i.value/acqMax*100)}%"></i></span>
+        <span class="nb-rank-v">${i.value.toLocaleString('en-IN')}</span>
+        <span class="nb-rank-c">${cp.toFixed(1)}% →Pro</span></div>`; }).join('');
+    const acqCard=`<div class="nb-card"><div class="nb-cardh"><div><div class="nb-t">Acquisition channels</div><div class="nb-note">${chTotal.toLocaleString('en-IN')} signups · ranked by volume</div></div></div><div class="nb-ranks">${acqRows}</div></div>`;
+
+    const txRows=_ovData.signups.slice(0,5).map(r=>{ const nm=r[1]||r[0];
+      return `<div class="nb-tx"><div class="nb-txlogo">${initials(nm)}</div>
+        <div style="min-width:0"><div class="nb-txname">${h(nm)}</div><div class="nb-txsub">${h(r[0])}</div></div>
+        <span class="plan-badge ${planClass(r[2]||'')}" style="margin-left:auto">${h(planLabel(r[2]||''))}</span>
         <span class="nb-txwhen">${fmtDate(r[3])||''}</span></div>`; }).join('') || `<div class="panel-empty">No recent signups</div>`;
-    const txCard = `<div class="nb-card nb-span2"><div class="nb-cardh"><div class="nb-t">Recent Signups</div></div>${txRows}</div>`;
-    const acqCard = `<div class="nb-card"><div class="nb-cardh"><div><div class="nb-t">Acquisition</div><div class="nb-note">by channel</div></div></div><div id="nbAcq" style="margin:2px -6px -8px"></div></div>`;
-    const lineCard = `<div class="nb-card nb-full"><div class="nb-cardh"><div><div class="nb-t">Daily Signups</div><div class="nb-note">${growthTotal.toLocaleString('en-IN')} · ${rangeLabel}</div></div></div><div id="nbLine" style="margin:4px -6px -8px"></div></div>`;
+    const txCard=`<div class="nb-card"><div class="nb-cardh"><div class="nb-t">Recent signups</div></div>${txRows}</div>`;
+
+    const lineCard=`<div class="nb-card nb-full"><div class="nb-cardh"><div><div class="nb-t">Daily signups</div><div class="nb-note">${growthTotal.toLocaleString('en-IN')} total · ${rangeLabel}</div></div>
+      <div class="nb-leg"><span><i style="background:var(--blue)"></i>Signups</span></div></div><div id="nbLine" style="margin:6px -6px -8px"></div></div>`;
 
     document.getElementById('overviewArea').innerHTML =
-      `<div class="okpis">${kpis}</div>
-       <div class="nb-grid">${aiCard}${revCard}${gaugeCard}${txCard}${acqCard}${lineCard}</div>`;
+      `<div class="okpis">${kpis2}</div>
+       <div class="nb-grid2">${aiCard}${gaugeCard}</div>
+       ${lineCard}
+       <div class="nb-grid2">${acqCard}${txCard}</div>`;
 
     // render live ApexCharts
     (window._ovCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}}); window._ovCharts=[];
     setTimeout(()=>{
       if(!window.ApexCharts) return;
       const DK=document.documentElement.dataset.theme==='dark';
-      const AX={chart:{toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:DK?'rgba(240,243,250,.55)':'rgba(17,23,38,.66)',animations:{enabled:true,speed:1000,animateGradually:{enabled:true,delay:100}}},grid:{borderColor:DK?'rgba(255,255,255,.06)':'rgba(28,40,75,.08)',strokeDashArray:4},tooltip:{theme:DK?'dark':'light'}};
+      const BLUE=DK?'#5f8bff':'#3b63e6', GRN=DK?'#37e0a6':'#12b981';
+      const AX={chart:{toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:DK?'rgba(240,243,250,.55)':'rgba(17,23,38,.66)',animations:{enabled:true,speed:900}},grid:{borderColor:DK?'rgba(255,255,255,.06)':'rgba(28,40,75,.08)',strokeDashArray:4},tooltip:{theme:DK?'dark':'light'}};
       const push=(sel,opt)=>{const el=document.querySelector(sel);if(!el)return;const ch=new ApexCharts(el,opt);ch.render();window._ovCharts.push(ch);};
-      push('#nbRev',{...AX,chart:{...AX.chart,type:'area',height:150},series:[{name:'Signups',data:dailyVals}],stroke:{curve:'smooth',width:3,colors:['#6a8bff']},fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.45,opacityTo:0,stops:[0,95]}},colors:['#4f7cff'],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},xaxis:{categories:dailyCats,labels:{show:false},axisBorder:{show:false},axisTicks:{show:false}},yaxis:{show:false}});
-      push('#nbGauge',{chart:{type:'radialBar',height:214,fontFamily:'General Sans',animations:{enabled:true,speed:1100}},series:[goalPct],plotOptions:{radialBar:{startAngle:-120,endAngle:120,hollow:{size:'60%'},track:{background:DK?'rgba(255,255,255,.07)':'rgba(28,40,75,.08)'},dataLabels:{name:{show:true,offsetY:20,color:DK?'rgba(238,241,248,.5)':'rgba(20,26,40,.5)',fontSize:'11px'},value:{offsetY:-12,fontSize:'26px',fontWeight:700,color:DK?'#fff':'#141a28',formatter:()=>convPct.toFixed(2)+'%'}}}},fill:{type:'gradient',gradient:{shade:'dark',type:'horizontal',gradientToColors:['#8b5cff'],stops:[0,100]}},colors:['#4f7cff'],stroke:{lineCap:'round'},labels:['vs 5% goal']});
-      push('#nbAcq',{...AX,chart:{...AX.chart,type:'bar',height:180},series:[{name:'Signups',data:chItems.slice(0,5).map(i=>i.value)}],plotOptions:{bar:{borderRadius:8,columnWidth:'48%',distributed:true}},colors:['oklch(0.62 0.185 260)','oklch(0.60 0.19 277)','oklch(0.60 0.205 292)','oklch(0.68 0.125 218)','oklch(0.68 0.115 205)'],dataLabels:{enabled:false},legend:{show:false},grid:{...AX.grid,show:false},xaxis:{categories:chItems.slice(0,5).map(i=>i.label.length>7?i.label.slice(0,6):i.label),axisBorder:{show:false},axisTicks:{show:false},labels:{style:{fontSize:'10px'}}},yaxis:{show:false},fill:{type:'gradient',gradient:{shadeIntensity:.6,opacityFrom:1,opacityTo:.75}}});
-      push('#nbLine',{...AX,chart:{...AX.chart,type:'area',height:220},series:[{name:'Signups',data:dailyVals}],stroke:{curve:'smooth',width:3,colors:['#37e0a6']},fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.35,opacityTo:0,stops:[0,95]}},colors:['#37e0a6'],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},xaxis:{categories:dailyCats,axisBorder:{show:false},axisTicks:{show:false},labels:{style:{fontSize:'11px'}}},yaxis:{labels:{formatter:v=>v>=1000?(v/1000).toFixed(1)+'k':v,style:{fontSize:'11px'}}}});
+      const spark=(sel,data,color)=>push(sel,{chart:{type:'area',height:46,sparkline:{enabled:true},animations:{enabled:true,speed:800}},series:[{name:'',data}],stroke:{curve:'smooth',width:2.4,colors:[color]},fill:{type:'gradient',gradient:{opacityFrom:.4,opacityTo:0}},colors:[color],tooltip:{enabled:false}});
+      spark('#spkSign',dailyVals,BLUE);
+      spark('#spkRev', revDaily.some(v=>v>0)?revDaily:dailyVals, GRN);
+      const gcol = convPct>=5?GRN:(convPct>=2.5?(DK?'#f7cf7a':'#b9791a'):(DK?'#ffb27a':'#c9651a'));
+      push('#nbGauge',{chart:{type:'radialBar',height:210,fontFamily:'General Sans',animations:{enabled:true,speed:1100}},series:[goalPct],plotOptions:{radialBar:{startAngle:-120,endAngle:120,hollow:{size:'60%'},track:{background:DK?'rgba(255,255,255,.08)':'rgba(28,40,75,.08)'},dataLabels:{name:{show:true,offsetY:20,color:DK?'rgba(238,241,248,.5)':'rgba(20,26,40,.5)',fontSize:'11px'},value:{offsetY:-12,fontSize:'26px',fontWeight:700,color:gcol,formatter:()=>convPct.toFixed(2)+'%'}}}},colors:[BLUE],stroke:{lineCap:'round'},labels:['vs 5% goal']});
+      push('#nbLine',{...AX,chart:{...AX.chart,type:'area',height:230},series:[{name:'Signups',data:dailyVals}],stroke:{curve:'smooth',width:3,colors:[BLUE]},fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.32,opacityTo:0,stops:[0,95]}},colors:[BLUE],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},xaxis:{categories:dailyCats,axisBorder:{show:false},axisTicks:{show:false},labels:{style:{fontSize:'11px'}}},yaxis:{labels:{formatter:v=>v>=1000?(v/1000).toFixed(1)+'k':v,style:{fontSize:'11px'}}}});
     }, 30);
   }
 
