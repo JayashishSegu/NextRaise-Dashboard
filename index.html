@@ -1552,6 +1552,44 @@
     .nn-pill{ display:inline-block; margin-top:16px; font-size:11px; font-weight:800; color:var(--surface);
       background:var(--ink); border-radius:20px; padding:6px 15px; }
     html[data-theme="dark"] .nn-pill{ color:var(--canvas); }
+
+    /* ============ Orca Overview components ============ */
+    .okpis{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:16px; }
+    @media (max-width:1100px){ .okpis{ grid-template-columns:repeat(2,1fr); } }
+    .okpi{ background:var(--surface); border:1px solid var(--border); border-radius:22px; padding:18px 18px 16px; box-shadow:var(--shadow-md); }
+    .okpi-top{ display:flex; align-items:flex-start; gap:12px; margin-bottom:12px; }
+    .okpi-chip{ width:44px; height:44px; border-radius:14px; display:grid; place-items:center; flex:none; color:#fff; }
+    .okpi-chip .ic-sm{ width:21px; height:21px; }
+    .okpi-lbl{ font-size:13px; font-weight:700; color:var(--text); line-height:1.25; padding-top:3px; }
+    .okpi-lbl small{ display:block; font-size:11px; font-weight:600; color:var(--text-3); margin-top:1px; }
+    .okpi-delta{ display:inline-flex; align-items:center; gap:4px; font-size:11.5px; font-weight:800; padding:4px 9px; border-radius:20px; margin-bottom:10px; }
+    .okpi-delta.up{ background:var(--green-soft); color:var(--green-text); }
+    .okpi-delta.down{ background:var(--red-soft); color:var(--red-text); }
+    .okpi-val{ font-size:26px; font-weight:800; letter-spacing:-.03em; }
+    .okpi-val small{ font-size:14px; color:var(--text-3); font-weight:700; }
+
+    .ov2{ display:grid; grid-template-columns:1.65fr 1fr; gap:16px; margin-bottom:16px; }
+    @media (max-width:1100px){ .ov2{ grid-template-columns:1fr; } }
+    .ocard{ background:var(--surface); border:1px solid var(--border); border-radius:22px; box-shadow:var(--shadow-md); overflow:hidden; }
+    .ocard-h{ display:flex; align-items:center; justify-content:space-between; padding:16px 20px 4px; }
+    .ocard-t{ font-size:14px; font-weight:800; letter-spacing:-.01em; }
+    .ocard-note{ font-size:11px; color:var(--text-3); font-weight:700; }
+    .orc{ display:flex; flex-direction:column; gap:16px; }
+
+    .obars{ display:flex; align-items:flex-end; gap:10px; height:180px; padding:16px 20px 14px; }
+    .obar-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; height:100%; justify-content:flex-end; min-width:0; }
+    .obar-track{ width:100%; max-width:34px; height:100%; display:flex; align-items:flex-end; background:var(--surface-2); border-radius:10px; overflow:hidden; }
+    .obar-fill{ width:100%; background:linear-gradient(180deg,var(--green),#7fe6c0); border-radius:10px; position:relative; min-height:3px; transition:height .5s cubic-bezier(.3,1,.4,1); }
+    .obar-fill b{ position:absolute; top:-18px; left:50%; transform:translateX(-50%); font-size:10px; font-weight:800; color:var(--text-2); white-space:nowrap; }
+    .obar-x{ font-size:10px; color:var(--text-3); font-weight:700; white-space:nowrap; }
+
+    .otx{ display:flex; align-items:center; gap:12px; padding:10px 20px; }
+    .otx + .otx{ border-top:1px solid var(--border); }
+    .otx-main{ min-width:0; flex:1; }
+    .otx-name{ font-weight:700; font-size:13px; }
+    .otx-sub{ font-size:11.5px; color:var(--text-3); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .otx-when{ margin-left:auto; font-size:11.5px; font-weight:800; color:var(--green-text); flex:none; }
+    .otx .plan-badge, .otx .badge{ margin-left:auto; flex:none; }
   </style>
   <script>
     // Apply the saved (or system) theme before first paint to avoid a flash.
@@ -4171,15 +4209,20 @@
       `<div class="stat-pill ${cls||''}" style="cursor:default;" ${tip ? `title="${h(tip)}"` : ''}>
         <span class="stat-num" style="${numFs(String(val))}">${val}</span><span class="stat-label">${label}</span></div>`;
 
+    const rangeLabel = tabGdrPreset('overview').label;
+    const oDelta = (up, txt) => `<div class="okpi-delta ${up?'up':'down'}">${up?'▲':'▼'} ${txt}</div>`;
+    const oDeltaPct = (cur, prev) => { if(!prev) return ''; const p=(cur-prev)/prev*100; return oDelta(p>=0, Math.abs(p).toFixed(1)+'%'); };
+    const okpi = (icoUse, bg, label, sub, value, delta) => `
+      <div class="okpi">
+        <div class="okpi-top"><div class="okpi-chip" style="background:${bg}"><svg class="ic-sm"><use href="#${icoUse}"/></svg></div>
+          <div class="okpi-lbl">${label}<small>${sub}</small></div></div>
+        ${delta||''}<div class="okpi-val">${value}</div></div>`;
+    const usersShort = newProduct>=1000 ? (newProduct/1000).toFixed(1)+'K' : String(newProduct);
     const kpis = [
-      stat(newProduct, 'Users', '', null, 'Total signups since the 1 May 2026 relaunch (blank emails excluded)'),
-      stat(newToday, 'New · Today', 'hl-green', null, 'Signups so far today (IST) vs all of yesterday', deltaChip(newToday, newYesterday)),
-      stat(newWeek, 'New · 7 days', 'hl-green', null, 'Signups in the last 7 days vs the previous 7 days', deltaChip(newWeek, newWeekPrev)),
-      stat(newMonth, 'New · Month', 'hl-green', null, 'Signups this calendar month (IST)'),
-      stat(activePro, 'Active Pro', 'hl-purple', "switchTab('pro')", 'Users on an active Pro subscription, excluding internal/test accounts'),
-      stat(activeBasic, 'Active Basic', 'hl-teal', null, 'Users on an active Basic subscription'),
-      statRaw(convPct.toFixed(1)+'%', 'Pro Conv.', 'hl-amber', 'Active Pro customers ÷ total users since launch'),
-      statRaw(inrTotal(revInr, revUsd), 'Revenue', 'hl-green', `Payments · ${tabGdrPreset('overview').label} · ₹${Math.round(revInr).toLocaleString('en-IN')} INR${revUsd>0?` + $${Math.round(revUsd).toLocaleString('en-US')} USD (≈₹${USD_TO_INR}/$)`:''}`),
+      okpi('i-users','var(--blue)','New Signups','Last 7 days', newWeek.toLocaleString('en-IN'), oDeltaPct(newWeek,newWeekPrev)),
+      okpi('i-star','var(--green)','Active Pro',`of ${usersShort} users`, activePro.toLocaleString('en-IN'), oDelta(true, convPct.toFixed(2)+'%')),
+      okpi('i-coins','var(--violet)','Revenue', rangeLabel, inrTotal(revInr, revUsd), revUsd>0 ? oDelta(true,'+$'+Math.round(revUsd).toLocaleString('en-US')) : ''),
+      okpi('i-check-circle','var(--amber)','Paying Users',`₹${arpu.toLocaleString('en-IN')} ARPU`, activePro.toLocaleString('en-IN'), ''),
     ].join('');
 
     // Growth chart
@@ -4187,10 +4230,21 @@
     const growthTotal = growthSeries.reduce((a,s)=>a+s.v,0);
     const payMap = {};
     for (const r of (_ovData.dailyPay||[])) payMap[r[0]] = { pays: +r[1]||0, inr: +r[2]||0, usd: +r[3]||0 };
-    const growthChartLabel = _tabRanges['overview'] === 'all' ? 'Signups — since 1 May 2026' : `Signups — ${tabGdrPreset('overview').label.toLowerCase()}`;
-    const growthCard = `<div class="ov-card span-2"><div class="ov-card-head">
-        <span class="ov-card-title"><svg class="ic-sm"><use href="#i-trending"/></svg> ${growthChartLabel}</span>
-        <span class="ov-card-note">${growthTotal.toLocaleString('en-IN')} total</span></div>${lineChart(growthSeries, payMap)}</div>`;
+    const growthChartLabel = _tabRanges['overview'] === 'all' ? 'Signups — since 1 May 2026' : `Daily Signups — ${tabGdrPreset('overview').label.toLowerCase()}`;
+    const orcaBars = (series) => {
+      const s = series.length > 16 ? series.slice(-16) : series;
+      const max = Math.max(1, ...s.map(x=>x.v));
+      const fewer = s.length <= 8;
+      const WD = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      return `<div class="obars">${s.map(x=>{
+        const pct = Math.max(3, Math.round(x.v/max*100));
+        const dt = new Date(x.d);
+        const lbl = isNaN(dt.getTime()) ? String(x.d).slice(5) : (fewer ? WD[dt.getDay()] : String(dt.getDate()));
+        return `<div class="obar-col"><div class="obar-track"><div class="obar-fill" style="height:${pct}%"><b>${(x.v).toLocaleString('en-IN')}</b></div></div><div class="obar-x">${lbl}</div></div>`;
+      }).join('')}</div>`;
+    };
+    const growthCard = `<div class="ocard"><div class="ocard-h"><div class="ocard-t">${growthChartLabel}</div>
+        <div class="ocard-note">${growthTotal.toLocaleString('en-IN')} total</div></div>${orcaBars(growthSeries)}</div>`;
 
     // Acquisition sources → channels (with paid-conversion per channel for GTM)
     const chMap = {}, chConv = {};
@@ -4255,12 +4309,20 @@
       const amt = (r[4] && r[4] > 0) ? `${cur}${Number(r[4]).toLocaleString('en-IN')}` : 'Paid';
       return ovRow(r[0], r[1], r[2], `<span class="badge badge-paid">${h(amt)}</span>`, `<span class="date-val">${fmtDate(r[3])||''}</span>`);
     }).join('') || `<div class="panel-empty">No recent payments</div>`;
-    const recentSignups = `<div class="ov-card" style="padding:0;overflow:hidden;"><div class="panel-head"><svg class="ic-sm"><use href="#i-users"/></svg> Recent Signups</div>${signupRows}</div>`;
+    const sigList = _ovData.signups.slice(0,5).map(r=>{
+      const nm = r[1]||r[0];
+      return `<div class="otx"><div class="row-avatar av-blue">${initials(nm)}</div>
+        <div class="otx-main"><div class="otx-name">${h(nm)}</div><div class="otx-sub">${h(r[0])}</div></div>
+        <span class="plan-badge ${planClass(r[2]||'')}">${h(planLabel(r[2]||''))}</span>
+        <span class="otx-when">${fmtDate(r[3])||''}</span></div>`;
+    }).join('') || `<div class="panel-empty">No recent signups</div>`;
+    const recentSignups = `<div class="ocard"><div class="ocard-h"><div class="ocard-t">Recent Signups</div><div class="ocard-note">latest 5</div></div>${sigList}</div>`;
     const recentPayments = `<div class="ov-card" style="padding:0;overflow:hidden;"><div class="panel-head"><svg class="ic-sm"><use href="#i-coins"/></svg> Recent Payments</div>${paymentRows}</div>`;
 
     document.getElementById('overviewArea').innerHTML =
-      `<div class="stats-bar">${kpis}</div>
-       <div class="ov-grid">${growthCard}${sourcesCard}${influencerCard}${revenueCard}${planCard}${recentSignups}${recentPayments}</div>`;
+      `<div class="okpis">${kpis}</div>
+       <div class="ov2">${growthCard}<div class="orc">${recentSignups}${revenueCard}</div></div>
+       <div class="ov-grid">${sourcesCard}${planCard}${influencerCard}${recentPayments}</div>`;
   }
 
   // ── Search ────────────────────────────────────────────────────────
