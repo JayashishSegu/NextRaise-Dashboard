@@ -1899,6 +1899,25 @@
     a:focus-visible, button:focus-visible, .tab:focus-visible, input:focus-visible, .nb-kpi:focus-visible, .cmdk-i:focus-visible{
       outline:2px solid var(--blue); outline-offset:2px; }
 
+    /* F2 · one motion system — single easing curve, 3px hover lift */
+    .okpi, .ocard, .ov-card, .rev-kpi, .nb-card, .panel, .table-wrap, .infl-card{
+      transition:transform .5s cubic-bezier(.32,.72,0,1), box-shadow .5s cubic-bezier(.32,.72,0,1), border-color .35s cubic-bezier(.32,.72,0,1)!important; }
+    .okpi:hover, .ocard:hover, .ov-card:hover, .rev-kpi:hover, .nb-card:hover{ transform:translateY(-3px)!important; }
+    .nb-ai-cta, .nb-clk-arrow, .cmdk-i, .tab, .nb-tx, .btn, .pill, .cmdk-trigger{ transition-timing-function:cubic-bezier(.32,.72,0,1)!important; }
+
+    /* E3 · ApexCharts tooltip as a glass pill (was a hard dark rectangle) */
+    .apexcharts-tooltip.apexcharts-theme-dark, .apexcharts-tooltip.apexcharts-theme-light{
+      background:var(--pop)!important; border:1px solid var(--border-strong)!important; border-radius:12px!important;
+      box-shadow:var(--shadow-lg)!important; backdrop-filter:var(--glass-blur); color:var(--text)!important; overflow:hidden; }
+    .apexcharts-tooltip-title{ background:var(--surface-2)!important; border-bottom:1px solid var(--border)!important; color:var(--text-2)!important; font-family:'IBM Plex Mono',monospace!important; font-weight:600!important; }
+    .apexcharts-tooltip-text-y-value, .apexcharts-tooltip-text-goals-value, .apexcharts-tooltip-marker + .apexcharts-tooltip-text{ font-family:'IBM Plex Mono',monospace!important; }
+    .apexcharts-xaxistooltip, .apexcharts-yaxistooltip{ background:var(--pop)!important; border-color:var(--border-strong)!important; color:var(--text)!important; border-radius:8px!important; backdrop-filter:var(--glass-blur); }
+    .apexcharts-xaxistooltip::before, .apexcharts-xaxistooltip::after{ border-bottom-color:var(--border-strong)!important; }
+
+    /* F3 · empty state as an invitation */
+    .panel-empty{ padding:26px 20px!important; text-align:center; color:var(--text-3); font-size:13px; }
+    .panel-empty::before{ content:"◦"; display:block; font-size:22px; color:var(--text-3); opacity:.5; margin-bottom:6px; }
+
     /* ============ Orca polish for other screens ============ */
     /* Revenue / KPI tiles */
     .rev-kpi{ border-radius:22px; padding:20px; background:var(--surface); border:1px solid var(--border); box-shadow:var(--shadow-md); }
@@ -4830,6 +4849,16 @@
        ${lineCard}
        <div class="nb-grid2">${acqCard}${txCard}</div>`;
     { const up=document.getElementById('ovUpdated'); if(up) up.innerHTML='<i></i> Live · updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+
+    // F2 · 900ms count-up on KPI values (preserves ₹ / % / commas)
+    setTimeout(()=>{ if(!window.gsap) return;
+      document.querySelectorAll('#overviewArea .nb-kpi-v').forEach(el=>{
+        const m=el.textContent.match(/^([^\d]*)([\d,]+(?:\.\d+)?)(.*)$/); if(!m) return;
+        const pre=m[1], numStr=m[2].replace(/,/g,''), suf=m[3], end=parseFloat(numStr); if(!isFinite(end)) return;
+        const dec=(numStr.split('.')[1]||'').length, o={v:0};
+        window.gsap.to(o,{v:end,duration:.9,ease:'power2.out',onUpdate:()=>{ el.textContent=pre+o.v.toLocaleString('en-IN',{minimumFractionDigits:dec,maximumFractionDigits:dec})+suf; }});
+      });
+    }, 60);
 
     // render live ApexCharts
     (window._ovCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}}); window._ovCharts=[];
