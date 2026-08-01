@@ -1849,7 +1849,8 @@
     .acq-flat .acq-ch-head{ cursor:default; }
     .acq-hd{ padding:2px 6px 8px; cursor:default; }
     .acq-hd .acq-ch-l, .acq-hd .acq-v, .acq-hd .acq-share, .acq-hd .acq-conv{ font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-3); font-weight:700; }
-    .acq-caret{ font-size:10px; color:var(--text-3); }
+    .acq-caret{ font-size:11px; color:var(--text-3); transition:transform .2s cubic-bezier(.32,.72,0,1); }
+    .acq-ch-head:not(.acq-hd):hover .acq-caret{ color:var(--blue-text); }
     .acq-sw{ width:12px; height:12px; border-radius:3px; }
     .acq-ch-l{ font-weight:700; font-size:13.5px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .acq-bar{ height:9px; border-radius:6px; background:var(--surface-2); overflow:hidden; }
@@ -1858,6 +1859,7 @@
     .acq-share{ text-align:right; color:var(--text-3); font-weight:600; font-size:12px; font-family:'IBM Plex Mono',monospace; }
     .acq-conv{ text-align:right; color:var(--green-text); font-weight:700; font-size:12px; font-family:'IBM Plex Mono',monospace; }
     .acq-ch-subs{ padding:2px 6px 12px 39px; display:flex; flex-direction:column; gap:1px; }
+    .acq-ch-subs[hidden]{ display:none!important; }   /* explicit display must yield to [hidden] */
     .acq-sub{ display:grid; grid-template-columns:158px 1fr 74px 54px 60px; align-items:center; gap:11px; padding:7px 0; }
     .acq-sub + .acq-sub{ border-top:1px dashed var(--sep); }
     .acq-sub-l{ color:var(--text-2); font-weight:600; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
