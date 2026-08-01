@@ -1843,13 +1843,13 @@
     /* Acquire · expandable channel breakdown */
     .acq-list{ padding:6px 20px 16px; }
     .acq-ch{ border-bottom:1px solid var(--sep); }
-    .acq-ch-head{ display:grid; grid-template-columns:16px 12px 158px 1fr 74px 54px 60px; align-items:center; gap:11px; padding:13px 6px; border-radius:9px; }
+    .acq-ch-head{ display:grid; grid-template-columns:22px 12px 158px 1fr 74px 54px 60px; align-items:center; gap:11px; padding:13px 6px; border-radius:9px; }
     .acq-ch-head:not(.acq-hd){ cursor:pointer; transition:background .35s cubic-bezier(.32,.72,0,1); }
     .acq-ch-head:not(.acq-hd):hover{ background:var(--surface-2); }
     .acq-flat .acq-ch-head{ cursor:default; }
     .acq-hd{ padding:2px 6px 8px; cursor:default; }
     .acq-hd .acq-ch-l, .acq-hd .acq-v, .acq-hd .acq-share, .acq-hd .acq-conv{ font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-3); font-weight:700; }
-    .acq-caret{ font-size:11px; color:var(--text-3); transition:transform .2s cubic-bezier(.32,.72,0,1); }
+    .acq-caret{ font-size:15px; line-height:1; color:var(--text-3); transition:color .2s ease; }
     .acq-ch-head:not(.acq-hd):hover .acq-caret{ color:var(--blue-text); }
     .acq-sw{ width:12px; height:12px; border-radius:3px; }
     .acq-ch-l{ font-weight:700; font-size:13.5px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -1864,7 +1864,7 @@
     .acq-sub + .acq-sub{ border-top:1px dashed var(--sep); }
     .acq-sub-l{ color:var(--text-2); font-weight:600; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .acq-more{ color:var(--text-3); font-style:italic; font-size:12px; display:block; padding-top:8px; }
-    @media(max-width:640px){ .acq-ch-head{ grid-template-columns:16px 12px 1fr 60px 48px; } .acq-ch-head .acq-bar, .acq-hd .acq-share, .acq-sub .acq-bar{ display:none; } .acq-sub{ grid-template-columns:1fr 60px 48px; } }
+    @media(max-width:640px){ .acq-ch-head{ grid-template-columns:22px 12px 1fr 60px 48px; } .acq-ch-head .acq-bar, .acq-hd .acq-share, .acq-sub .acq-bar{ display:none; } .acq-sub{ grid-template-columns:1fr 60px 48px; } }
     /* gauge context + legend */
     .nb-gctx{ display:flex; justify-content:space-between; align-items:center; margin-top:2px; font-size:12px; }
     .nb-leg{ display:flex; gap:14px; font-size:12px; color:var(--text-2); font-weight:600; }
