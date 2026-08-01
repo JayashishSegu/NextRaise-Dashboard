@@ -1844,6 +1844,29 @@
     .nb-ranks.cvp .cvp-cur + .nb-rank, .nb-ranks.cvp .cvp-cur{ border-top-color:transparent; }
     .nb-ranks.cvp .cvp-cur .nb-rank-l::after{ content:'· current filter'; margin-left:6px; font-size:10px; font-weight:600; color:var(--blue-text); letter-spacing:.02em; }
     .cvp-foot{ margin-top:12px; padding-top:10px; border-top:1px solid var(--sep); }
+    /* Acquire · expandable channel breakdown */
+    .acq-list{ padding:6px 20px 16px; }
+    .acq-ch{ border-bottom:1px solid var(--sep); }
+    .acq-ch-head{ display:grid; grid-template-columns:16px 12px 158px 1fr 74px 54px 60px; align-items:center; gap:11px; padding:13px 6px; border-radius:9px; }
+    .acq-ch-head:not(.acq-hd){ cursor:pointer; transition:background .35s cubic-bezier(.32,.72,0,1); }
+    .acq-ch-head:not(.acq-hd):hover{ background:var(--surface-2); }
+    .acq-flat .acq-ch-head{ cursor:default; }
+    .acq-hd{ padding:2px 6px 8px; cursor:default; }
+    .acq-hd .acq-ch-l, .acq-hd .acq-v, .acq-hd .acq-share, .acq-hd .acq-conv{ font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-3); font-weight:700; }
+    .acq-caret{ font-size:10px; color:var(--text-3); }
+    .acq-sw{ width:12px; height:12px; border-radius:3px; }
+    .acq-ch-l{ font-weight:700; font-size:13.5px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .acq-bar{ height:9px; border-radius:6px; background:var(--surface-2); overflow:hidden; }
+    .acq-bar i{ display:block; height:100%; border-radius:6px; transition:width .8s cubic-bezier(.32,.72,0,1); }
+    .acq-v{ text-align:right; font-weight:800; font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums; font-size:13px; color:var(--text); }
+    .acq-share{ text-align:right; color:var(--text-3); font-weight:600; font-size:12px; font-family:'IBM Plex Mono',monospace; }
+    .acq-conv{ text-align:right; color:var(--green-text); font-weight:700; font-size:12px; font-family:'IBM Plex Mono',monospace; }
+    .acq-ch-subs{ padding:2px 6px 12px 39px; display:flex; flex-direction:column; gap:1px; }
+    .acq-sub{ display:grid; grid-template-columns:158px 1fr 74px 54px 60px; align-items:center; gap:11px; padding:7px 0; }
+    .acq-sub + .acq-sub{ border-top:1px dashed var(--sep); }
+    .acq-sub-l{ color:var(--text-2); font-weight:600; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .acq-more{ color:var(--text-3); font-style:italic; font-size:12px; display:block; padding-top:8px; }
+    @media(max-width:640px){ .acq-ch-head{ grid-template-columns:16px 12px 1fr 60px 48px; } .acq-ch-head .acq-bar, .acq-hd .acq-share, .acq-sub .acq-bar{ display:none; } .acq-sub{ grid-template-columns:1fr 60px 48px; } }
     /* gauge context + legend */
     .nb-gctx{ display:flex; justify-content:space-between; align-items:center; margin-top:2px; font-size:12px; }
     .nb-leg{ display:flex; gap:14px; font-size:12px; color:var(--text-2); font-weight:600; }
@@ -4301,16 +4324,23 @@
 
   // Acquisition-channel buckets for the messy raw source/medium pairs in
   // mongodb.users → attribution.firstTouch. Order of checks matters.
-  const CH_COLOR = { 'Paid Search':'c-blue','Extension':'c-teal','Direct':'c-gray','Influencer':'c-violet','Paid Social':'c-rose','Organic Social':'c-amber','Email':'c-green','Other':'c-orange' };
+  const CH_COLOR = { 'Google Ads':'c-blue','Meta Ads':'c-rose','Extension':'c-teal','Direct':'c-gray','Influencer':'c-violet','Organic Social':'c-amber','Email':'c-green','Referral':'c-orange','Other':'c-gray' };
   function channelOf(source, medium) {
     const s = (source||'').toLowerCase().trim(), m = (medium||'').toLowerCase().trim();
-    if (!s && !m) return 'Direct';
-    if (s === 'chrome_extension' || m === 'extension') return 'Extension';
-    if (m === 'influencer' || m === 'influencer_boost' || s.includes('influencer')) return 'Influencer';
-    if (s.includes('google')) return 'Paid Search';
-    if (s.includes('meta') || s === 'facebook' || s === 'fb' || m === 'paid' || m === 'paid_social') return 'Paid Social';
-    if (m === 'email' || s === 'loops') return 'Email';
-    if (m === 'social' || m === 'video') return 'Organic Social';
+    // treat placeholder strings ("none"/"null"/…) as empty — this is what dumped
+    // ~6.7K "direct|none" + "None|None" signups into Other and inflated it to #1
+    const blank = v => !v || v==='none' || v==='null' || v==='undefined' || v==='(none)' || v==='(direct)' || v==='false';
+    if ((blank(s) && blank(m)) || s==='direct') return 'Direct';
+    if (s==='chrome_extension' || m==='extension') return 'Extension';
+    if (m.includes('influ') || s.includes('influ')) return 'Influencer';   // influencer + "influenser" typo
+    if (s.includes('google')) return 'Google Ads';
+    if (s.includes('meta') || s.includes('facebook') || s==='fb' || s==='ig' || s.includes('instagram') || s.includes('instagran')) {
+      return (m==='social' || m==='video') ? 'Organic Social' : 'Meta Ads';   // paid IG/FB → Meta Ads
+    }
+    if (m==='email' || s==='loops') return 'Email';
+    if (m==='referral' || s==='affiliate' || s.includes('auto_dm')) return 'Referral';
+    if (m==='social' || m==='video' || m==='paid_social') return 'Organic Social';
+    if (s.includes('twitter') || s.includes('chatgpt') || s.includes('youtube')) return 'Organic Social';
     return 'Other';
   }
   // "tamanna_instagram_influencer" / "vansh_youtube_influencer" → "Tamanna" / "Vansh"
@@ -8860,12 +8890,13 @@
     try{
       const start=tabGdrStartDate('acquire'), end=tabGdrEndDate('acquire');
       const res=await runHogQL(`
-        SELECT source, medium, count() AS c,
+        SELECT source, medium, campaign, count() AS c,
                countIf(plan LIKE '%pro%' AND status='active') AS conv
         FROM (
           SELECT person_id,
             argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='') AS source,
             argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='') AS medium,
+            argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS campaign,
             argMaxIf(toString(person.properties.plan), timestamp, person.properties.plan!='') AS plan,
             argMaxIf(toString(person.properties.subscription_status), timestamp, person.properties.subscription_status!='') AS status,
             minIf(toDate(toTimeZone(timestamp,'Asia/Kolkata')), event IN ('signup_complete','onboarding_start')) AS su
@@ -8876,23 +8907,43 @@
             AND lower(coalesce(person.properties.email,'')) NOT LIKE '%test%'
           GROUP BY person_id
           HAVING su >= toDate('${start}') AND su < toDate('${end}')
-        ) GROUP BY source, medium ORDER BY c DESC LIMIT 300`);
+        ) GROUP BY source, medium, campaign ORDER BY c DESC LIMIT 500`);
       _acqData=res.results||[]; _acqLoaded=true; renderAcquire();
     }catch(e){ area.innerHTML=errorBox('Could not load acquisition — '+e.message); }
   }
+  const CHIP_VAR={ 'Google Ads':'--blue','Meta Ads':'--rose','Extension':'--teal','Direct':'--text-3','Influencer':'--violet','Organic Social':'--amber','Email':'--green','Referral':'--orange','Other':'--text-3' };
+  // Human label for a raw (source,medium,campaign) inside a channel
+  function acqSubLabel(ch, source, medium, campaign){
+    const s=(source||'').trim(), m=(medium||'').trim(), c=(campaign||'').trim();
+    const blank=v=>!v||/^(none|null|undefined|\(none\)|\(direct\))$/i.test(v);
+    if(ch==='Influencer'){ const nm=influencerName(c||s); return (nm&&!/^(instagram|ig|instagran|youtube|unknown|)$/i.test(nm.toLowerCase()))?nm:(c||s||'Unattributed'); }
+    if(ch==='Email')  return c||s||'Email';
+    if(ch==='Direct') return 'Direct';
+    if(!blank(c))     return c;                                   // ad campaign name when present
+    return (blank(s)?'unknown':s)+(blank(m)?'':' · '+m);
+  }
   function renderAcquire(){
     const area=document.getElementById('acquireArea'); if(!area||!_acqData) return;
-    const chMap={}, chConv={};
-    for(const r of _acqData){ const ch=channelOf(r[0],r[1]); chMap[ch]=(chMap[ch]||0)+(+r[2]||0); chConv[ch]=(chConv[ch]||0)+(+r[3]||0); }
-    const items=Object.entries(chMap).map(([label,value])=>({label,value,conv:chConv[label]||0})).sort((a,b)=>b.value-a.value);
+    // group raw rows → channel → merged sub-sources
+    const G={};
+    for(const r of _acqData){
+      const src=r[0], med=r[1], camp=r[2], val=+r[3]||0, conv=+r[4]||0;
+      const ch=channelOf(src,med);
+      const g=G[ch]||(G[ch]={value:0,conv:0,subs:{}});
+      g.value+=val; g.conv+=conv;
+      const lbl=acqSubLabel(ch,src,med,camp);
+      const sub=g.subs[lbl]||(g.subs[lbl]={label:lbl,value:0,conv:0});
+      sub.value+=val; sub.conv+=conv;
+    }
+    const items=Object.entries(G).map(([label,g])=>({label,value:g.value,conv:g.conv,
+      subs:Object.values(g.subs).sort((a,b)=>b.value-a.value)})).sort((a,b)=>b.value-a.value);
     const total=items.reduce((a,i)=>a+i.value,0)||1;
     const totalConv=items.reduce((a,i)=>a+i.conv,0);
-    const paidSet=new Set(['Paid Search','Paid Social']);
+    const paidSet=new Set(['Google Ads','Meta Ads']);
     const paid=items.filter(i=>paidSet.has(i.label)).reduce((a,i)=>a+i.value,0);
     const organic=Math.max(0,total-paid);
     const infl=items.find(i=>i.label==='Influencer'); const inflV=infl?infl.value:0;
     const top=items[0]||{label:'—',value:0};
-    const CHIP={ 'Paid Search':'var(--blue)','Paid Social':'var(--rose)','Extension':'var(--teal)','Direct':'var(--text-3)','Influencer':'var(--violet)','Organic Social':'var(--amber)','Email':'var(--green)','Other':'var(--orange)' };
     const kpis=[
       oKpi('i-users','var(--blue)','Total Signups',tabGdrPreset('acquire').label,_nf(total)),
       oKpi('i-globe','var(--teal)','Top Channel',top.label,_nf(top.value)),
@@ -8900,21 +8951,42 @@
       oKpi('i-share','var(--violet)','Influencer Share',`${(inflV/total*100).toFixed(1)}% of signups`,_nf(inflV)),
     ].join('');
     const max=Math.max(1,...items.map(i=>i.value));
-    const rows=items.map(i=>`
-      <tr><td><div style="display:flex;align-items:center;gap:10px;">
-        <span style="width:10px;height:10px;border-radius:3px;background:${CHIP[i.label]||'var(--text-3)'}"></span>
-        <b style="font-weight:700">${h(i.label)}</b></div></td>
-        <td style="width:44%"><div class="bar-track" style="height:9px;"><div style="width:${Math.round(i.value/max*100)}%;height:9px;border-radius:8px;background:${CHIP[i.label]||'var(--text-3)'};"></div></div></td>
-        <td style="text-align:right;font-weight:800">${_nf(i.value)}</td>
-        <td style="text-align:right;color:var(--text-3);font-weight:600">${(i.value/total*100).toFixed(1)}%</td>
-        <td style="text-align:right;color:var(--green-text);font-weight:700">${i.conv?((i.conv/i.value*100).toFixed(1)+'%'):'—'}</td>
-      </tr>`).join('');
+    const chBlocks=items.map(i=>{
+      const cv=CHIP_VAR[i.label]||'--text-3';
+      const subsShown=i.subs.slice(0,15), moreN=i.subs.length-subsShown.length;
+      const subMax=Math.max(1,...i.subs.map(s=>s.value));
+      const canExpand=i.subs.length>1 || (i.subs[0] && i.subs[0].label!==i.label);
+      const subRows=subsShown.map(s=>`
+        <div class="acq-sub">
+          <span class="acq-sub-l" title="${h(s.label)}">${h(s.label)}</span>
+          <span class="acq-bar"><i style="width:${Math.round(s.value/subMax*100)}%;background:var(${cv});opacity:.7"></i></span>
+          <span class="acq-v">${_nf(s.value)}</span>
+          <span class="acq-share">${(s.value/i.value*100).toFixed(1)}%</span>
+          <span class="acq-conv">${s.conv?((s.conv/s.value*100).toFixed(1)+'%'):'—'}</span>
+        </div>`).join('') + (moreN>0?`<div class="acq-sub acq-more">+ ${moreN} more source${moreN>1?'s':''}</div>`:'');
+      return `<div class="acq-ch${canExpand?'':' acq-flat'}">
+        <div class="acq-ch-head" ${canExpand?'onclick="toggleAcqCh(this)" role="button" tabindex="0"':''}>
+          <span class="acq-caret">${canExpand?'▸':''}</span>
+          <span class="acq-sw" style="background:var(${cv})"></span>
+          <span class="acq-ch-l">${h(i.label)}</span>
+          <span class="acq-bar"><i style="width:${Math.round(i.value/max*100)}%;background:var(${cv})"></i></span>
+          <span class="acq-v">${_nf(i.value)}</span>
+          <span class="acq-share">${(i.value/total*100).toFixed(1)}%</span>
+          <span class="acq-conv" title="active-Pro conversion">${i.conv?((i.conv/i.value*100).toFixed(1)+'%'):'—'}</span>
+        </div>
+        ${canExpand?`<div class="acq-ch-subs" hidden>${subRows}</div>`:''}
+      </div>`;
+    }).join('');
     area.innerHTML=`<div class="okpis">${kpis}</div>
-      <div class="ocard"><div class="ocard-h"><div class="ocard-t">Channels</div><div class="ocard-note">${_nf(total)} signups · ${_nf(totalConv)} → Pro</div></div>
-        <div style="padding:8px 20px 16px;"><table style="width:100%"><thead><tr>
-          <th style="text-align:left">Channel</th><th></th><th style="text-align:right">Signups</th><th style="text-align:right">Share</th><th style="text-align:right">→ Pro</th>
-        </tr></thead><tbody>${rows}</tbody></table></div></div>`;
+      <div class="ocard"><div class="ocard-h"><div class="ocard-t">Channels</div><div class="ocard-note">${_nf(total)} signups · ${_nf(totalConv)} → Pro · tap a channel to expand</div></div>
+        <div class="acq-list">
+          <div class="acq-ch-head acq-hd"><span></span><span></span><span class="acq-ch-l">Channel</span><span></span><span class="acq-v">Signups</span><span class="acq-share">Share</span><span class="acq-conv">→ Pro</span></div>
+          ${chBlocks}
+        </div></div>`;
   }
+  function toggleAcqCh(head){ const ch=head.parentElement; const open=ch.classList.toggle('open');
+    head.querySelector('.acq-caret').textContent=open?'▾':'▸';
+    const subs=ch.querySelector('.acq-ch-subs'); if(subs) subs.hidden=!open; }
 
   /* ---- INSIGHTS (funnel) ---- */
   var _insLoaded=false, _insData=null;
