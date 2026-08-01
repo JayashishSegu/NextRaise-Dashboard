@@ -4467,7 +4467,7 @@
     // Real paying customer = active Pro sub, excluding internal/test accounts.
     const extOnly = `JSONExtractString(data,'email') NOT LIKE '%@nextraise.ai' AND JSONExtractString(data,'email') NOT LIKE '%@creditdharma.in' AND lower(JSONExtractString(data,'email')) NOT LIKE '%test%'`;
     try {
-      const [counts, signups, payments, revenue, sources, growth, dailyPay, influencers, pgSubscribers, convPeriods] = await Promise.all([
+      const [counts, signups, payments, revenue, sources, growth, dailyPay, influencers, pgSubscribers] = await Promise.all([
         runHogQL(`
           SELECT
             countIf(su >= toDate('2026-05-01')) AS new_product,
@@ -4482,7 +4482,11 @@
             countIf(su = toDate(toTimeZone(now(),'Asia/Kolkata')) - 1) AS new_yesterday,
             countIf(su >= toDate(toTimeZone(now(),'Asia/Kolkata')) - 14 AND su < toDate(toTimeZone(now(),'Asia/Kolkata')) - 7) AS new_week_prev,
             countIf(plan LIKE '%pro%' AND status='expired') AS expired_pro,
-            countIf(plan LIKE '%pro%' AND status='expired') AS lapsed_30d
+            countIf(plan LIKE '%pro%' AND status='expired') AS lapsed_30d,
+            ${CONV_PRESETS.map((p,i)=>{ const b=gdrBounds(p.key);
+              return `countIf(su>=toDate('${b.startDate}') AND su<toDate('${b.endDate}')) AS cs${i}, `
+                   + `countIf(su>=toDate('${b.startDate}') AND su<toDate('${b.endDate}') AND plan LIKE '%pro%') AS cp${i}`;
+            }).join(', ')}
           FROM (
             SELECT person_id,
               minIf(toDate(toTimeZone(timestamp,'Asia/Kolkata')), event = 'signup_complete') AS su,
@@ -4607,26 +4611,6 @@
           WHERE email NOT LIKE '%@nextraise.ai'
             AND email NOT LIKE '%@creditdharma.in'
             AND lower(email) NOT LIKE '%test%'`).catch(()=>({results:[]})),
-        // Free → Pro cohort conversion per preset period: of users who signed up
-        // in each window, how many are now on a Pro plan. One row, two cols per period.
-        runHogQL(`
-          SELECT ${CONV_PRESETS.map((p,i)=>{ const b=gdrBounds(p.key);
-            return `countIf(su>=toDate('${b.startDate}') AND su<toDate('${b.endDate}')) AS s${i}, `
-                 + `countIf(su>=toDate('${b.startDate}') AND su<toDate('${b.endDate}') AND isPro) AS p${i}`;
-          }).join(', ')}
-          FROM (
-            SELECT person_id,
-              minIf(toDate(toTimeZone(timestamp,'Asia/Kolkata')), event='signup_complete') AS su,
-              argMaxIf(toString(person.properties.plan), timestamp, person.properties.plan!='') LIKE '%pro%' AS isPro
-            FROM events
-            WHERE timestamp > now() - INTERVAL 400 DAY
-              AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
-              AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
-              AND person_id NOT IN COHORT 278743
-              AND lower(coalesce(person.properties.email,'')) NOT LIKE '%test%'
-            GROUP BY person_id
-            HAVING su > toDate('2000-01-01')
-          )`).catch(()=>({results:[]})),
       ]);
       const revRow = (revenue.results||[])[0] || [0,0];
       // Override Active Pro/Basic with postgres (more accurate than PostHog person props)
@@ -4649,13 +4633,11 @@
         growth:      growth.results      || [],
         dailyPay:    dailyPay.results    || [],
         influencers: influencers.results || [],
-        convByPeriod: (() => {
-          const row = (convPeriods.results||[])[0] || [];
-          return CONV_PRESETS.map((p,i) => {
-            const s = +row[i*2]||0, pr = +row[i*2+1]||0;
-            return { key:p.key, label:p.label, signups:s, pro:pr, rate: s ? pr/s*100 : 0 };
-          });
-        })(),
+        convByPeriod: CONV_PRESETS.map((p,i) => {
+          // period conversion cols are appended to the counts query after the 13 base cols
+          const s = +mergedCounts[13 + i*2]||0, pr = +mergedCounts[13 + i*2 + 1]||0;
+          return { key:p.key, label:p.label, signups:s, pro:pr, rate: s ? pr/s*100 : 0 };
+        }),
       };
       saveOvCache(_ovData);
       // legacy count doubles as the Salahkart sidebar badge
