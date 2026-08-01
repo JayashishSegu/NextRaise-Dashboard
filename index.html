@@ -1837,6 +1837,13 @@
     .nb-rank-v{ text-align:right; font-weight:700; font-size:13px; color:var(--text); }
     .nb-rank-c{ text-align:right; font-size:12px; color:var(--green-text); font-weight:600; }
     @media(max-width:640px){ .nb-rank{ grid-template-columns:1fr 48px } .nb-rank-bar,.nb-rank-c{ display:none } }
+    /* Free → Pro by period breakdown */
+    .nb-ranks.cvp .nb-rank-v{ font-family:'IBM Plex Mono',monospace; color:var(--blue-text); font-variant-numeric:tabular-nums; }
+    .nb-ranks.cvp .nb-rank-c{ color:var(--text-3); font-weight:500; font-family:'IBM Plex Mono',monospace; }
+    .nb-ranks.cvp .cvp-cur{ background:var(--surface-2); border-radius:8px; padding-left:10px; padding-right:10px; margin:0 -10px; }
+    .nb-ranks.cvp .cvp-cur + .nb-rank, .nb-ranks.cvp .cvp-cur{ border-top-color:transparent; }
+    .nb-ranks.cvp .cvp-cur .nb-rank-l::after{ content:'· current filter'; margin-left:6px; font-size:10px; font-weight:600; color:var(--blue-text); letter-spacing:.02em; }
+    .cvp-foot{ margin-top:12px; padding-top:10px; border-top:1px solid var(--sep); }
     /* gauge context + legend */
     .nb-gctx{ display:flex; justify-content:space-between; align-items:center; margin-top:2px; font-size:12px; }
     .nb-leg{ display:flex; gap:14px; font-size:12px; color:var(--text-2); font-weight:600; }
@@ -4111,6 +4118,8 @@
     { key: 'all',       label: 'All time'     },
     { key: 'custom',    label: 'Custom'       },
   ];
+  // Periods shown in the Overview "Free → Pro by period" breakdown (no Custom)
+  const CONV_PRESETS = GDR_PRESETS.filter(p => p.key !== 'custom');
   // Independent date range per tab — changing one tab never touches others
   const _tabRanges = {
     overview: '7d', revenue: 'all', activation: 'all',
@@ -4458,7 +4467,7 @@
     // Real paying customer = active Pro sub, excluding internal/test accounts.
     const extOnly = `JSONExtractString(data,'email') NOT LIKE '%@nextraise.ai' AND JSONExtractString(data,'email') NOT LIKE '%@creditdharma.in' AND lower(JSONExtractString(data,'email')) NOT LIKE '%test%'`;
     try {
-      const [counts, signups, payments, revenue, sources, growth, dailyPay, influencers, pgSubscribers] = await Promise.all([
+      const [counts, signups, payments, revenue, sources, growth, dailyPay, influencers, pgSubscribers, convPeriods] = await Promise.all([
         runHogQL(`
           SELECT
             countIf(su >= toDate('2026-05-01')) AS new_product,
@@ -4598,6 +4607,26 @@
           WHERE email NOT LIKE '%@nextraise.ai'
             AND email NOT LIKE '%@creditdharma.in'
             AND lower(email) NOT LIKE '%test%'`).catch(()=>({results:[]})),
+        // Free → Pro cohort conversion per preset period: of users who signed up
+        // in each window, how many are now on a Pro plan. One row, two cols per period.
+        runHogQL(`
+          SELECT ${CONV_PRESETS.map((p,i)=>{ const b=gdrBounds(p.key);
+            return `countIf(su>=toDate('${b.startDate}') AND su<toDate('${b.endDate}')) AS s${i}, `
+                 + `countIf(su>=toDate('${b.startDate}') AND su<toDate('${b.endDate}') AND isPro) AS p${i}`;
+          }).join(', ')}
+          FROM (
+            SELECT person_id,
+              minIf(toDate(toTimeZone(timestamp,'Asia/Kolkata')), event='signup_complete') AS su,
+              argMaxIf(toString(person.properties.plan), timestamp, person.properties.plan!='') LIKE '%pro%' AS isPro
+            FROM events
+            WHERE timestamp > now() - INTERVAL 400 DAY
+              AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
+              AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
+              AND person_id NOT IN COHORT 278743
+              AND lower(coalesce(person.properties.email,'')) NOT LIKE '%test%'
+            GROUP BY person_id
+            HAVING su > toDate('2000-01-01')
+          )`).catch(()=>({results:[]})),
       ]);
       const revRow = (revenue.results||[])[0] || [0,0];
       // Override Active Pro/Basic with postgres (more accurate than PostHog person props)
@@ -4620,6 +4649,13 @@
         growth:      growth.results      || [],
         dailyPay:    dailyPay.results    || [],
         influencers: influencers.results || [],
+        convByPeriod: (() => {
+          const row = (convPeriods.results||[])[0] || [];
+          return CONV_PRESETS.map((p,i) => {
+            const s = +row[i*2]||0, pr = +row[i*2+1]||0;
+            return { key:p.key, label:p.label, signups:s, pro:pr, rate: s ? pr/s*100 : 0 };
+          });
+        })(),
       };
       saveOvCache(_ovData);
       // legacy count doubles as the Salahkart sidebar badge
@@ -4840,12 +4876,33 @@
         <span class="nb-txwhen">${fmtDate(r[3])||''}</span></div>`; }).join('') || `<div class="panel-empty">No recent signups</div>`;
     const txCard=`<div class="nb-card"><div class="nb-cardh"><div class="nb-t">Recent signups</div></div>${txRows}</div>`;
 
+    // Free → Pro conversion, broken out for every date-filter preset (signup cohort)
+    const cbp = _ovData.convByPeriod || [];
+    const convMax = Math.max(0.01, ...cbp.map(p=>p.rate));
+    const curKey = tabGdrKey('overview');
+    const convRows = cbp.map(p=>{
+      const w = p.rate>0 ? Math.max(4, Math.round(p.rate/convMax*100)) : 0;
+      const cur = p.key===curKey;
+      return `<div class="nb-rank${cur?' cvp-cur':''}">
+        <span class="nb-rank-l">${p.label}</span>
+        <span class="nb-rank-bar" title="${p.rate.toFixed(2)}% of ${p.signups.toLocaleString('en-IN')} signups"><i style="width:${w}%"></i></span>
+        <span class="nb-rank-v">${p.rate.toFixed(2)}%</span>
+        <span class="nb-rank-c" title="Pro conversions / signups in period">${p.pro.toLocaleString('en-IN')} / ${p.signups.toLocaleString('en-IN')}</span>
+      </div>`;
+    }).join('') || `<div class="panel-empty">No cohort data</div>`;
+    const convPeriodCard=`<div class="nb-card nb-full"><div class="nb-cardh"><div>
+        <div class="nb-t">Free → Pro conversion by period</div>
+        <div class="nb-note">signup cohort · share of each window's signups now on a Pro plan</div></div></div>
+      <div class="nb-ranks cvp">${convRows}</div>
+      <div class="nb-note cvp-foot">Recent short windows read low because upgrades lag signup by days. Compare against last month and all-time for a settled rate.</div></div>`;
+
     const lineCard=`<div class="nb-card nb-full"><div class="nb-cardh"><div><div class="nb-t">Daily signups</div><div class="nb-note">${growthTotal.toLocaleString('en-IN')} total · ${rangeLabel}</div></div>
       <div class="nb-leg"><span><i style="background:var(--blue)"></i>Signups</span></div></div><div id="nbLine" style="margin:6px -6px -8px"></div></div>`;
 
     document.getElementById('overviewArea').innerHTML =
       `<div class="okpis">${kpis2}</div>
        <div class="nb-grid2">${aiCard}${gaugeCard}</div>
+       ${convPeriodCard}
        ${lineCard}
        <div class="nb-grid2">${acqCard}${txCard}</div>`;
     { const up=document.getElementById('ovUpdated'); if(up) up.innerHTML='<i></i> Live · updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
