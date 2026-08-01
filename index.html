@@ -4850,16 +4850,6 @@
        <div class="nb-grid2">${acqCard}${txCard}</div>`;
     { const up=document.getElementById('ovUpdated'); if(up) up.innerHTML='<i></i> Live · updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
 
-    // F2 · 900ms count-up on KPI values (preserves ₹ / % / commas)
-    setTimeout(()=>{ if(!window.gsap) return;
-      document.querySelectorAll('#overviewArea .nb-kpi-v').forEach(el=>{
-        const m=el.textContent.match(/^([^\d]*)([\d,]+(?:\.\d+)?)(.*)$/); if(!m) return;
-        const pre=m[1], numStr=m[2].replace(/,/g,''), suf=m[3], end=parseFloat(numStr); if(!isFinite(end)) return;
-        const dec=(numStr.split('.')[1]||'').length, o={v:0};
-        window.gsap.to(o,{v:end,duration:.9,ease:'power2.out',onUpdate:()=>{ el.textContent=pre+o.v.toLocaleString('en-IN',{minimumFractionDigits:dec,maximumFractionDigits:dec})+suf; }});
-      });
-    }, 60);
-
     // render live ApexCharts
     (window._ovCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}}); window._ovCharts=[];
     setTimeout(()=>{
@@ -9400,6 +9390,54 @@
       ch.render(); window._dlyCharts.push(ch);
     },30);
   }
+
+  /* F2 · global KPI count-up — one system for every screen.
+     Watches all hero KPI numbers; when any changes to a new value (via
+     innerHTML render OR .textContent = ...), animates 0→value (or prev→value)
+     over 800ms. Preserves ₹ / % / L / comma-grouping and tabular alignment. */
+  (function(){
+    const SEL = '.nb-kpi-v, .rev-kpi-num, .okpi-val, .rev-big, .nb-big, .stat-num';
+    const fmt = (n,dec) => n.toLocaleString('en-IN',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+    function countUp(el){
+      if(!window.gsap || el._nbBusy) return;
+      const m = el.textContent.trim().match(/^([^\d-]*)(-?[\d,]+(?:\.\d+)?)(.*)$/);
+      if(!m) return;                                   // non-numeric (labels, dashes) — skip
+      const pre=m[1], numStr=m[2].replace(/,/g,''), suf=m[3], end=parseFloat(numStr);
+      if(!isFinite(end)) return;
+      const dec=(numStr.split('.')[1]||'').length;
+      const from = el._nbLast!=null ? el._nbLast : 0;
+      el._nbLast = end;
+      if(from===end){ return; }
+      el._nbBusy = true;
+      const o={v:from};
+      window.gsap.to(o,{v:end,duration:.8,ease:'power2.out',
+        onUpdate(){ el._nbGuard=true; el.textContent=pre+fmt(o.v,dec)+suf; el._nbGuard=false; },
+        onComplete(){ el._nbGuard=true; el.textContent=pre+fmt(end,dec)+suf; el._nbGuard=false; el._nbBusy=false; }});
+    }
+    const queue=new Set();
+    let raf=0;
+    const flush=()=>{ raf=0; queue.forEach(countUp); queue.clear(); };
+    const schedule=el=>{ queue.add(el); if(!raf) raf=requestAnimationFrame(flush); };
+    const obs=new MutationObserver(muts=>{
+      for(const mu of muts){
+        if(mu.type==='characterData'){
+          const el=mu.target.parentElement;
+          if(el && el.matches && el.matches(SEL)) schedule(el);
+        } else {
+          // el.textContent = x → childList on the element itself (new text node)
+          const t=mu.target;
+          if(t && t.nodeType===1 && t.matches && t.matches(SEL)) schedule(t);
+          for(const node of mu.addedNodes){
+            if(node.nodeType!==1) continue;                 // innerHTML render → walk subtree
+            if(node.matches && node.matches(SEL)) schedule(node);
+            if(node.querySelectorAll) node.querySelectorAll(SEL).forEach(schedule);
+          }
+        }
+      }
+    });
+    const start=()=>obs.observe(document.body,{subtree:true,childList:true,characterData:true});
+    if(document.readyState==='loading') window.addEventListener('DOMContentLoaded',start); else start();
+  })();
 </script>
 </body>
 </html>
