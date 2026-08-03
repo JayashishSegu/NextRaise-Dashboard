@@ -3795,12 +3795,13 @@
   }
 
   // ── HogQL API ─────────────────────────────────────────────────────
-  // Global concurrency gate + timeout-retry for every HogQL call.
+  // Global concurrency gate + transient-retry for every HogQL call.
   // The overview fires 9 heavy person-level scans at once (plus background tab
   // warming); hitting PostHog with all of them collides on ClickHouse and one
   // crosses the ~60s max-execution limit ("Query has hit the max execution
-  // time…"). Capping concurrency to 3 and retrying transient timeouts fixes it
-  // without changing any query — same numbers, just staggered.
+  // time…"), or trips PostHog's per-project concurrency limiter (HTTP 429
+  // "Too many queries are running right now…"). Capping concurrency to 3 and
+  // retrying BOTH timeouts and 429s fixes it without changing any query.
   const _hog = { active: 0, queue: [], MAX: 3 };
   function _hogAcquire() {
     if (_hog.active < _hog.MAX) { _hog.active++; return Promise.resolve(); }
@@ -3828,14 +3829,26 @@
     setBusy(true);
     try {
       let lastErr;
-      for (let attempt = 0; attempt < 3; attempt++) {
+      for (let attempt = 0; attempt < 4; attempt++) {
         try {
           return await _hogFetch(sql);
         } catch (e) {
           lastErr = e;
-          const transient = /max execution time|timed out|timeout|\b50[234]\b/i.test(e.message || '');
-          if (attempt < 2 && transient) {
-            await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+          const msg = e.message || '';
+          // Retry two classes of transient failure:
+          //  1. slow-query timeouts ("max execution time", 502/503/504)
+          //  2. PostHog's concurrency/rate limit — HTTP 429, detail
+          //     "Too many queries are running right now — please try again in a
+          //     moment." This trips most often on a narrow range (today/yesterday)
+          //     where each query returns instantly, so the gated slots recycle
+          //     fast enough to burst PostHog's per-project limiter. PostHog tells
+          //     us to retry, so we do — instead of blanking the whole overview.
+          const transient = /max execution time|timed out|timeout|too many|concurren|rate limit|\b429\b|\b50[234]\b/i.test(msg);
+          if (attempt < 3 && transient) {
+            // Concurrency errors need in-flight queries to drain; back off a bit
+            // more and add jitter so parallel retries don't re-collide on one tick.
+            const base = /too many|concurren|429/i.test(msg) ? 1800 : 1500;
+            await new Promise(r => setTimeout(r, base * (attempt + 1) + Math.floor(Math.random() * 500)));
             continue;
           }
           throw e;
