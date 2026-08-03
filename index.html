@@ -4515,8 +4515,38 @@
       <text x="60" y="73" text-anchor="middle" class="donut-center-lbl">${centerLbl}</text></svg>`;
   }
 
+  // Warm all tabs in the background so sidebar badges fill in. Staggered to
+  // avoid hammering PostHog simultaneously. Each is guarded by its own _loaded
+  // flag, so this runs at most once per session.
+  function _warmOverviewTabs() {
+    setTimeout(() => { if (!_creditsLoaded) fetchExhaustedCredits(); }, 300);
+    setTimeout(() => { if (!_proLoaded)     fetchProUsers();          }, 800);
+    setTimeout(() => { if (!_powerLoaded)   fetchPowerUsers();        }, 1300);
+    setTimeout(() => { if (!_abandLoaded)   fetchAbandoned();         }, 1800);
+    setTimeout(() => { if (!_inflLoaded)    fetchInfluencers();       }, 2400);
+    setTimeout(() => { if (!_skLoaded)      fetchSalahkartUsers();    }, 3000);
+    setTimeout(() => { if (!_skpLoaded)      fetchSkProUsers();       }, 3600);
+    setTimeout(() => { if (!_expiringLoaded) fetchExpiringSoon();     }, 4200);
+    setTimeout(() => { if (!_revLoaded)      fetchRevenue();          }, 4800);
+    setTimeout(() => { if (!_actLoaded)      fetchActivation();       }, 5400);
+  }
+
+  // Fast path: read the server-precomputed, edge-cached overview (PostHog key
+  // lives on the server, not here). Returns the _ovData object, or null if the
+  // API isn't configured yet / errored — caller then falls back to direct queries.
+  async function fetchOverviewFromAPI() {
+    const range = _tabRanges['overview'];
+    let url = '/api/overview?range=' + encodeURIComponent(range);
+    if (range === 'custom' && _tabCustom['overview'])
+      url += '&from=' + _tabCustom['overview'].from + '&to=' + _tabCustom['overview'].to;
+    const r = await fetch(url);
+    if (!r.ok) return null;
+    const j = await r.json();
+    if (!j || !j.data || !Array.isArray(j.data.counts)) return null;
+    return { data: j.data, ts: j.ts || Date.now() };
+  }
+
   async function loadOverview(force) {
-    if (!cfg('apiKey')) return;
     // ── Stale-while-revalidate ────────────────────────────────────────
     // Paint the last snapshot for THIS range instantly — even if it's stale —
     // so the heavy live queries never block first paint. The overview's queries
@@ -4537,6 +4567,31 @@
       const area = document.getElementById('overviewArea');
       if (area && !_ovData) area.innerHTML =
         `<div class="state-box"><div class="spinner sp-blue"></div><p>Loading overview…</p></div>`;
+    }
+
+    // ── Fast path: server-precomputed, edge-cached, keyless ───────────────
+    // Read the overview the Vercel cron keeps warm. This moves the 9 heavy
+    // queries off the browser entirely (no client PostHog key, no 429/timeout
+    // risk here). If it isn't configured yet or errors, fall through to the
+    // direct-query path below — no regression.
+    try {
+      const api = await fetchOverviewFromAPI();
+      if (api) {
+        _ovData = api.data;
+        _ovDataTs = api.ts;
+        saveOvCache(_ovData);
+        (document.getElementById('skTabBadge')||{}).textContent = _ovData.counts[1];
+        renderOverview();
+        _warmOverviewTabs();
+        return;
+      }
+    } catch(_) { /* fall through to direct client-side queries */ }
+
+    // Direct client-side queries (fallback). These need the user's own key.
+    if (!cfg('apiKey')) {
+      if (!_ovData) document.getElementById('overviewArea').innerHTML =
+        errorBox('Could not load overview — no API key set. Open API Settings (top right).');
+      return;
     }
     // MongoDB stores UTC timestamps, but "today" should follow IST (the project
     // timezone) — otherwise signups between midnight and 5:30 AM IST are missed.
@@ -4748,18 +4803,7 @@
       // legacy count doubles as the Salahkart sidebar badge
       (document.getElementById('skTabBadge')||{}).textContent = _ovData.counts[1];
       renderOverview();
-      // Warm all tabs in the background so sidebar badges fill in.
-      // Staggered to avoid hammering PostHog simultaneously.
-      setTimeout(() => { if (!_creditsLoaded) fetchExhaustedCredits(); }, 300);
-      setTimeout(() => { if (!_proLoaded)     fetchProUsers();          }, 800);
-      setTimeout(() => { if (!_powerLoaded)   fetchPowerUsers();        }, 1300);
-      setTimeout(() => { if (!_abandLoaded)   fetchAbandoned();         }, 1800);
-      setTimeout(() => { if (!_inflLoaded)    fetchInfluencers();       }, 2400);
-      setTimeout(() => { if (!_skLoaded)      fetchSalahkartUsers();    }, 3000);
-      setTimeout(() => { if (!_skpLoaded)      fetchSkProUsers();       }, 3600);
-      setTimeout(() => { if (!_expiringLoaded) fetchExpiringSoon();     }, 4200);
-      setTimeout(() => { if (!_revLoaded)      fetchRevenue();          }, 4800);
-      setTimeout(() => { if (!_actLoaded)      fetchActivation();       }, 5400);
+      _warmOverviewTabs();
     } catch(e) {
       // A refresh failed (usually a heavy query hitting ClickHouse's ~60s limit).
       // If we're already showing a snapshot, KEEP it — never wipe good data to a
