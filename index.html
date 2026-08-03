@@ -9521,7 +9521,7 @@
           GROUP BY p ORDER BY p`),
         runHogQL(`
           SELECT toString(${bPay}) AS p,
-            sumIf(amount, currency='INR') + sumIf(amount, currency='USD')*${USD_TO_INR} AS rev,
+            ifNull(sumIf(amount, currency='INR'),0) + ifNull(sumIf(amount, currency='USD'),0)*${USD_TO_INR} AS rev,
             count() AS pays
           FROM postgres.payments
           WHERE status='completed' AND created_at > now() - INTERVAL ${o.interval}
@@ -9585,7 +9585,7 @@
           GROUP BY d ORDER BY d`),
         runHogQL(`
           SELECT toString(toDate(toTimeZone(created_at,'Asia/Kolkata'))) AS d,
-            sumIf(amount, currency='INR') + sumIf(amount, currency='USD')*${USD_TO_INR} AS rev,
+            ifNull(sumIf(amount, currency='INR'),0) + ifNull(sumIf(amount, currency='USD'),0)*${USD_TO_INR} AS rev,
             count() AS pays
           FROM postgres.payments
           WHERE status='completed' AND created_at > now() - INTERVAL 31 DAY
