@@ -3839,23 +3839,20 @@
         } catch (e) {
           lastErr = e;
           const msg = e.message || '';
-          // Retry two classes of transient failure:
-          //  1. slow-query timeouts ("max execution time", 502/503/504)
-          //  2. PostHog's concurrency/rate limit — HTTP 429, detail
-          //     "Too many queries are running right now — please try again in a
-          //     moment." This trips most often on a narrow range (today/yesterday)
-          //     where each query returns instantly, so the gated slots recycle
-          //     fast enough to burst PostHog's per-project limiter. PostHog tells
-          //     us to retry, so we do — instead of blanking the whole overview.
-          const transient = /max execution time|timed out|timeout|too many|concurren|rate limit|\b429\b|\b50[234]\b/i.test(msg);
-          if (attempt < 3 && transient) {
-            // Concurrency (429) clears in well under a second once an in-flight
-            // query finishes — retry quickly (~0.5s) so a breach barely costs
-            // time. Genuine query timeouts need longer to let ClickHouse recover.
-            // Jitter so parallel retries don't re-collide on the same tick.
-            const isConc = /too many|concurren|429/i.test(msg);
-            const base = isConc ? 500 : 1500;
-            await new Promise(r => setTimeout(r, base * (attempt + 1) + Math.floor(Math.random() * (isConc ? 250 : 500))));
+          // Retry ONLY genuinely transient failures:
+          //  • 429 concurrency ("Too many queries are running right now…") — clears
+          //    sub-second once an in-flight query finishes, so retry quickly.
+          //  • gateway blips (502/503/504).
+          // Do NOT retry "max execution time" (a slow query hitting ClickHouse's
+          // ~60s ceiling). That is DETERMINISTIC — the query is just too heavy, so
+          // re-running it wastes 60s AND trips PostHog's "failed 3× in a row →
+          // blocked for 2 minutes" circuit breaker. Fail fast and let the caller
+          // fall back to the cached snapshot instead of locking the query out.
+          const retriable = /too many|concurren|rate limit|\b429\b|\b50[234]\b/i.test(msg)
+                            && !/max execution time/i.test(msg);
+          if (attempt < 3 && retriable) {
+            const base = /too many|concurren|429/i.test(msg) ? 500 : 1200;
+            await new Promise(r => setTimeout(r, base * (attempt + 1) + Math.floor(Math.random() * 250)));
             continue;
           }
           throw e;
@@ -4351,9 +4348,14 @@
 
   // ── Overview / Analytics (default landing tab) ────────────────────
   let _ovData = null;
+  let _ovDataTs = null;   // wall-clock time of the data currently on screen (may be a stale snapshot)
   const OV_CACHE_BASE = 'nr_ov_cache2', OV_CACHE_TTL = 10 * 60 * 1000; // 10 min
+  const OV_FRESH_TTL = 3 * 60 * 1000; // <3 min old → skip the refetch entirely (instant, zero queries)
   function saveOvCache(d) { try { localStorage.setItem(OV_CACHE_BASE + '_' + _tabRanges['overview'], JSON.stringify({ ts: Date.now(), d })); } catch(_) {} }
   function loadOvCache() { try { const r = JSON.parse(localStorage.getItem(OV_CACHE_BASE + '_' + _tabRanges['overview'])||'null'); return r && (Date.now()-r.ts < OV_CACHE_TTL) ? r.d : null; } catch(_) { return null; } }
+  // Raw snapshot for the current range, IGNORING TTL — used to paint instantly
+  // (stale-while-revalidate) so the heavy live queries never block first paint.
+  function loadOvCacheRaw() { try { return JSON.parse(localStorage.getItem(OV_CACHE_BASE + '_' + _tabRanges['overview'])||'null'); } catch(_) { return null; } }
 
   function getRecent() { try { return JSON.parse(localStorage.getItem('nr_recent')||'[]'); } catch(_) { return []; } }
   function saveRecent(q) {
@@ -4513,14 +4515,28 @@
       <text x="60" y="73" text-anchor="middle" class="donut-center-lbl">${centerLbl}</text></svg>`;
   }
 
-  async function loadOverview() {
+  async function loadOverview(force) {
     if (!cfg('apiKey')) return;
-    // Show cached data instantly so the page isn't blank while fetching
-    const cached = loadOvCache();
-    if (cached && !_ovData) {
-      _ovData = cached;
+    // ── Stale-while-revalidate ────────────────────────────────────────
+    // Paint the last snapshot for THIS range instantly — even if it's stale —
+    // so the heavy live queries never block first paint. The overview's queries
+    // are person-level scans that can flirt with ClickHouse's ~60s ceiling; we
+    // must never let one blank the screen. Show data first, refresh behind it.
+    const _snap = loadOvCacheRaw();
+    if (_snap && _snap.d) {
+      _ovData = _snap.d;
+      _ovDataTs = _snap.ts;
       (document.getElementById('skTabBadge')||{}).textContent = _ovData.counts[1];
       renderOverview();
+      // If the snapshot is fresh, skip the refetch entirely — instant, and it
+      // spares PostHog's team-wide 120-queries/hour budget on every range flip.
+      if (!force && (Date.now() - _snap.ts) < OV_FRESH_TTL) return;
+    } else {
+      // No snapshot at all (first ever load / cleared cache): show a spinner,
+      // not a blank — the queries below can take a while on a cold ClickHouse.
+      const area = document.getElementById('overviewArea');
+      if (area && !_ovData) area.innerHTML =
+        `<div class="state-box"><div class="spinner sp-blue"></div><p>Loading overview…</p></div>`;
     }
     // MongoDB stores UTC timestamps, but "today" should follow IST (the project
     // timezone) — otherwise signups between midnight and 5:30 AM IST are missed.
@@ -4550,8 +4566,11 @@
     // Real paying customer = active Pro sub, excluding internal/test accounts.
     const extOnly = `JSONExtractString(data,'email') NOT LIKE '%@nextraise.ai' AND JSONExtractString(data,'email') NOT LIKE '%@creditdharma.in' AND lower(JSONExtractString(data,'email')) NOT LIKE '%test%'`;
     try {
-      const [counts, signups, payments, revenue, sources, growth, dailyPay, influencers, pgSubscribers] = await Promise.all([
-        runHogQL(`
+      // The counts query is the heaviest — a 400-day person-level scan with
+      // per-person argMax aggregation. Run it SOLO first so it gets ClickHouse's
+      // full execution headroom and stays under the ~60s ceiling, instead of
+      // racing the other 400-day scans and timing out under contention.
+      const counts = await runHogQL(`
           SELECT
             countIf(su >= toDate('2026-05-01')) AS new_product,
             countIf(su > toDate('2000-01-01') AND su < toDate('2026-05-01')) AS legacy,
@@ -4583,7 +4602,9 @@
               AND lower(coalesce(person.properties.email,'')) NOT LIKE '%test%'
             GROUP BY person_id
             HAVING su > toDate('2000-01-01')
-          )`),
+          )`);
+      // The remaining 8 queries are lighter — run them together (gated to 2).
+      const [signups, payments, revenue, sources, growth, dailyPay, influencers, pgSubscribers] = await Promise.all([
         runHogQL(`
           SELECT email, name, plan, created_at FROM (
             SELECT argMaxIf(toString(person.properties.email), timestamp, person.properties.email!='') AS email,
@@ -4723,6 +4744,7 @@
         }),
       };
       saveOvCache(_ovData);
+      _ovDataTs = Date.now();   // fresh live data
       // legacy count doubles as the Salahkart sidebar badge
       (document.getElementById('skTabBadge')||{}).textContent = _ovData.counts[1];
       renderOverview();
@@ -4739,7 +4761,17 @@
       setTimeout(() => { if (!_revLoaded)      fetchRevenue();          }, 4800);
       setTimeout(() => { if (!_actLoaded)      fetchActivation();       }, 5400);
     } catch(e) {
-      if (!_ovData) document.getElementById('overviewArea').innerHTML = errorBox('Could not load overview — ' + e.message);
+      // A refresh failed (usually a heavy query hitting ClickHouse's ~60s limit).
+      // If we're already showing a snapshot, KEEP it — never wipe good data to a
+      // red error. Just note that the refresh didn't land. Only show the full
+      // error when there's genuinely nothing to display.
+      if (_ovData) {
+        const up = document.getElementById('ovUpdated');
+        if (up) up.innerHTML = '<i style="background:var(--amber);box-shadow:0 0 0 3px var(--amber-soft)"></i> Showing last synced'
+          + (_ovDataTs ? ' · ' + new Date(_ovDataTs).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '');
+      } else {
+        document.getElementById('overviewArea').innerHTML = errorBox('Could not load overview — ' + e.message);
+      }
     }
   }
 
@@ -4750,8 +4782,8 @@
     if (!_ovData) document.getElementById('overviewArea').innerHTML =
       `<div class="state-box"><div class="spinner sp-blue"></div><p>Syncing latest data from MongoDB…</p></div>`;
     try { await syncMongoAndWait(); } catch(_) {}
-    _syncInfo = null; _ovData = null;
-    try { await loadOverview(); } finally { if (btn) btn.disabled = false; setBusy(false); }
+    _syncInfo = null;   // keep _ovData so a failed refresh still shows the last snapshot
+    try { await loadOverview(true); } finally { if (btn) btn.disabled = false; setBusy(false); }
   }
 
   function renderOverview() {
@@ -4970,7 +5002,8 @@
        ${convPeriodCard}
        ${lineCard}
        <div class="nb-grid2">${acqCard}${txCard}</div>`;
-    { const up=document.getElementById('ovUpdated'); if(up) up.innerHTML='<i></i> Live · updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+    { const up=document.getElementById('ovUpdated'); if(up){ const ts=_ovDataTs||Date.now(); const stale=(Date.now()-ts)>OV_FRESH_TTL;
+        up.innerHTML=(stale?'<i style="background:var(--amber);box-shadow:0 0 0 3px var(--amber-soft)"></i> Updated ':'<i></i> Live · updated ')+new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); } }
 
     // render live ApexCharts
     (window._ovCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}}); window._ovCharts=[];
