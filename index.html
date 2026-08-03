@@ -3799,10 +3799,14 @@
   // The overview fires 9 heavy person-level scans at once (plus background tab
   // warming); hitting PostHog with all of them collides on ClickHouse and one
   // crosses the ~60s max-execution limit ("Query has hit the max execution
-  // time…"), or trips PostHog's per-project concurrency limiter (HTTP 429
-  // "Too many queries are running right now…"). Capping concurrency to 3 and
-  // retrying BOTH timeouts and 429s fixes it without changing any query.
-  const _hog = { active: 0, queue: [], MAX: 3 };
+  // time…"), or trips PostHog's concurrency limiter (HTTP 429 "Too many queries
+  // are running right now…").
+  // PostHog's /query concurrency ceiling is 3 — and it's TEAM-WIDE (shared by
+  // every browser tab, the PostHog UI, and any API tool on the project). Sitting
+  // at MAX=3 means this tab alone eats the whole budget, so a second dashboard
+  // tab or a stray query instantly breaches it. Cap at 2 to leave headroom, and
+  // retry both timeouts and 429s (429s clear sub-second, so back off only briefly).
+  const _hog = { active: 0, queue: [], MAX: 2 };
   function _hogAcquire() {
     if (_hog.active < _hog.MAX) { _hog.active++; return Promise.resolve(); }
     return new Promise(res => _hog.queue.push(res)).then(() => { _hog.active++; });
@@ -3845,10 +3849,13 @@
           //     us to retry, so we do — instead of blanking the whole overview.
           const transient = /max execution time|timed out|timeout|too many|concurren|rate limit|\b429\b|\b50[234]\b/i.test(msg);
           if (attempt < 3 && transient) {
-            // Concurrency errors need in-flight queries to drain; back off a bit
-            // more and add jitter so parallel retries don't re-collide on one tick.
-            const base = /too many|concurren|429/i.test(msg) ? 1800 : 1500;
-            await new Promise(r => setTimeout(r, base * (attempt + 1) + Math.floor(Math.random() * 500)));
+            // Concurrency (429) clears in well under a second once an in-flight
+            // query finishes — retry quickly (~0.5s) so a breach barely costs
+            // time. Genuine query timeouts need longer to let ClickHouse recover.
+            // Jitter so parallel retries don't re-collide on the same tick.
+            const isConc = /too many|concurren|429/i.test(msg);
+            const base = isConc ? 500 : 1500;
+            await new Promise(r => setTimeout(r, base * (attempt + 1) + Math.floor(Math.random() * (isConc ? 250 : 500))));
             continue;
           }
           throw e;
