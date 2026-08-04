@@ -6918,7 +6918,7 @@
             AND created_at >= ${tabGdrStart('influencers')} AND created_at < ${tabGdrEnd('influencers')}
           ORDER BY created_at DESC`).catch(()=>({results:[]})),
         fetchAllPages(`
-          SELECT refcode, email, name, plan, st, ends, signup
+          SELECT refcode, email, name, plan, st, ends, first_seen
           FROM (
             SELECT person_id,
               argMaxIf(toString(person.properties.referred_by_code), timestamp, person.properties.referred_by_code IS NOT NULL) AS refcode,
@@ -6927,7 +6927,11 @@
               argMaxIf(toString(person.properties.subscription_plan), timestamp, person.properties.subscription_plan IS NOT NULL) AS plan,
               argMaxIf(toString(person.properties.subscription_status), timestamp, person.properties.subscription_status IS NOT NULL) AS st,
               argMaxIf(toString(person.properties.subscription_ends_at), timestamp, person.properties.subscription_ends_at IS NOT NULL) AS ends,
-              toString(minIf(toDate(toTimeZone(timestamp,'Asia/Kolkata')), event IN ('signup_complete','onboarding_start'))) AS signup
+              -- first_seen = person's earliest event date (always present), a reliable
+              -- proxy for "referred date". The old signup field (min signup_complete/
+              -- onboarding_start among code-tagged events) was empty for most referred
+              -- users, so range-filtering on it dropped nearly everyone.
+              toString(min(toDate(toTimeZone(timestamp,'Asia/Kolkata')))) AS first_seen
             FROM events
             WHERE timestamp >= '2026-04-01'
               AND person.properties.referred_by_code IS NOT NULL
@@ -6938,8 +6942,8 @@
             GROUP BY person_id
           )
           WHERE refcode != '' AND email != ''
-            AND signup >= '${tabGdrStartDate('influencers')}' AND signup < '${tabGdrEndDate('influencers')}'
-          ORDER BY signup DESC`).catch(()=>[]),
+            AND first_seen >= '${tabGdrStartDate('influencers')}' AND first_seen < '${tabGdrEndDate('influencers')}'
+          ORDER BY first_seen DESC`).catch(()=>[]),
       ]);
 
       // 2a. resolve postgres referrer UUIDs → {code, name, email}
