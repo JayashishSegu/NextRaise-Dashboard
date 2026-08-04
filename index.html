@@ -8101,10 +8101,15 @@
           AND timestamp >= ${tabGdrStart('revenue')} AND timestamp < ${tabGdrEnd('revenue')}
           GROUP BY channel ORDER BY (coalesce(inr,0) + coalesce(usd,0)*${USD_TO_INR}) DESC LIMIT 10`).catch(()=>({results:[]})),
 
-        // Resume uploaders in range (proxy for "used product")
+        // "Used product" = SIGNED-UP users who also uploaded a résumé (a subset
+        // of Signed Up, so the funnel stays monotonic). Counting every résumé
+        // uploader pulls in people who used the tool before/without signing up
+        // (~21.7k), which made "Used Product" exceed "Signed Up" and broke the funnel.
         runHogQL(`SELECT count(DISTINCT person_id) AS n FROM events
           WHERE event='resume_upload_success' AND ${EW}
-          AND timestamp >= ${tabGdrStart('revenue')} AND timestamp < ${tabGdrEnd('revenue')}`).catch(()=>({results:[[0]]})),
+          AND timestamp >= ${tabGdrStart('revenue')} AND timestamp < ${tabGdrEnd('revenue')}
+          AND person_id IN (SELECT DISTINCT person_id FROM events WHERE event='signup_complete'
+            AND timestamp >= ${tabGdrStart('revenue')} AND timestamp < ${tabGdrEnd('revenue')})`).catch(()=>({results:[[0]]})),
       ]);
 
       _revData = {
@@ -8149,7 +8154,10 @@
     const prevRows = rows.filter(r=>r[0] < curMonth);
     const lastRow = prevRows.length ? prevRows[prevRows.length-1] : null;
     const lastRev = lastRow ? monthRev(lastRow) : 0;
-    const momPct = lastRev ? ((curRev - lastRev)/lastRev*100) : null;
+    // Compare the PROJECTED full-month run rate vs last month — not partial
+    // month-to-date vs a full prior month (which always reads as a huge drop
+    // early in the month, e.g. "-93.7%" on day 4).
+    const momPct = lastRev ? ((runRate - lastRev)/lastRev*100) : null;
     // Total reconciled to the Overview figure: Pro revenue since the 1 May relaunch.
     const totalRev = rows.filter(r=>r[0] >= '2026-05').reduce((a,r)=>a+monthRev(r),0);
     const payingUsers = _ovData ? (+_ovData.counts[6]||0) : 0;
@@ -8243,15 +8251,15 @@
     const paidPro    = _ovData ? (+_ovData.counts[6]||0) : 0;
     const fpct = n => totalUsers ? Math.min(100, Math.round(n/totalUsers*100)) : 0;
     const fSteps = [
-      { label:'Signed Up',     value:totalUsers,   color:'var(--blue)',   pct:100 },
-      { label:'Used Product',  value:resumeCount,  color:'var(--teal)',   pct:fpct(resumeCount) },
-      { label:'Paid (Pro)',    value:paidPro,      color:'var(--violet)', pct:fpct(paidPro) },
+      { label:'Signed Up',     value:totalUsers,   color:'var(--blue)',   pct:100,               hint:'Completed signup since 1 May 2026' },
+      { label:'Used Product',  value:resumeCount,  color:'var(--teal)',   pct:fpct(resumeCount), hint:'Of those signups, how many uploaded a résumé (used the product)' },
+      { label:'Paid (Pro)',    value:paidPro,      color:'var(--violet)', pct:fpct(paidPro),     hint:'Of those signups, how many made a successful Pro payment' },
     ];
     const funnelCard = `<div class="ov-card"><div class="ov-card-head">
         <span class="ov-card-title"><svg class="ic-sm"><use href="#i-trending"/></svg> Conversion Funnel</span>
         <span class="ov-card-note">since 1 May 2026</span></div>
         <div class="funnel-steps">${fSteps.map((s,i)=>`
-          <div class="funnel-step">
+          <div class="funnel-step" title="${h(s.hint||'')}">
             <span class="fsl">${h(s.label)}</span>
             <span class="fsbar"><span class="fsbar-fill" style="width:${s.pct}%;background:${s.color}"></span></span>
             <span class="fsn">${s.value.toLocaleString('en-IN')}</span>
@@ -8620,7 +8628,7 @@
         <span class="ov-card-title"><svg class="ic-sm"><use href="#i-trending"/></svg> Activation Funnel</span>
         <span class="ov-card-note">since 1 May 2026 · % of signups</span></div>
         <div class="funnel-steps">${fSteps.map((s,i)=>`
-          <div class="funnel-step">
+          <div class="funnel-step" title="${h(s.hint||'')}">
             <span class="fsl">${h(s.label)}</span>
             <span class="fsbar"><span class="fsbar-fill" style="width:${s.pct}%;background:${s.color}"></span></span>
             <span class="fsn">${s.value.toLocaleString('en-IN')}</span>
