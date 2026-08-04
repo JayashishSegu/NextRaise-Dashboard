@@ -6855,7 +6855,17 @@
   // to show the users they referred, with how many converted to Pro.
   // ══════════════════════════════════════════════════════════════════
   let _inflRows = [];                 // [{refId,name,email,code,referrals,pro,convRate,lastRef,referred:[...]}]
+  let _inflCohortNames = {};          // { REFERRAL_CODE → influencer/cohort name (IG handle) } from /api/influencer-names
   let _inflFilters = { text:'', tier:'all', code:'all' };
+  // Influencer handles live only in PostHog cohort names ("MoonXShruthi" =
+  // referred_by_code YUBC4W). Pull that map so we can label referrers by handle
+  // instead of their signup account name. Best-effort — {} on any failure.
+  async function fetchInflCohortNames() {
+    try { const r = await fetch('/api/influencer-names'); if (!r.ok) return {}; const j = await r.json(); return (j && j.map) || {}; }
+    catch(_) { return {}; }
+  }
+  const inflHandle = (refId, code) =>
+    _inflCohortNames[String(refId||'').toUpperCase()] || _inflCohortNames[String(code||'').toUpperCase()] || '';
   let _inflSort    = { col:'referrals', dir:'desc' };
   let _inflOpen    = new Set();        // refIds whose referral list is expanded
 
@@ -6875,6 +6885,9 @@
     }
 
     try {
+      // Influencer handle map (referral code → cohort / IG-handle name) — fetch
+      // in parallel with the referral queries; applied to row names below.
+      const _cohortNamesP = fetchInflCohortNames();
       // 1. Referred users — HYBRID:
       //    a) postgres referred_by_id chains (source of truth)
       //    b) PostHog person-prop referred_by_code (live; prop only instrumented recently)
@@ -6917,6 +6930,7 @@
             GROUP BY person_id
           )
           WHERE refcode != '' AND email != ''
+            AND signup >= '${tabGdrStartDate('influencers')}' AND signup < '${tabGdrEndDate('influencers')}'
           ORDER BY signup DESC`).catch(()=>[]),
       ]);
 
@@ -7029,9 +7043,11 @@
       for (const list of Object.values(referredByRef))
         for (const u of list) { const rv = revByUser[u.userId]; u.revInr = rv?rv.inr:0; u.revUsd = rv?rv.usd:0; u.paidPlan = rv?rv.plan||'':''; u.payCount = rv?rv.cnt:0; u.inrParts = rv?rv.inrParts:''; u.usdParts = rv?rv.usdParts:''; }
 
+      _inflCohortNames = await _cohortNamesP;
       _inflRows = refIds.map(refId => {
         const referred = referredByRef[refId];
         const info = refInfo[refId] || {};
+        const handle = inflHandle(refId, info.code);   // IG-handle name from the cohort, if any
         const pro = referred.filter(u => u.plan.includes('pro')).length;
         const referrals = referred.length;
         const revenue    = referred.reduce((s,u) => s + (u.revInr||0), 0);  // INR (primary, sortable)
@@ -7042,7 +7058,8 @@
         referred.sort((a,b) => (b.created||'').localeCompare(a.created||''));
         return {
           refId,
-          name:  info.name || info.email || `User ${refId.slice(-6)}`,
+          name:  handle || info.name || info.email || `User ${refId.slice(-6)}`,
+          account: info.name || '',   // signup-account name (kept for reference)
           email: info.email || '',
           code:  info.code || '',
           referrals, pro, revenue, revenueUsd,
