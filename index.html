@@ -3718,6 +3718,10 @@
           [['powerCopyAllBtn','inline-flex'],['powerExportCsvBtn','inline-flex']])) fetchPowerUsers();
     }
     if (name === 'influencers' && !_inflLoaded) {
+      // Load the code→handle map so cohort names show even on the cached path;
+      // re-render once it arrives if the list is already up.
+      if (!Object.keys(_inflCohortNames).length)
+        fetchInflCohortNames().then(m => { _inflCohortNames = m; if (_inflLoaded) inflApply(); });
       if (!tcRestore('infl2', r=>{_inflRows=r;_inflLoaded=true;}, 'inflTabBadge', updateInflStats, inflApply,
           [['inflFilter','block'],['inflSortWrap','flex'],['inflStatsBar','flex'],['inflFilterBar','flex']],
           null, [['inflExportCsvBtn','inline-flex']])) fetchInfluencers();
@@ -6866,6 +6870,10 @@
   }
   const inflHandle = (refId, code) =>
     _inflCohortNames[String(refId||'').toUpperCase()] || _inflCohortNames[String(code||'').toUpperCase()] || '';
+  // Effective display name — applied at render/search time (NOT baked into the
+  // cached row), so cohort handles show even for rows restored from the local
+  // cache that were built before the map loaded.
+  const inflDisplayName = r => inflHandle(r.refId, r.code) || r.name || r.email || '';
   let _inflSort    = { col:'referrals', dir:'desc' };
   let _inflOpen    = new Set();        // refIds whose referral list is expanded
 
@@ -7124,7 +7132,7 @@
       if (_inflFilters.tier==='conv' && r.pro <= 0) return false;
       if (_inflFilters.tier==='10'   && r.referrals < 10) return false;
       if (_inflFilters.code==='has'  && !r.code) return false;
-      if (text && !(r.name.toLowerCase().includes(text)||r.email.toLowerCase().includes(text)||r.code.toLowerCase().includes(text))) return false;
+      if (text && !(inflDisplayName(r).toLowerCase().includes(text)||(r.account||'').toLowerCase().includes(text)||r.email.toLowerCase().includes(text)||r.code.toLowerCase().includes(text))) return false;
       return true;
     });
     rows = inflSortRows(rows, _inflSort);
@@ -7244,9 +7252,9 @@
       return `<div class="infl-card ${open?'open':''}">
         <div class="infl-card-head" onclick="toggleInfl('${esc(r.refId)}')">
           ${rankCell}
-          <div class="row-avatar av-rose">${initials(r.name)}</div>
+          <div class="row-avatar av-rose">${initials(inflDisplayName(r))}</div>
           <div class="infl-id">
-            <div class="name-text">${h(r.name)} ${codeBadge}</div>
+            <div class="name-text">${h(inflDisplayName(r))} ${codeBadge}</div>
             <div class="email-text">${h(r.email)||'—'}</div>
             ${r.firstRef ? `<div style="font-size:10.5px;color:var(--text-3);margin-top:2px;">
               <span style="font-weight:700;letter-spacing:0.04em;text-transform:uppercase;">Video live</span>
@@ -7277,7 +7285,7 @@
     const lines = [];
     for (const inf of _inflRows) {
       for (const u of inf.referred) {
-        lines.push([inf.name, inf.email, inf.code, u.name, u.email, u.plan,
+        lines.push([inflDisplayName(inf), inf.email, inf.code, u.name, u.email, u.plan,
           statusLabel(u.effStatus), u.plan.includes('pro')?'Yes':'No',
           Math.round(u.revInr||0), Math.round(u.revUsd||0), u.created?u.created.slice(0,10):'']
           .map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
