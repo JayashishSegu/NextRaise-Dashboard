@@ -4544,18 +4544,26 @@
   // API isn't configured yet / errored — caller then falls back to direct queries.
   async function fetchOverviewFromAPI(range, force) {
     range = range || _tabRanges['overview'];
-    let url = '/api/overview?range=' + encodeURIComponent(range);
+    let base = '/api/overview?range=' + encodeURIComponent(range);
     if (range === 'custom' && _tabCustom['overview'])
-      url += '&from=' + _tabCustom['overview'].from + '&to=' + _tabCustom['overview'].to;
-    // On an explicit Refresh, bypass the edge cache and recompute live —
-    // otherwise Refresh just re-shows the same up-to-5-min-stale cached copy,
-    // which reads as "the numbers aren't syncing".
-    if (force) url += '&fresh=' + Date.now();
-    const r = await fetch(url, force ? { cache: 'no-store' } : undefined);
-    if (!r.ok) return null;
-    const j = await r.json();
-    if (!j || !j.data || !Array.isArray(j.data.counts)) return null;
-    return { data: j.data, ts: j.ts || Date.now() };
+      base += '&from=' + _tabCustom['overview'].from + '&to=' + _tabCustom['overview'].to;
+    const hit = async (bust) => {
+      // bust=true → cache-buster + no-store: bypass the edge cache and recompute
+      // live (used by Refresh), otherwise Refresh just re-shows the up-to-5-min
+      // stale cached copy and the numbers look like they aren't syncing.
+      const r = await fetch(base + (bust ? '&fresh=' + Date.now() : ''), bust ? { cache: 'no-store' } : undefined);
+      if (!r.ok) return null;
+      const j = await r.json();
+      if (!j || !j.data || !Array.isArray(j.data.counts)) return null;
+      return { data: j.data, ts: j.ts || Date.now() };
+    };
+    if (force) {
+      // The live recompute is heavy and can occasionally hit ClickHouse's limit;
+      // fall back to the latest cached copy so Refresh still updates to something
+      // recent instead of dropping to the slow client-side query path.
+      return (await hit(true)) || (await hit(false));
+    }
+    return hit(false);
   }
 
   async function loadOverview(force) {
