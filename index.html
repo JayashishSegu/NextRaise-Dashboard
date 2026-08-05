@@ -5003,8 +5003,17 @@
         <div class="nb-kpi-h"><span class="nb-kpi-l">${label}</span>${delta||''}</div>
         <div class="nb-kpi-v">${value}</div>
         <div class="nb-kpi-sub">${sub}</div>${tgt?'<span class="nb-clk-arrow">→</span>':''}</div>`;
+    // Delta must match the SELECTED range, not always week-over-week. We only
+    // have a clean prior-period count for Today (vs yesterday) and 7d (vs the
+    // previous 7d); for other ranges show the range label instead of a delta
+    // that doesn't correspond to the number above it.
+    const _nsRange = tabGdrKey('overview');
+    const nsDelta = _nsRange==='today' ? sDelta(newToday, newYesterday)
+                  : _nsRange==='7d'    ? sDelta(newWeek, newWeekPrev)
+                  : '';
+    const nsSub = nsDelta ? 'vs previous period' : tabGdrPreset('overview').label;
     const kpis2=[
-      kpi('New signups', rangeSignups.toLocaleString('en-IN'), sDelta(newWeek,newWeekPrev), 'vs previous period', 'acquire', 'Unique users who completed signup in this range. Click for acquisition channels.'),
+      kpi('New signups', rangeSignups.toLocaleString('en-IN'), nsDelta, nsSub, 'acquire', 'Unique users who completed signup in this range. Click for acquisition channels.'),
       kpi('Gross revenue', inrTotal(revInr,revUsd), '', revUsd>0?`incl. $${Math.round(revUsd).toLocaleString('en-US')} at ₹${USD_TO_INR}/$`:'completed Pro payments', 'revenue', 'Completed Pro payments in this range, all shown in INR. Click for revenue analytics.'),
       kpi('Active Pro subscribers', activePro.toLocaleString('en-IN'), '', `${convPct.toFixed(2)}% of ${usersShort} users`, 'pro', 'Users on an active Pro subscription right now. Click for the list.'),
       kpi('Total users', newProduct.toLocaleString('en-IN'), '', 'since 1 May 2026', 'search', 'All signed-up users since the relaunch. Click to search contacts.'),
@@ -9066,7 +9075,13 @@
     if(!cfg('apiKey')){ area.innerHTML=stateBox(null,'Add your PostHog key in Settings to load data.','sp-blue'); return; }
     if(!_acqData) area.innerHTML=stateBox(null,'Loading channels…','sp-blue');
     try{
-      const start=tabGdrStartDate('acquire'), end=tabGdrEndDate('acquire');
+      const _gdr=tabGdrPreset('acquire');
+      const start=_gdr.startDate, end=_gdr.endDate;
+      // Scan only the window the selected range needs (e.g. ~3 days for Today)
+      // instead of a fixed 400 days — otherwise every load does a full-year
+      // person scan and hits ClickHouse's ~60s limit. person.properties.* are
+      // denormalised onto every event, so a narrower scan keeps attribution intact.
+      const scanDays=_gdr.scanDays;
       const res=await runHogQL(`
         SELECT source, medium, campaign, count() AS c,
                countIf(plan LIKE '%pro%' AND status='active') AS conv
@@ -9079,7 +9094,7 @@
             argMaxIf(toString(person.properties.subscription_status), timestamp, person.properties.subscription_status!='') AS status,
             minIf(toDate(toTimeZone(timestamp,'Asia/Kolkata')), event IN ('signup_complete','onboarding_start')) AS su
           FROM events
-          WHERE timestamp > now() - INTERVAL 400 DAY
+          WHERE timestamp > now() - INTERVAL ${scanDays} DAY
             AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
             AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
             AND lower(coalesce(person.properties.email,'')) NOT LIKE '%test%'
