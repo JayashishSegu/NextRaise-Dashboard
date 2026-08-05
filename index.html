@@ -4542,12 +4542,16 @@
   // Fast path: read the server-precomputed, edge-cached overview (PostHog key
   // lives on the server, not here). Returns the _ovData object, or null if the
   // API isn't configured yet / errored — caller then falls back to direct queries.
-  async function fetchOverviewFromAPI(range) {
+  async function fetchOverviewFromAPI(range, force) {
     range = range || _tabRanges['overview'];
     let url = '/api/overview?range=' + encodeURIComponent(range);
     if (range === 'custom' && _tabCustom['overview'])
       url += '&from=' + _tabCustom['overview'].from + '&to=' + _tabCustom['overview'].to;
-    const r = await fetch(url);
+    // On an explicit Refresh, bypass the edge cache and recompute live —
+    // otherwise Refresh just re-shows the same up-to-5-min-stale cached copy,
+    // which reads as "the numbers aren't syncing".
+    if (force) url += '&fresh=' + Date.now();
+    const r = await fetch(url, force ? { cache: 'no-store' } : undefined);
     if (!r.ok) return null;
     const j = await r.json();
     if (!j || !j.data || !Array.isArray(j.data.counts)) return null;
@@ -4588,7 +4592,7 @@
     // risk here). If it isn't configured yet or errors, fall through to the
     // direct-query path below — no regression.
     try {
-      const api = await fetchOverviewFromAPI(reqRange);
+      const api = await fetchOverviewFromAPI(reqRange, force);
       if (api && stillCurrent()) {
         _ovData = api.data;
         _ovDataTs = api.ts;
@@ -4596,6 +4600,19 @@
         (document.getElementById('skTabBadge')||{}).textContent = _ovData.counts[1];
         renderOverview();
         _warmOverviewTabs();
+        // The edge copy can be stale (the cron only warms it intermittently).
+        // If it's older than ~6 min, quietly recompute live in the background so
+        // passive loads converge to current numbers without a manual Refresh.
+        if (!force && (Date.now() - api.ts) > 6*60000) {
+          fetchOverviewFromAPI(reqRange, true).then(fresh => {
+            if (fresh && _tabRanges['overview'] === reqRange) {
+              _ovData = fresh.data; _ovDataTs = fresh.ts;
+              saveOvCache(fresh.data, reqRange);
+              (document.getElementById('skTabBadge')||{}).textContent = _ovData.counts[1];
+              renderOverview();
+            }
+          }).catch(()=>{});
+        }
         return;
       }
       if (api) return; // range changed mid-fetch — a newer load owns the screen
