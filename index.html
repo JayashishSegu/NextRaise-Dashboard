@@ -8143,15 +8143,15 @@
           AND timestamp >= ${tabGdrStart('revenue')} AND timestamp < ${tabGdrEnd('revenue')}
           GROUP BY channel ORDER BY (coalesce(inr,0) + coalesce(usd,0)*${USD_TO_INR}) DESC LIMIT 10`).catch(()=>({results:[]})),
 
-        // "Used product" = SIGNED-UP users who also uploaded a résumé (a subset
-        // of Signed Up, so the funnel stays monotonic). Counting every résumé
-        // uploader pulls in people who used the tool before/without signing up
-        // (~21.7k), which made "Used Product" exceed "Signed Up" and broke the funnel.
+        // "Used product" = SIGNED-UP users who also uploaded a résumé. ALL-TIME
+        // (since 1 May) to match the funnel's other steps — Signed Up and Paid
+        // come from the all-time overview counts, so this must be all-time too,
+        // otherwise the funnel mixes scopes (e.g. Used Product '2%' on a day filter).
         runHogQL(`SELECT count(DISTINCT person_id) AS n FROM events
           WHERE event='resume_upload_success' AND ${EW}
-          AND timestamp >= ${tabGdrStart('revenue')} AND timestamp < ${tabGdrEnd('revenue')}
+          AND timestamp >= toDateTime('2026-05-01 00:00:00')
           AND person_id IN (SELECT DISTINCT person_id FROM events WHERE event='signup_complete'
-            AND timestamp >= ${tabGdrStart('revenue')} AND timestamp < ${tabGdrEnd('revenue')})`).catch(()=>({results:[[0]]})),
+            AND timestamp >= toDateTime('2026-05-01 00:00:00'))`).catch(()=>({results:[[0]]})),
       ]);
 
       _revData = {
@@ -8215,17 +8215,17 @@
       `<span style="color:${momPct>=0?'var(--green)':'var(--red)'}">${momPct>=0?'▲':'▼'} ${Math.abs(momPct).toFixed(1)}% vs last month</span>`;
 
     const kpis = `<div class="rev-metric-row">
-      <div class="rev-kpi rk-green">
+      <div class="rev-kpi rk-green" title="This month's revenue so far, projected to a full month: current-month revenue ÷ days elapsed × days in the month. An early-month estimate, not actual.">
         <div class="rev-kpi-num">${inrToL(runRate)}</div>
         <div class="rev-kpi-label">Est. Monthly Run Rate</div>
-        <div class="rev-kpi-sub">${istDay}/${daysInMonth} days recorded${momChip?' · '+momChip:''}</div>
+        <div class="rev-kpi-sub">Projected from ${istDay}/${daysInMonth} days${momChip?' · '+momChip:''}</div>
       </div>
-      <div class="rev-kpi rk-blue">
+      <div class="rev-kpi rk-blue" title="Annualised run rate — this month's projected run rate × 12. Gross, before any churn.">
         <div class="rev-kpi-num">${inrToL(arr)}</div>
         <div class="rev-kpi-label">ARR Estimate</div>
         <div class="rev-kpi-sub">Run rate × 12 (gross, pre-churn)</div>
       </div>
-      <div class="rev-kpi rk-violet">
+      <div class="rev-kpi rk-violet" title="Total completed Pro revenue since the 1 May 2026 relaunch (INR + USD converted). Not affected by the date filter.">
         <div class="rev-kpi-num">${inrToL(totalRev)}</div>
         <div class="rev-kpi-label">Total Revenue</div>
         <div class="rev-kpi-sub">Since 1 May 2026 · Pro</div>
@@ -8240,7 +8240,7 @@
         <div class="rev-kpi-label">30-Day Churn</div>
         <div class="rev-kpi-sub">${lapsed30} lapsed in last 30d</div>
       </div>
-      <div class="rev-kpi rk-amber">
+      <div class="rev-kpi rk-amber" title="Distinct users with at least one successful Pro payment since 1 May 2026. Higher than Active Pro because some have since lapsed or were one-off.">
         <div class="rev-kpi-num">${payingUsers.toLocaleString('en-IN')}</div>
         <div class="rev-kpi-label">Paying Users</div>
         <div class="rev-kpi-sub">Successful payment since 1 May</div>
@@ -8308,6 +8308,10 @@
             <span class="fsp">${i===0?'100%':s.pct+'%'}</span>
           </div>`).join('')}</div></div>`;
 
+    // Label for the date-filtered breakdown cards below — reflects the picked
+    // range so ₹ figures don't read as "since 1 May" when a day/week is selected.
+    const rlbl = tabGdrKey('revenue')==='all' ? 'since 1 May 2026' : tabGdrPreset('revenue').label;
+
     // Revenue by acquisition channel — [channel, payments, payers, inr, usd]
     const crItems = (_revData.chanRev||[]).map(r=>{
       const ch = r[0]||'(unknown)';
@@ -8323,7 +8327,7 @@
         </div>`).join('');
     const chanRevCard = `<div class="ov-card"><div class="ov-card-head">
         <span class="ov-card-title"><svg class="ic-sm"><use href="#i-megaphone"/></svg> Revenue by Channel</span>
-        <span class="ov-card-note">Pro · since 1 May</span></div>
+        <span class="ov-card-note">Pro · ${rlbl}</span></div>
         ${crItems.length ? `<div class="bars">${crBars}</div>` : `<div class="panel-empty">No channel-attributed revenue yet</div>`}</div>`;
 
     // Revenue by plan — [plan, payments, payers, inr, usd]
@@ -8332,7 +8336,7 @@
     const planLbls = planItems.map(r=>(r[0]||'').replace('resume-builder-','').replace('-',' mo ').replace('1w','1 wk'));
     const planCard = `<div class="ov-card"><div class="ov-card-head">
         <span class="ov-card-title"><svg class="ic-sm"><use href="#i-star"/></svg> Revenue by plan</span>
-        <span class="ov-card-note">since 1 May 2026</span></div>
+        <span class="ov-card-note">${rlbl}</span></div>
         ${planData.some(v=>v>0) ? `<div id="revPlanDonut"></div>` : `<div class="panel-empty">No plan data yet</div>`}</div>`;
 
     // Discount codes — [code, uses, payers, inr]
@@ -8343,7 +8347,7 @@
       <td style="text-align:right;color:var(--green);font-weight:600">${(+r[3]||0)>0?inrToL(+r[3]):'—'}</td></tr>`).join('');
     const discountCard = `<div class="ov-card"><div class="ov-card-head">
         <span class="ov-card-title">🏷️ Discount Codes</span>
-        <span class="ov-card-note">since 1 May 2026</span></div>
+        <span class="ov-card-note">${rlbl}</span></div>
         ${dcRows ? `<div class="table-scroll"><table><thead><tr>
           <th>Code</th><th style="text-align:right">Uses</th><th style="text-align:right">Payers</th><th style="text-align:right">Revenue</th>
         </tr></thead><tbody>${dcRows}</tbody></table></div>`
