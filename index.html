@@ -2090,6 +2090,12 @@
 
     /* Warm focus ring */
     html:not([data-theme="dark"]) :is(a,button,.tab,input,.nb-kpi,.cmdk-i):focus-visible{ outline:2px solid var(--blue) !important; }
+
+    /* AI / Key-opportunities panel → warm tint (was cool blue/violet) */
+    html:not([data-theme="dark"]) .nb-ai{ background:linear-gradient(135deg,rgba(184,159,113,.17),rgba(206,192,168,.05)) !important; border:1px solid var(--glass-edge) !important; box-shadow:var(--shadow-md) !important; }
+    html:not([data-theme="dark"]) .nb-ai::before{ background:radial-gradient(circle,rgba(192,166,120,.34),transparent 70%) !important; }
+    html:not([data-theme="dark"]) :is(.nb-ai .nb-ai-badge,.nb-ai-k.act){ color:var(--blue-text) !important; }
+    html:not([data-theme="dark"]) .nb-ai-big b{ color:var(--blue-text) !important; }
   </style>
   <script>
     // Apply the saved (or system) theme before first paint to avoid a flash.
