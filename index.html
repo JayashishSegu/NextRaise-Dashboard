@@ -8088,35 +8088,39 @@
       `<div class="state-box"><div class="spinner sp-blue"></div><p>Loading revenue data…</p></div>`;
     try {
       const EW = `person.properties.email NOT ILIKE '%@nextraise.ai' AND person.properties.email NOT ILIKE '%@creditdharma.in' AND person.properties.email NOT ILIKE '%test%' AND person_id NOT IN COHORT 278743`;
+      // Revenue AMOUNTS come from postgres.payments (source of truth). The
+      // payment_completed EVENTS undercount badly (many have missing/zero
+      // amounts) — they were showing ~half the real revenue (₹1.09L vs ₹2.47L).
+      const PW = `user_email NOT LIKE '%@nextraise.ai' AND user_email NOT LIKE '%@creditdharma.in' AND lower(user_email) NOT LIKE '%test%'`;
       const [monthly, topPayers, planBreakdown, discountCodes, chanRev, resumeCount] = await Promise.all([
-        // Monthly revenue from payment_completed events
-        runHogQL(`SELECT substring(toString(toStartOfMonth(toTimeZone(timestamp,'Asia/Kolkata'))),1,7) AS month,
+        // Monthly revenue — postgres.payments (completed)
+        runHogQL(`SELECT substring(toString(toStartOfMonth(toTimeZone(created_at,'Asia/Kolkata'))),1,7) AS month,
           count() AS cnt,
-          sumIf(toFloat64OrNull(properties.amount), properties.currency='INR') AS inr,
-          sumIf(toFloat64OrNull(properties.amount), properties.currency='USD') AS usd,
-          count(DISTINCT person_id) AS payers
-          FROM events WHERE event='payment_completed' AND ${EW}
-          AND timestamp >= '2026-01-01'
+          sumIf(amount, currency='INR') AS inr,
+          sumIf(amount, currency='USD') AS usd,
+          count(DISTINCT user_email) AS payers
+          FROM postgres.payments WHERE status='completed' AND ${PW}
+          AND created_at >= toDateTime('2026-01-01 00:00:00')
           GROUP BY month ORDER BY month LIMIT 24`).catch(()=>({results:[]})),
 
-        // Top payers: [email, payments, inr, usd, plan]
-        runHogQL(`SELECT person.properties.email AS email,
+        // Top payers: [email, payments, inr, usd, plan] — postgres.payments
+        runHogQL(`SELECT user_email AS email,
           count() AS payments,
-          sumIf(toFloat64OrNull(properties.amount), properties.currency='INR') AS inr,
-          sumIf(toFloat64OrNull(properties.amount), properties.currency='USD') AS usd,
-          argMax(properties.plan, timestamp) AS plan
-          FROM events WHERE event='payment_completed' AND ${EW}
-          AND person.properties.email != '' AND person.properties.email IS NOT NULL
-          AND timestamp >= ${tabGdrStart('revenue')} AND timestamp < ${tabGdrEnd('revenue')}
+          sumIf(amount, currency='INR') AS inr,
+          sumIf(amount, currency='USD') AS usd,
+          argMax(plan, created_at) AS plan
+          FROM postgres.payments WHERE status='completed' AND ${PW}
+          AND user_email != '' AND user_email IS NOT NULL
+          AND created_at >= ${tabGdrStart('revenue')} AND created_at < ${tabGdrEnd('revenue')}
           GROUP BY email ORDER BY (coalesce(inr,0) + coalesce(usd,0)*${USD_TO_INR}) DESC LIMIT 20`).catch(()=>({results:[]})),
 
-        // Revenue by plan: [plan, payments, payers, inr, usd]
-        runHogQL(`SELECT properties.plan AS plan,
-          count() AS payments, count(DISTINCT person_id) AS payers,
-          sumIf(toFloat64OrNull(properties.amount), properties.currency='INR') AS inr,
-          sumIf(toFloat64OrNull(properties.amount), properties.currency='USD') AS usd
-          FROM events WHERE event='payment_completed' AND ${EW}
-          AND timestamp >= ${tabGdrStart('revenue')} AND timestamp < ${tabGdrEnd('revenue')}
+        // Revenue by plan: [plan, payments, payers, inr, usd] — postgres.payments
+        runHogQL(`SELECT plan,
+          count() AS payments, count(DISTINCT user_email) AS payers,
+          sumIf(amount, currency='INR') AS inr,
+          sumIf(amount, currency='USD') AS usd
+          FROM postgres.payments WHERE status='completed' AND ${PW}
+          AND created_at >= ${tabGdrStart('revenue')} AND created_at < ${tabGdrEnd('revenue')}
           GROUP BY plan ORDER BY (coalesce(inr,0) + coalesce(usd,0)*${USD_TO_INR}) DESC LIMIT 10`).catch(()=>({results:[]})),
 
         // Discount codes: [code, uses, payers, inr]
