@@ -4882,6 +4882,14 @@
     const revInr = _ovData.revInr, revUsd = _ovData.revUsd;
     const totalRevInr = Math.round(revInr + revUsd * USD_TO_INR);
     const convPct = newProduct ? (activePro/newProduct*100) : 0;
+    // Free→Pro conversion for the SELECTED range (matches the by-period card and
+    // the current filter). The gauge + Key opportunities use THIS so "Today"
+    // shows today's cohort conversion, not the all-time figure. Falls back to
+    // all-time for custom ranges with no matching preset.
+    const _gRC = (_ovData.convByPeriod||[]).find(p => p.key === tabGdrKey('overview'));
+    const convGauge   = _gRC ? _gRC.rate    : convPct;
+    const gaugeSignups= _gRC ? _gRC.signups : newProduct;
+    const gaugePro    = _gRC ? _gRC.pro     : activePro;
     const arpu = activePro ? Math.round(totalRevInr/activePro) : 0;
 
     // Period-over-period delta chip (CEO scorecard): green ▲ / red ▼ with %.
@@ -5018,9 +5026,9 @@
     const dailyCats = growthSeries.map(x=>{ const d=new Date(x.d); return isNaN(d.getTime())?String(x.d).slice(5):String(d.getDate()); });
     const dailyVals = growthSeries.map(x=>x.v);
     const revDaily = growthSeries.map(x=>{ const p=payMap[x.d]; return p?Math.round((p.inr||0)+(p.usd||0)*USD_TO_INR):0; });
-    const goalPct = Math.min(100, Math.round(convPct/5*100));
-    const gapPts = Math.max(0, 5 - convPct);
-    const upgradesNeeded = Math.max(0, Math.round(0.05*newProduct - activePro));
+    const goalPct = Math.min(100, Math.round(convGauge/5*100));
+    const gapPts = Math.max(0, 5 - convGauge);
+    const upgradesNeeded = Math.max(0, Math.round(0.05*gaugeSignups - gaugePro));
     const topShare = chTotal ? (topCh.value/chTotal*100) : 0;
 
     const sDelta=(cur,prev)=>{ if(!prev) return ''; const p=(cur-prev)/prev*100,up=p>=0; return `<span class="nb-d ${up?'up':'down'}">${up?'↑':'↓'} ${Math.abs(p).toFixed(1)}%</span>`; };
@@ -5046,7 +5054,7 @@
 
     const aiCard=`<div class="nb-card nb-ai"><div class="nb-ai-badge">✦ Key opportunities</div>
       <div class="nb-ai-sec"><span class="nb-ai-k perf">Top performer</span><span class="nb-ai-v"><b>${h(topCh.label)}</b> drove <b>${(topCh.value||0).toLocaleString('en-IN')}</b> signups, ${topShare.toFixed(0)}% of acquisition.</span></div>
-      <div class="nb-ai-sec"><span class="nb-ai-k risk">Risk</span><span class="nb-ai-v">Free→Pro conversion is <b>${convPct.toFixed(2)}%</b>, ${gapPts.toFixed(2)} pts below the 5% target.</span></div>
+      <div class="nb-ai-sec"><span class="nb-ai-k risk">Risk</span><span class="nb-ai-v">Free→Pro conversion is <b>${convGauge.toFixed(2)}%</b>, ${gapPts.toFixed(2)} pts below the 5% target.</span></div>
       <div class="nb-ai-sec"><span class="nb-ai-k act">Do next</span><span class="nb-ai-v">Scale <b>${h(topCh.label)}</b> and test the Pro upgrade flow. About <b>${upgradesNeeded.toLocaleString('en-IN')}</b> more upgrades reach the goal.</span></div>
       <button class="nb-ai-cta" onclick="switchTab('acquire')">View source breakdown →</button></div>`;
 
@@ -5110,9 +5118,9 @@
       const AX={chart:{toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:DK?'rgba(240,243,250,.55)':'rgba(17,23,38,.66)',animations:{enabled:true,speed:900}},grid:{borderColor:DK?'rgba(255,255,255,.06)':'rgba(28,40,75,.08)',strokeDashArray:4},tooltip:{theme:DK?'dark':'light'}};
       const push=(sel,opt)=>{const el=document.querySelector(sel);if(!el)return;const ch=new ApexCharts(el,opt);ch.render();window._ovCharts.push(ch);};
       // gauge — the whole element carries the state: amber arc + amber value when below goal (B2)
-      const below = convPct < 5;
+      const below = convGauge < 5;
       const stateCol = !below ? GRN : (DK?'#f0b552':'#c98212');
-      push('#nbGauge',{chart:{type:'radialBar',height:210,fontFamily:'IBM Plex Mono',animations:{enabled:true,speed:1100}},series:[goalPct],plotOptions:{radialBar:{startAngle:-120,endAngle:120,hollow:{size:'60%'},track:{background:DK?'rgba(255,255,255,.08)':'rgba(28,40,75,.08)'},dataLabels:{name:{show:true,offsetY:20,color:DK?'rgba(238,241,248,.5)':'rgba(20,26,40,.5)',fontSize:'11px',fontFamily:'General Sans'},value:{offsetY:-12,fontSize:'26px',fontWeight:700,color:stateCol,formatter:()=>convPct.toFixed(2)+'%'}}}},colors:[stateCol],stroke:{lineCap:'round'},labels:['vs 5% goal']});
+      push('#nbGauge',{chart:{type:'radialBar',height:210,fontFamily:'IBM Plex Mono',animations:{enabled:true,speed:1100}},series:[goalPct],plotOptions:{radialBar:{startAngle:-120,endAngle:120,hollow:{size:'60%'},track:{background:DK?'rgba(255,255,255,.08)':'rgba(28,40,75,.08)'},dataLabels:{name:{show:true,offsetY:20,color:DK?'rgba(238,241,248,.5)':'rgba(20,26,40,.5)',fontSize:'11px',fontFamily:'General Sans'},value:{offsetY:-12,fontSize:'26px',fontWeight:700,color:stateCol,formatter:()=>convGauge.toFixed(2)+'%'}}}},colors:[stateCol],stroke:{lineCap:'round'},labels:['vs 5% goal']});
       // daily line — zero-baseline y-axis so the chart doesn't dramatise (A3)
       push('#nbLine',{...AX,chart:{...AX.chart,type:'area',height:230},series:[{name:'Signups',data:dailyVals}],stroke:{curve:'smooth',width:3,colors:[BLUE]},fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.32,opacityTo:0,stops:[0,95]}},colors:[BLUE],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},xaxis:{categories:dailyCats,axisBorder:{show:false},axisTicks:{show:false},labels:{style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}}},yaxis:{min:0,labels:{formatter:v=>v>=1000?(v/1000).toFixed(1)+'k':Math.round(v),style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}}}});
     }, 30);
