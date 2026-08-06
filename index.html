@@ -15,6 +15,7 @@
   <link rel="preconnect" href="https://api.fontshare.com" />
   <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700,800&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.1/dist/apexcharts.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <style>
@@ -1990,6 +1991,105 @@
 
     /* Donut legend number weight */
     .dl-num{ font-weight:800; }
+
+    /* ══════════════════════════════════════════════════════════════════
+       WARM GLASSMORPHISM — premium enterprise SaaS (light theme only)
+       Purely visual: retokenises the variable-driven system into a warm
+       ivory/champagne palette with frosted-glass surfaces, Inter type,
+       tinted shadows, grain + ambient glow. No layout/JS/markup changes.
+       Structural rules scoped to :not(dark) so dark mode is untouched.
+       ══════════════════════════════════════════════════════════════════ */
+    html:not([data-theme="dark"]){
+      --canvas:#f2eee6;
+      --glows:
+        radial-gradient(1150px 660px at 84% -14%, rgba(230,206,166,.60), transparent 60%),
+        radial-gradient(900px 620px at 2% 10%, rgba(210,220,212,.42), transparent 60%),
+        radial-gradient(860px 780px at 100% 106%, rgba(226,206,182,.46), transparent 62%),
+        radial-gradient(720px 520px at 42% 44%, rgba(247,240,229,.5), transparent 72%),
+        linear-gradient(166deg,#f7f2ea 0%,#efe8dc 56%,#e9e0d2 100%);
+      --surface:rgba(255,255,255,.55); --surface-2:rgba(255,255,255,.4); --pop:rgba(255,255,255,.74);
+      --glass-blur:blur(26px) saturate(180%); --glass-edge:rgba(255,255,255,.55);
+      --border:rgba(120,101,74,.14); --border-strong:rgba(120,101,74,.24);
+      --hover:rgba(120,101,74,.055); --sep:rgba(120,101,74,.10);
+      --row-border:rgba(120,101,74,.09); --table-head:rgba(120,101,74,.035); --table-head-2:rgba(120,101,74,.06);
+      --text:#2c2620; --ink:#2c2620; --text-2:rgba(44,38,32,.70); --text-3:rgba(44,38,32,.48);
+      --blue:#9a8460; --blue-dark:#7f6c4e; --blue-soft:rgba(154,132,96,.16); --blue-text:#7a6446;
+      --shadow-blue:0 12px 30px -12px rgba(154,132,96,.5);
+      --accent-grad:linear-gradient(135deg,#b39a6f,#9a8460);
+      --radius:20px; --radius-lg:24px;
+      --shadow-sm:0 1px 2px rgba(64,52,38,.05), 0 6px 16px -12px rgba(64,52,38,.20);
+      --shadow-md:0 2px 5px rgba(64,52,38,.045), 0 16px 42px -20px rgba(64,52,38,.24), inset 0 1px 0 rgba(255,255,255,.6);
+      --shadow-lg:0 44px 96px -40px rgba(64,52,38,.30), inset 0 1px 0 rgba(255,255,255,.55);
+      --grid-line:rgba(120,101,74,.05);
+    }
+    /* Inter type + tabular figures for data */
+    body, .app-layout, .app-body, input, select, textarea, button,
+    .nb-kpi-l, .nb-ai-v, .nb-ai-k, .nb-rank-l, .ov-sub, .nb-note, .nb-kpi-sub, .home-title, .tab, .btn{
+      font-family:'Inter','General Sans',-apple-system,system-ui,sans-serif !important; }
+    body{ -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; letter-spacing:-.006em; }
+    .home-title{ letter-spacing:-.035em !important; }
+    .nb-kpi-v, .rev-kpi-num, .stat-num, .okpi-val, .nb-big, .rev-big, .kpi-val, .big{ font-variant-numeric:tabular-nums; letter-spacing:-.035em !important; }
+
+    /* Ambient grain overlay (fixed, non-interactive) */
+    html:not([data-theme="dark"]) body::before{
+      content:""; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.42; mix-blend-mode:soft-light;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+    /* Frosted glass on every major surface */
+    html:not([data-theme="dark"]) :is(.ov-card,.nb-card,.rev-kpi,.okpi,.ocard,.panel,.infl-card,.stat-pill,
+      .table-wrap,.gdr-drop,.gdrSharedDrop,#gdrSharedDrop,.modal,.modal-card,.cmdk,.nb-updated,.toolbar-input){
+      background:var(--surface) !important; backdrop-filter:var(--glass-blur) !important; -webkit-backdrop-filter:var(--glass-blur) !important;
+      border:1px solid var(--glass-edge) !important; box-shadow:var(--shadow-md) !important; }
+    html:not([data-theme="dark"]) :is(.ov-card,.nb-card,.rev-kpi,.okpi,.ocard,.panel,.infl-card,.table-wrap){ border-radius:var(--radius-lg) !important; }
+
+    /* Sidebar → floating frosted glass */
+    html:not([data-theme="dark"]) .sidebar{
+      background:rgba(255,255,255,.5) !important; backdrop-filter:var(--glass-blur) !important; -webkit-backdrop-filter:var(--glass-blur) !important;
+      border-right:1px solid var(--glass-edge) !important; box-shadow:1px 0 0 rgba(255,255,255,.4), 26px 0 64px -44px rgba(64,52,38,.32); }
+    html:not([data-theme="dark"]) .tab.active, html:not([data-theme="dark"]) .tab[class*="tab-"].active{
+      background:rgba(255,255,255,.68) !important; color:var(--blue-text) !important; border:1px solid var(--glass-edge) !important;
+      box-shadow:0 2px 9px -3px rgba(64,52,38,.2), inset 0 1px 0 rgba(255,255,255,.75) !important; }
+    html:not([data-theme="dark"]) .tab .ic-sm{ opacity:.7; } html:not([data-theme="dark"]) .tab:hover .ic-sm, html:not([data-theme="dark"]) .tab.active .ic-sm{ opacity:1; }
+
+    /* Toolbar / filters / date pills → glass */
+    html:not([data-theme="dark"]) :is(.filter-bar,.gdr-btn,.days-chip,.search-shortcut,.cmdk-trigger){
+      background:var(--surface) !important; backdrop-filter:var(--glass-blur); border:1px solid var(--glass-edge) !important; border-radius:14px !important; }
+
+    /* Buttons → capsules; primary = warm gradient; secondary = glass ghost */
+    html:not([data-theme="dark"]) :is(.btn,.btn-primary,.btn-secondary,.btn-ghost,.rowbtn){ border-radius:999px !important; }
+    html:not([data-theme="dark"]) :is(.btn-primary,.nb-ai-cta){
+      background:linear-gradient(135deg,#a98f66,#8a7350) !important; color:#fff !important; border:1px solid rgba(255,255,255,.28) !important;
+      box-shadow:0 8px 22px -10px rgba(120,96,58,.6), inset 0 1px 0 rgba(255,255,255,.35) !important; }
+    html:not([data-theme="dark"]) .btn-secondary{
+      background:rgba(255,255,255,.55) !important; color:var(--text-2) !important; border:1px solid var(--glass-edge) !important;
+      backdrop-filter:var(--glass-blur); box-shadow:var(--shadow-sm) !important; }
+    html:not([data-theme="dark"]) .btn:hover{ transform:translateY(-1px); }
+    html:not([data-theme="dark"]) .btn:active{ transform:translateY(0) scale(.985); }
+
+    /* KPI hierarchy: larger values, muted labels */
+    html:not([data-theme="dark"]) .nb-kpi-v{ font-size:32px !important; }
+    html:not([data-theme="dark"]) :is(.nb-kpi-l,.rev-kpi-label,.okpi-l){ color:var(--text-3) !important; }
+
+    /* Tables — airy, soft dividers, elegant hover */
+    html:not([data-theme="dark"]) :is(table td,table th){ border-color:var(--row-border) !important; }
+    html:not([data-theme="dark"]) table thead th{ background:transparent !important; color:var(--text-3) !important; font-weight:600; }
+    html:not([data-theme="dark"]) tbody tr{ transition:background .2s ease; }
+    html:not([data-theme="dark"]) tbody tr:hover{ background:var(--hover) !important; }
+
+    /* Status/plan badges → translucent pills */
+    html:not([data-theme="dark"]) :is(.badge,.plan-badge,.li-tag,.sugg-tag,.count-pill,.tab-badge,.infl-code){ border-radius:999px !important; font-weight:600 !important; backdrop-filter:blur(6px); }
+
+    /* Card hover → gentle lift + warm ambient glow */
+    html:not([data-theme="dark"]) :is(.okpi,.ocard,.ov-card,.rev-kpi,.nb-card,.infl-card):hover{
+      border-color:rgba(255,255,255,.8) !important;
+      box-shadow:0 3px 8px rgba(64,52,38,.05), 0 32px 62px -28px rgba(120,96,58,.4), inset 0 1px 0 rgba(255,255,255,.72) !important; }
+
+    /* Search + text inputs → glass */
+    html:not([data-theme="dark"]) :is(.toolbar-input,.search-box input,input[type="text"],input[type="search"]){
+      background:rgba(255,255,255,.52) !important; border:1px solid var(--glass-edge) !important; border-radius:14px !important; backdrop-filter:var(--glass-blur); }
+
+    /* Warm focus ring */
+    html:not([data-theme="dark"]) :is(a,button,.tab,input,.nb-kpi,.cmdk-i):focus-visible{ outline:2px solid var(--blue) !important; }
   </style>
   <script>
     // Apply the saved (or system) theme before first paint to avoid a flash.
@@ -5115,12 +5215,12 @@
       if(!window.ApexCharts) return;
       const DK=document.documentElement.dataset.theme==='dark';
       const BLUE=DK?'#5f8bff':'#3b63e6', GRN=DK?'#37e0a6':'#12b981';
-      const AX={chart:{toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:DK?'rgba(240,243,250,.55)':'rgba(17,23,38,.66)',animations:{enabled:true,speed:900}},grid:{borderColor:DK?'rgba(255,255,255,.06)':'rgba(28,40,75,.08)',strokeDashArray:4},tooltip:{theme:DK?'dark':'light'}};
+      const AX={chart:{toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:DK?'rgba(240,243,250,.55)':'rgba(44,38,32,.62)',animations:{enabled:true,speed:900}},grid:{borderColor:DK?'rgba(255,255,255,.06)':'rgba(120,101,74,.10)',strokeDashArray:4},tooltip:{theme:DK?'dark':'light'}};
       const push=(sel,opt)=>{const el=document.querySelector(sel);if(!el)return;const ch=new ApexCharts(el,opt);ch.render();window._ovCharts.push(ch);};
       // gauge — the whole element carries the state: amber arc + amber value when below goal (B2)
       const below = convGauge < 5;
       const stateCol = !below ? GRN : (DK?'#f0b552':'#c98212');
-      push('#nbGauge',{chart:{type:'radialBar',height:210,fontFamily:'IBM Plex Mono',animations:{enabled:true,speed:1100}},series:[goalPct],plotOptions:{radialBar:{startAngle:-120,endAngle:120,hollow:{size:'60%'},track:{background:DK?'rgba(255,255,255,.08)':'rgba(28,40,75,.08)'},dataLabels:{name:{show:true,offsetY:20,color:DK?'rgba(238,241,248,.5)':'rgba(20,26,40,.5)',fontSize:'11px',fontFamily:'General Sans'},value:{offsetY:-12,fontSize:'26px',fontWeight:700,color:stateCol,formatter:()=>convGauge.toFixed(2)+'%'}}}},colors:[stateCol],stroke:{lineCap:'round'},labels:['vs 5% goal']});
+      push('#nbGauge',{chart:{type:'radialBar',height:210,fontFamily:'IBM Plex Mono',animations:{enabled:true,speed:1100}},series:[goalPct],plotOptions:{radialBar:{startAngle:-120,endAngle:120,hollow:{size:'60%'},track:{background:DK?'rgba(255,255,255,.08)':'rgba(120,101,74,.10)'},dataLabels:{name:{show:true,offsetY:20,color:DK?'rgba(238,241,248,.5)':'rgba(20,26,40,.5)',fontSize:'11px',fontFamily:'General Sans'},value:{offsetY:-12,fontSize:'26px',fontWeight:700,color:stateCol,formatter:()=>convGauge.toFixed(2)+'%'}}}},colors:[stateCol],stroke:{lineCap:'round'},labels:['vs 5% goal']});
       // daily line — zero-baseline y-axis so the chart doesn't dramatise (A3)
       push('#nbLine',{...AX,chart:{...AX.chart,type:'area',height:230},series:[{name:'Signups',data:dailyVals}],stroke:{curve:'smooth',width:3,colors:[BLUE]},fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.32,opacityTo:0,stops:[0,95]}},colors:[BLUE],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},xaxis:{categories:dailyCats,axisBorder:{show:false},axisTicks:{show:false},labels:{style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}}},yaxis:{min:0,labels:{formatter:v=>v>=1000?(v/1000).toFixed(1)+'k':Math.round(v),style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}}}});
     }, 30);
@@ -8394,10 +8494,10 @@
       const BLUE=DK?'#5f8bff':'#3b63e6';
       const fmtInr=v=>v>=100000?'₹'+(v/100000).toFixed(1)+'L':v>=1000?'₹'+(v/1000).toFixed(0)+'k':'₹'+Math.round(v);
       const put=(sel,opt)=>{const el=document.querySelector(sel);if(!el)return;const ch=new ApexCharts(el,opt);ch.render();window._revCharts.push(ch);};
-      put('#revMonthlyChart',{chart:{type:'area',height:220,toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:DK?'rgba(240,243,250,.55)':'rgba(17,23,38,.66)',animations:{enabled:true,speed:900}},
+      put('#revMonthlyChart',{chart:{type:'area',height:220,toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:DK?'rgba(240,243,250,.55)':'rgba(44,38,32,.62)',animations:{enabled:true,speed:900}},
         series:[{name:'Revenue',data:monthVals}],stroke:{curve:'smooth',width:3,colors:[BLUE]},
         fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.32,opacityTo:0,stops:[0,95]}},colors:[BLUE],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},
-        grid:{borderColor:DK?'rgba(255,255,255,.06)':'rgba(28,40,75,.08)',strokeDashArray:4},tooltip:{theme:DK?'dark':'light',y:{formatter:fmtInr}},
+        grid:{borderColor:DK?'rgba(255,255,255,.06)':'rgba(120,101,74,.10)',strokeDashArray:4},tooltip:{theme:DK?'dark':'light',y:{formatter:fmtInr}},
         xaxis:{categories:monthLbls,axisBorder:{show:false},axisTicks:{show:false},labels:{style:{fontSize:'11px'}}},
         yaxis:{labels:{formatter:fmtInr,style:{fontSize:'11px'}}}});
       if(document.querySelector('#revPlanDonut')) put('#revPlanDonut',{chart:{type:'donut',height:260,fontFamily:'General Sans',animations:{enabled:true,speed:900}},
@@ -9394,10 +9494,10 @@
     (window._lifCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}}); window._lifCharts=[];
     setTimeout(()=>{ if(!window.ApexCharts) return; const el=document.querySelector('#lifeChart'); if(!el) return;
       const DK=document.documentElement.dataset.theme==='dark', BLUE=DK?'#5f8bff':'#3b63e6', GRN=DK?'#37e0a6':'#12b981';
-      const ch=new ApexCharts(el,{chart:{type:'bar',height:240,stacked:true,toolbar:{show:false},fontFamily:'General Sans',foreColor:DK?'rgba(240,243,250,.55)':'rgba(17,23,38,.66)',animations:{enabled:true,speed:900}},
+      const ch=new ApexCharts(el,{chart:{type:'bar',height:240,stacked:true,toolbar:{show:false},fontFamily:'General Sans',foreColor:DK?'rgba(240,243,250,.55)':'rgba(44,38,32,.62)',animations:{enabled:true,speed:900}},
         series:[{name:'New',data:lNew},{name:'Returning',data:lRet}],colors:[GRN,BLUE],
         plotOptions:{bar:{borderRadius:6,columnWidth:'56%',borderRadiusApplication:'end'}},dataLabels:{enabled:false},legend:{show:false},
-        grid:{borderColor:DK?'rgba(255,255,255,.06)':'rgba(28,40,75,.08)',strokeDashArray:4},tooltip:{theme:DK?'dark':'light'},
+        grid:{borderColor:DK?'rgba(255,255,255,.06)':'rgba(120,101,74,.10)',strokeDashArray:4},tooltip:{theme:DK?'dark':'light'},
         fill:{type:'gradient',gradient:{shadeIntensity:.5,opacityFrom:1,opacityTo:.85}},
         xaxis:{categories:lLbls,axisBorder:{show:false},axisTicks:{show:false},labels:{style:{fontSize:'11px'}}},
         yaxis:{labels:{formatter:v=>v>=1000?(v/1000).toFixed(1)+'k':v,style:{fontSize:'11px'}}}});
@@ -9726,10 +9826,10 @@
     (window._dlyCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}}); window._dlyCharts=[];
     setTimeout(()=>{ if(!window.ApexCharts) return; const el=document.querySelector('#dailyChart'); if(!el) return;
       const DK=document.documentElement.dataset.theme==='dark', BLUE=DK?'#5f8bff':'#3b63e6', GRN=DK?'#37e0a6':'#12b981';
-      const ch=new ApexCharts(el,{chart:{type:'area',height:260,toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:DK?'rgba(240,243,250,.55)':'rgba(17,23,38,.66)',animations:{enabled:true,speed:900}},
+      const ch=new ApexCharts(el,{chart:{type:'area',height:260,toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:DK?'rgba(240,243,250,.55)':'rgba(44,38,32,.62)',animations:{enabled:true,speed:900}},
         series:[{name:'Signups',data:dSign},{name:'Activated',data:dAct}],stroke:{curve:'smooth',width:[3,2.5],colors:[BLUE,GRN]},
         fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.3,opacityTo:0,stops:[0,95]}},colors:[BLUE,GRN],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},legend:{show:false},
-        grid:{borderColor:DK?'rgba(255,255,255,.06)':'rgba(28,40,75,.08)',strokeDashArray:4},tooltip:{theme:DK?'dark':'light'},
+        grid:{borderColor:DK?'rgba(255,255,255,.06)':'rgba(120,101,74,.10)',strokeDashArray:4},tooltip:{theme:DK?'dark':'light'},
         xaxis:{categories:dLbls,tickAmount:10,axisBorder:{show:false},axisTicks:{show:false},labels:{style:{fontSize:'11px'}}},
         yaxis:{labels:{formatter:v=>v>=1000?(v/1000).toFixed(1)+'k':v,style:{fontSize:'11px'}}}});
       ch.render(); window._dlyCharts.push(ch);
