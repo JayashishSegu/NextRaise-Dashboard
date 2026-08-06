@@ -9221,8 +9221,7 @@
           uniqIf(person_id, event='onboarding_start')      AS onb_start,
           uniqIf(person_id, event='onboarding_complete')   AS onb_done,
           uniqIf(person_id, event='resume_upload_success') AS resume,
-          uniqIf(person_id, event='extension_installed')   AS ext,
-          uniqIf(person_id, event='job_match_analyzed')    AS jobmatch,
+          uniqIf(person_id, event='tailor_open')           AS tailor,
           uniqIf(person_id, event='payment_completed')     AS paid
         FROM events
         WHERE timestamp > now() - INTERVAL 400 DAY
@@ -9235,22 +9234,21 @@
           AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
           AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
           AND lower(coalesce(person.properties.email,'')) NOT LIKE '%test%'`);
-      _insData=(res.results||[])[0]||[0,0,0,0,0,0,0]; _insLoaded=true; renderInsights();
+      _insData=(res.results||[])[0]||[0,0,0,0,0,0]; _insLoaded=true; renderInsights();
     }catch(e){ area.innerHTML=errorBox('Could not load funnel — '+e.message); }
   }
   function renderInsights(){
     const area=document.getElementById('insightsArea'); if(!area||!_insData) return;
-    const [signed, onbStart, onbDone, resume, ext, jobmatch, paid] = _insData.map(x=>+x||0);
+    const [signed, onbStart, onbDone, resume, tailor, paid] = _insData.map(x=>+x||0);
     // Steps in journey order, all within the signup cohort (so ≤ signups).
-    // "Résumé uploaded" is the activation moment; extension + job-match are
-    // parallel engagement actions ordered by reach for a clean funnel shape.
+    // "Résumé uploaded" is the activation moment; "Job Tailor" = opened the
+    // JD-tailoring feature (deeper engagement) on the way to Pro.
     const steps=[
       {label:'Signed up',           v:signed,   c:'var(--blue)'},
       {label:'Onboarding started',  v:onbStart, c:'var(--teal)'},
       {label:'Onboarding complete', v:onbDone,  c:'var(--amber)'},
       {label:'Résumé uploaded',     v:resume,   c:'var(--violet)'},
-      {label:'Extension installed', v:ext,      c:'var(--orange)'},
-      {label:'Job match analyzed',  v:jobmatch, c:'var(--rose)'},
+      {label:'Job Tailor',          v:tailor,   c:'var(--orange)'},
       {label:'Paid (Pro)',          v:paid,     c:'var(--green)'},
     ];
     const base=signed||1;
