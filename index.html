@@ -3378,7 +3378,7 @@
     <div class="ov-head">
       <div>
         <div class="home-title" style="margin:0 0 3px;">Insights</div>
-        <div class="ov-sub">Extension → Résumé · Pageview → Signup · acquisition funnels</div>
+        <div class="ov-sub">Signup → Onboarding → Activation → Pro · conversion funnel</div>
         <button class="gdr-btn" id="gdrTabBtn-insights" onclick="openTabGdr(event,'insights')" style="margin-top:8px;">
           <svg class="ic-sm"><use href="#i-calendar"/></svg>
           <span class="gdr-tab-label">Last 7 days</span>
@@ -9212,101 +9212,61 @@
     const area=document.getElementById('insightsArea'); if(!area) return;
     if(typeof updateTabGdrBtn==='function') updateTabGdrBtn('insights');
     if(!cfg('apiKey')){ area.innerHTML=stateBox(null,'Add your PostHog key in Settings to load data.','sp-blue'); return; }
-    if(!_insData) area.innerHTML=stateBox(null,'Loading funnels…','sp-blue');
+    if(!_insData) area.innerHTML=stateBox(null,'Loading funnel…','sp-blue');
     try{
-      const gdr=tabGdrPreset('insights'); const start=gdr.startDate, end=gdr.endDate; const scan=gdr.scanDays;
-      const excl=`person_id NOT IN COHORT 278743
-              AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
-              AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
-              AND lower(coalesce(person.properties.email,'')) NOT LIKE '%test%'`;
-      // cohort = people whose <entry event> fired within the selected range.
-      const entered=(ev)=>`(SELECT person_id FROM events WHERE event=${ev}
-                AND toDate(toTimeZone(timestamp,'Asia/Kolkata')) >= toDate('${start}')
-                AND toDate(toTimeZone(timestamp,'Asia/Kolkata')) < toDate('${end}'))`;
-      const [f1res,f2res]=await Promise.all([
-        // Funnel 1 — Extension → Signup → Onboarding → Résumé
-        runHogQL(`
-          SELECT countIf(has_ext) AS s1,
-                 countIf(has_ext AND has_signup) AS s2,
-                 countIf(has_ext AND has_signup AND has_onb) AS s3,
-                 countIf(has_ext AND has_signup AND has_onb AND has_resume) AS s4
-          FROM (
-            SELECT person_id,
-              max(event='extension_installed')   AS has_ext,
-              max(event='signup_complete')       AS has_signup,
-              max(event='onboarding_complete')   AS has_onb,
-              max(event='resume_upload_success') AS has_resume
-            FROM events
-            WHERE timestamp > now() - INTERVAL ${scan} DAY
-              AND person_id IN ${entered("'extension_installed'")}
-              AND ${excl}
-            GROUP BY person_id
-          )`),
-        // Funnel 2 — Pageview → Extension → Signup
-        runHogQL(`
-          SELECT countIf(has_pv) AS s1,
-                 countIf(has_pv AND has_ext) AS s2,
-                 countIf(has_pv AND has_ext AND has_signup) AS s3
-          FROM (
-            SELECT person_id,
-              max(event='$pageview')           AS has_pv,
-              max(event='extension_installed') AS has_ext,
-              max(event='signup_complete')     AS has_signup
-            FROM events
-            WHERE timestamp > now() - INTERVAL ${scan} DAY
-              AND person_id IN ${entered("'$pageview'")}
-              AND ${excl}
-            GROUP BY person_id
-          )`),
-      ]);
-      _insData={ f1:(f1res.results||[])[0]||[0,0,0,0], f2:(f2res.results||[])[0]||[0,0,0] };
-      _insLoaded=true; renderInsights();
-    }catch(e){ area.innerHTML=errorBox('Could not load funnels — '+e.message); }
+      const start=tabGdrStartDate('insights'), end=tabGdrEndDate('insights');
+      const res=await runHogQL(`
+        SELECT
+          uniqIf(person_id, event='signup_complete')      AS signed,
+          uniqIf(person_id, event='onboarding_start')     AS onb_start,
+          uniqIf(person_id, event='onboarding_complete')  AS onb_done,
+          uniqIf(person_id, event='payment_completed')    AS paid
+        FROM events
+        WHERE timestamp > now() - INTERVAL 400 DAY
+          AND person_id IN (
+            SELECT person_id FROM events
+            WHERE event='signup_complete'
+              AND toDate(toTimeZone(timestamp,'Asia/Kolkata')) >= toDate('${start}')
+              AND toDate(toTimeZone(timestamp,'Asia/Kolkata')) < toDate('${end}')
+          )
+          AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
+          AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
+          AND lower(coalesce(person.properties.email,'')) NOT LIKE '%test%'`);
+      _insData=(res.results||[])[0]||[0,0,0,0]; _insLoaded=true; renderInsights();
+    }catch(e){ area.innerHTML=errorBox('Could not load funnel — '+e.message); }
   }
   function renderInsights(){
     const area=document.getElementById('insightsArea'); if(!area||!_insData) return;
-    const f1=(_insData.f1||[0,0,0,0]).map(x=>+x||0);
-    const f2=(_insData.f2||[0,0,0]).map(x=>+x||0);
-    const lbl=tabGdrPreset('insights').label, lblo=lbl.toLowerCase();
-    const pct=(a,b)=>b?(a/b*100):0;
+    const [signed, onbStart, onbDone, paid] = _insData.map(x=>+x||0);
+    const steps=[
+      {label:'Signed up',           v:signed,   c:'var(--blue)'},
+      {label:'Onboarding started',  v:onbStart, c:'var(--teal)'},
+      {label:'Onboarding complete', v:onbDone,  c:'var(--amber)'},
+      {label:'Paid (Pro)',          v:paid,     c:'var(--green)'},
+    ];
+    const base=signed||1;
     const kpis=[
-      oKpi('i-download','var(--orange)','Extension Installs',lbl,_nf(f1[0])),
-      oKpi('i-check-circle','var(--violet)','Ext → Résumé',`${pct(f1[3],f1[0]).toFixed(1)}% of installs`,_nf(f1[3])),
-      oKpi('i-users','var(--teal)','Pageviews',lbl,_nf(f2[0])),
-      oKpi('i-star','var(--green)','Pageview → Signup',`${pct(f2[2],f2[0]).toFixed(2)}%`,_nf(f2[2])),
+      oKpi('i-users','var(--blue)','Signed Up',tabGdrPreset('insights').label,_nf(signed)),
+      oKpi('i-check-circle','var(--amber)','Activated',`${(onbDone/base*100).toFixed(1)}% of signups`,_nf(onbDone)),
+      oKpi('i-star','var(--green)','Paid (Pro)',`${(paid/base*100).toFixed(2)}% of signups`,_nf(paid)),
+      oKpi('i-pie','var(--violet)','Overall Conv.','signup → Pro',`${(paid/base*100).toFixed(2)}%`),
     ].join('');
-    const funnelCard=(title,note,steps)=>{
-      const base=steps[0].v||1;
-      const rows=steps.map((s,i)=>{
-        const pctOfBase=(s.v/base*100);
-        const stepPct=i===0?100:(steps[i-1].v?(s.v/steps[i-1].v*100):0);
-        return `<div style="padding:12px 20px;${i?'border-top:1px solid var(--border);':''}">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <div style="display:flex;align-items:center;gap:10px;"><span style="width:10px;height:10px;border-radius:3px;background:${s.c}"></span>
-              <b style="font-weight:700;font-size:13.5px">${s.label}</b></div>
-            <div style="font-weight:800;font-size:14px">${_nf(s.v)} <span style="color:var(--text-3);font-weight:600;font-size:12px">· ${pctOfBase.toFixed(1)}%</span></div>
-          </div>
-          <div class="bar-track" style="height:12px;"><div style="width:${Math.max(2,pctOfBase)}%;height:12px;border-radius:8px;background:linear-gradient(90deg,${s.c},color-mix(in srgb,${s.c} 55%,white));"></div></div>
-          ${i?`<div style="font-size:11px;color:var(--text-3);font-weight:600;margin-top:5px;">${stepPct.toFixed(1)}% from previous step</div>`:''}
-        </div>`;
-      }).join('');
-      return `<div class="ocard" style="margin-top:16px;"><div class="ocard-h"><div class="ocard-t">${title}</div><div class="ocard-note">${note}</div></div>
+    const rows=steps.map((s,i)=>{
+      const pctOfBase=(s.v/base*100);
+      const stepPct=i===0?100:(steps[i-1].v?(s.v/steps[i-1].v*100):0);
+      return `<div style="padding:12px 20px;${i?'border-top:1px solid var(--border);':''}">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:10px;height:10px;border-radius:3px;background:${s.c}"></span>
+            <b style="font-weight:700;font-size:13.5px">${s.label}</b></div>
+          <div style="font-weight:800;font-size:14px">${_nf(s.v)} <span style="color:var(--text-3);font-weight:600;font-size:12px">· ${pctOfBase.toFixed(1)}%</span></div>
+        </div>
+        <div class="bar-track" style="height:12px;"><div style="width:${Math.max(2,pctOfBase)}%;height:12px;border-radius:8px;background:linear-gradient(90deg,${s.c},color-mix(in srgb,${s.c} 55%,white));"></div></div>
+        ${i?`<div style="font-size:11px;color:var(--text-3);font-weight:600;margin-top:5px;">${stepPct.toFixed(1)}% from previous step</div>`:''}
+      </div>`;
+    }).join('');
+    area.innerHTML=`<div class="okpis">${kpis}</div>
+      <div class="ocard"><div class="ocard-h"><div class="ocard-t">Conversion Funnel</div><div class="ocard-note">cohort: signed up in ${tabGdrPreset('insights').label.toLowerCase()}</div></div>
         <div style="padding:6px 0 10px;">${rows}</div></div>`;
-    };
-    const f1steps=[
-      {label:'Extension installed', v:f1[0], c:'var(--orange)'},
-      {label:'Signed up',           v:f1[1], c:'var(--blue)'},
-      {label:'Onboarding complete', v:f1[2], c:'var(--amber)'},
-      {label:'Résumé uploaded',     v:f1[3], c:'var(--violet)'},
-    ];
-    const f2steps=[
-      {label:'Pageview',            v:f2[0], c:'var(--teal)'},
-      {label:'Extension installed', v:f2[1], c:'var(--orange)'},
-      {label:'Signed up',           v:f2[2], c:'var(--blue)'},
-    ];
-    area.innerHTML=`<div class="okpis">${kpis}</div>`
-      + funnelCard('Extension → Résumé funnel', `cohort: installed the extension in ${lblo}`, f1steps)
-      + funnelCard('Pageview → Signup funnel', `cohort: visited (pageview) in ${lblo}`, f2steps);
   }
 
   /* ---- RETENTION (weekly signup cohorts) ---- */
