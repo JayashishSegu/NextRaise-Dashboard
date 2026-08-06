@@ -1964,7 +1964,7 @@
     .bar-track{ background:var(--surface-2); border-radius:8px; }
     .bar-row .bar-fill{ border-radius:8px !important; }
     /* channel/source bars keep blue for primary */
-    .c-blue .bar-fill{ background:linear-gradient(90deg,var(--blue),#5a9bff) !important; }
+    .c-blue .bar-fill{ background:linear-gradient(90deg,var(--blue),#c2a877) !important; }
 
     /* Funnel steps */
     .funnel-step{ border-radius:16px; }
@@ -5220,7 +5220,7 @@
     setTimeout(()=>{
       if(!window.ApexCharts) return;
       const DK=document.documentElement.dataset.theme==='dark';
-      const BLUE=DK?'#5f8bff':'#3b63e6', GRN=DK?'#37e0a6':'#12b981';
+      const BLUE=DK?'#5f8bff':'#a8895c', GRN=DK?'#37e0a6':'#12b981';
       const AX={chart:{toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:DK?'rgba(240,243,250,.55)':'rgba(44,38,32,.62)',animations:{enabled:true,speed:900}},grid:{borderColor:DK?'rgba(255,255,255,.06)':'rgba(120,101,74,.10)',strokeDashArray:4},tooltip:{theme:DK?'dark':'light'}};
       const push=(sel,opt)=>{const el=document.querySelector(sel);if(!el)return;const ch=new ApexCharts(el,opt);ch.render();window._ovCharts.push(ch);};
       // gauge — the whole element carries the state: amber arc + amber value when below goal (B2)
@@ -8497,7 +8497,7 @@
     setTimeout(()=>{
       if(!window.ApexCharts) return;
       const DK=document.documentElement.dataset.theme==='dark';
-      const BLUE=DK?'#5f8bff':'#3b63e6';
+      const BLUE=DK?'#5f8bff':'#a8895c';
       const fmtInr=v=>v>=100000?'₹'+(v/100000).toFixed(1)+'L':v>=1000?'₹'+(v/1000).toFixed(0)+'k':'₹'+Math.round(v);
       const put=(sel,opt)=>{const el=document.querySelector(sel);if(!el)return;const ch=new ApexCharts(el,opt);ch.render();window._revCharts.push(ch);};
       put('#revMonthlyChart',{chart:{type:'area',height:220,toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:DK?'rgba(240,243,250,.55)':'rgba(44,38,32,.62)',animations:{enabled:true,speed:900}},
@@ -9499,7 +9499,7 @@
         <div id="lifeChart" style="margin:6px -6px -8px"></div></div>`;
     (window._lifCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}}); window._lifCharts=[];
     setTimeout(()=>{ if(!window.ApexCharts) return; const el=document.querySelector('#lifeChart'); if(!el) return;
-      const DK=document.documentElement.dataset.theme==='dark', BLUE=DK?'#5f8bff':'#3b63e6', GRN=DK?'#37e0a6':'#12b981';
+      const DK=document.documentElement.dataset.theme==='dark', BLUE=DK?'#5f8bff':'#a8895c', GRN=DK?'#37e0a6':'#12b981';
       const ch=new ApexCharts(el,{chart:{type:'bar',height:240,stacked:true,toolbar:{show:false},fontFamily:'General Sans',foreColor:DK?'rgba(240,243,250,.55)':'rgba(44,38,32,.62)',animations:{enabled:true,speed:900}},
         series:[{name:'New',data:lNew},{name:'Returning',data:lRet}],colors:[GRN,BLUE],
         plotOptions:{bar:{borderRadius:6,columnWidth:'56%',borderRadiusApplication:'end'}},dataLabels:{enabled:false},legend:{show:false},
@@ -9831,7 +9831,7 @@
         <div style="padding:8px 20px 16px;"><table style="width:100%"><thead><tr><th style="text-align:left">Day</th><th style="text-align:right">Signups</th><th style="text-align:right">Activations</th><th style="text-align:right">Payments</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
     (window._dlyCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}}); window._dlyCharts=[];
     setTimeout(()=>{ if(!window.ApexCharts) return; const el=document.querySelector('#dailyChart'); if(!el) return;
-      const DK=document.documentElement.dataset.theme==='dark', BLUE=DK?'#5f8bff':'#3b63e6', GRN=DK?'#37e0a6':'#12b981';
+      const DK=document.documentElement.dataset.theme==='dark', BLUE=DK?'#5f8bff':'#a8895c', GRN=DK?'#37e0a6':'#12b981';
       const ch=new ApexCharts(el,{chart:{type:'area',height:260,toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:DK?'rgba(240,243,250,.55)':'rgba(44,38,32,.62)',animations:{enabled:true,speed:900}},
         series:[{name:'Signups',data:dSign},{name:'Activated',data:dAct}],stroke:{curve:'smooth',width:[3,2.5],colors:[BLUE,GRN]},
         fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.3,opacityTo:0,stops:[0,95]}},colors:[BLUE,GRN],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},legend:{show:false},
