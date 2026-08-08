@@ -10867,6 +10867,11 @@
     if(!cfg('apiKey')){ area.innerHTML=stateBox(null,'Add your PostHog key in Settings to load data.','sp-blue'); return; }
     if(!_lifData) area.innerHTML=stateBox(null,'Loading lifecycle…','sp-blue');
     try{
+      // Bucket attribution: inner derived table groups per-person; add _bs/_bm/_bc inline
+      // and filter in the middle WHERE with bucketExprSQL. The 70-day scan window stays
+      // narrow enough that this does not time out even for perf.
+      const bktWhere = BUCKET_VIEW==='overall' ? '' :
+        ` AND ${bucketExprSQL('_bs','_bm','_bc')}='${BUCKET_VIEW==='perf'?'perf':'infl'}'`;
       const res=await runHogQL(`
         SELECT toString(week) AS wk,
           countIf(week = sw) AS new_u,
@@ -10875,13 +10880,16 @@
           SELECT person_id, sw, arrayJoin(active_weeks) AS week FROM (
             SELECT person_id,
               toStartOfWeek(minIf(toTimeZone(timestamp,'Asia/Kolkata'), event='signup_complete'), 1) AS sw,
-              arrayDistinct(groupArray(toStartOfWeek(toTimeZone(timestamp,'Asia/Kolkata'), 1))) AS active_weeks
+              arrayDistinct(groupArray(toStartOfWeek(toTimeZone(timestamp,'Asia/Kolkata'), 1))) AS active_weeks,
+              lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
+              lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+              argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc
             FROM events
             WHERE timestamp > now() - INTERVAL 70 DAY
               AND person_id IN (SELECT person_id FROM events WHERE event='signup_complete' AND timestamp > now() - INTERVAL 400 DAY)
               AND ${_EXCL}
             GROUP BY person_id
-          )
+          ) WHERE 1=1${bktWhere}
         ) WHERE week >= toStartOfWeek(toTimeZone(now(),'Asia/Kolkata'), 1) - INTERVAL 56 DAY
         GROUP BY week ORDER BY week`);
       _lifData=res.results||[]; _lifLoaded=true; renderLifecycle();
