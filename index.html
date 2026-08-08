@@ -10819,6 +10819,9 @@
     if(!cfg('apiKey')){ area.innerHTML=stateBox(null,'Add your PostHog key in Settings to load data.','sp-blue'); return; }
     if(!_retData) area.innerHTML=stateBox(null,'Loading cohorts… (scans ~10 weeks)','sp-blue');
     try{
+      // Bucket attribution: per-person derived table → add _bs/_bm/_bc inline, filter in middle WHERE.
+      const retBktWhere = BUCKET_VIEW==='overall' ? '' :
+        ` AND ${bucketExprSQL('_bs','_bm','_bc')}='${BUCKET_VIEW==='perf'?'perf':'infl'}'`;
       const res=await runHogQL(`
         SELECT toString(signup_week) AS cohort, wk, uniq(person_id) AS n
         FROM (
@@ -10827,14 +10830,17 @@
           FROM (
             SELECT person_id,
               toStartOfWeek(minIf(toTimeZone(timestamp,'Asia/Kolkata'), event='signup_complete'), 1) AS signup_week,
-              arrayJoin(arrayDistinct(groupArray(toStartOfWeek(toTimeZone(timestamp,'Asia/Kolkata'), 1)))) AS act_week
+              arrayJoin(arrayDistinct(groupArray(toStartOfWeek(toTimeZone(timestamp,'Asia/Kolkata'), 1)))) AS act_week,
+              lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
+              lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+              argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc
             FROM events
             WHERE timestamp > now() - INTERVAL 77 DAY
               AND person_id IN (SELECT person_id FROM events WHERE event='signup_complete' AND timestamp > now() - INTERVAL 70 DAY)
               AND ${_EXCL}
             GROUP BY person_id
             HAVING signup_week >= toStartOfWeek(toTimeZone(now(),'Asia/Kolkata'), 1) - INTERVAL 56 DAY
-          )
+          ) WHERE 1=1${retBktWhere}
         ) WHERE wk >= 0 AND wk <= 6
         GROUP BY signup_week, wk ORDER BY signup_week DESC, wk`);
       _retData=res.results||[]; _retLoaded=true; renderRetention();
