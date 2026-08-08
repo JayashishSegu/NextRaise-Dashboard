@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#f2ebe0" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#080b14" media="(prefers-color-scheme: dark)" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="/manifest.webmanifest" />
   <title>NextRaise — Internal Tools</title>
   <meta name="description" content="NextRaise internal tools — contact lookup, exhausted credits, pro users" />
   <meta name="theme-color" content="#2563eb" />
@@ -16,6 +20,7 @@
   <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700,800&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.1/dist/apexcharts.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <style>
@@ -1866,6 +1871,26 @@
     .acq-sub-l{ color:var(--text-2); font-weight:600; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .acq-more{ color:var(--text-3); font-style:italic; font-size:12px; display:block; padding-top:8px; }
     @media(max-width:640px){ .acq-ch-head{ grid-template-columns:28px 12px 1fr 60px 48px; } .acq-ch-head .acq-bar, .acq-hd .acq-share, .acq-sub .acq-bar{ display:none; } .acq-sub{ grid-template-columns:1fr 60px 48px; } }
+    /* Source multi-select filter dropdown */
+    .acq-hd-right{ display:flex; align-items:center; gap:14px; margin-left:auto; }
+    .acq-src{ position:relative; }
+    .acq-src-btn{ display:inline-flex; align-items:center; gap:7px; padding:7px 13px; border:1px solid var(--sep); border-radius:999px; background:var(--surface); color:var(--text); font-size:12.5px; font-weight:600; cursor:pointer; transition:background .3s; white-space:nowrap; }
+    .acq-src-btn:hover{ background:var(--surface-2); }
+    .acq-src-btn b{ color:var(--blue-text,var(--blue)); font-weight:800; }
+    .acq-src-car{ color:var(--text-3); font-size:10px; }
+    .acq-src-panel{ position:absolute; right:0; top:calc(100% + 7px); z-index:80; min-width:236px; max-height:340px; overflow-y:auto; background:var(--pop,var(--surface)); border:1px solid var(--sep); border-radius:15px; box-shadow:0 16px 40px rgba(31,35,48,.16); padding:8px; }
+    .acq-src-panel[hidden]{ display:none; }
+    .acq-src-actions{ display:flex; gap:7px; padding:2px 3px 8px; border-bottom:1px solid var(--sep); margin-bottom:6px; }
+    .acq-src-actions button{ flex:1; font-size:11px; font-weight:700; padding:6px; border-radius:9px; border:1px solid var(--sep); background:var(--surface); color:var(--text-2); cursor:pointer; }
+    .acq-src-actions button:hover{ background:var(--surface-2); color:var(--text); }
+    .acq-src-opt{ display:flex; align-items:center; gap:9px; padding:8px; border-radius:10px; font-size:13px; font-weight:600; color:var(--text); cursor:pointer; }
+    .acq-src-opt:hover{ background:var(--surface-2); }
+    .acq-src-opt input{ width:15px; height:15px; accent-color:var(--blue); cursor:pointer; }
+    .acq-src-sw{ width:9px; height:9px; border-radius:3px; flex:0 0 auto; }
+    .acq-src-ol{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .acq-src-on{ color:var(--text-3); font-variant-numeric:tabular-nums; font-weight:600; }
+    .acq-empty{ padding:34px 10px; text-align:center; color:var(--text-3); font-size:13px; }
+    @media(max-width:640px){ .acq-hd-right{ flex-wrap:wrap; gap:8px; } .acq-src-panel{ right:auto; left:0; } }
     /* gauge context + legend */
     .nb-gctx{ display:flex; justify-content:space-between; align-items:center; margin-top:2px; font-size:12px; }
     .nb-leg{ display:flex; gap:14px; font-size:12px; color:var(--text-2); font-weight:600; }
@@ -2099,6 +2124,401 @@
     html:not([data-theme="dark"]) .nb-ai::before{ background:radial-gradient(circle,rgba(192,166,120,.34),transparent 70%) !important; }
     html:not([data-theme="dark"]) :is(.nb-ai .nb-ai-badge,.nb-ai-k.act){ color:var(--blue-text) !important; }
     html:not([data-theme="dark"]) .nb-ai-big b{ color:var(--blue-text) !important; }
+
+    /* ══════════════════════════════════════════════════════════════════
+       REFERENCE DESIGN SYSTEM — full component rebuild (light theme)
+       Reference = HReazec warm-glass HR dashboard. Rebuilds type scale,
+       spacing, radius, shadows, sidebar, nav, buttons, inputs, dropdowns,
+       badges, tables, KPI + gauge cards to the reference's visual language.
+       Layout / charts / data / functionality preserved. Dark mode untouched.
+       ══════════════════════════════════════════════════════════════════ */
+    html:not([data-theme="dark"]){
+      /* — palette — */
+      --canvas:#f2ebe0;
+      --glows:
+        radial-gradient(1250px 900px at 13% -12%, rgba(233,196,157,.62), transparent 50%),
+        radial-gradient(1050px 820px at 108% 4%, rgba(247,240,231,.7), transparent 54%),
+        linear-gradient(152deg,#f8f2ea 0%,#f3ece1 44%,#eee5d8 100%);
+      --surface:rgba(255,255,255,.72); --surface-2:rgba(255,255,255,.5); --pop:#ffffff;
+      --glass-blur:blur(22px) saturate(150%); --glass-edge:rgba(255,255,255,.7);
+      --border:rgba(31,35,48,.06); --border-strong:rgba(31,35,48,.11);
+      --hover:rgba(31,35,48,.035); --sep:rgba(31,35,48,.05);
+      --row-border:rgba(31,35,48,.05); --table-head:transparent; --table-head-2:rgba(31,35,48,.03);
+      --text:#1c2330; --ink:#1c2330; --text-2:#7b7367; --text-3:#a79d8f;
+      --blue:#a8763f; --blue-dark:#8f6134; --blue-soft:rgba(168,118,63,.12); --blue-text:#8a6236;
+      --accent-grad:linear-gradient(135deg,#b08b5a,#9a774a);
+      --radius:16px; --radius-lg:24px;
+      --shadow-sm:0 2px 8px rgba(31,35,48,.04);
+      --shadow-md:0 8px 20px rgba(31,35,48,.05), 0 20px 44px rgba(31,35,48,.055);
+      --shadow-lg:0 30px 70px rgba(31,35,48,.10);
+      --grid-line:rgba(31,35,48,.05);
+    }
+    /* — type: geometric premium sans, strong hierarchy — */
+    html:not([data-theme="dark"]) :is(body,.app-layout,.app-body,input,select,textarea,button,.tab,.btn,.home-title,.ov-sub,
+      .nb-kpi-l,.nb-kpi-v,.nb-kpi-sub,.nb-ai-v,.nb-rank-l,.rev-kpi-num,.rev-kpi-label,.stat-num,.ocard-t,.nb-t,td,th,.badge){
+      font-family:'Plus Jakarta Sans','Inter',-apple-system,system-ui,sans-serif !important; }
+    html:not([data-theme="dark"]) body{ -webkit-font-smoothing:antialiased; }
+    html:not([data-theme="dark"]) .home-title{ font-size:34px !important; font-weight:800 !important; letter-spacing:-.03em !important; color:var(--text) !important; }
+    html:not([data-theme="dark"]) .ov-sub{ font-size:14px !important; color:var(--text-2) !important; }
+    html:not([data-theme="dark"]) :is(.nb-kpi-v,.rev-kpi-num,.stat-num,.okpi-val,.nb-big,.rev-big,.kpi-val,.big){ font-variant-numeric:tabular-nums; font-weight:800 !important; letter-spacing:-.03em !important; color:var(--text) !important; }
+    /* section labels: small uppercase, wide tracking, muted warm gray */
+    html:not([data-theme="dark"]) :is(.nav-label,.nb-ai-k,.cmdk-sec,.ov-card-note,thead th){
+      font-size:10.5px !important; font-weight:700 !important; letter-spacing:.12em !important; text-transform:uppercase !important; color:var(--text-3) !important; }
+
+    /* — surfaces: soft near-white floating cards — */
+    html:not([data-theme="dark"]) :is(.ov-card,.nb-card,.rev-kpi,.okpi,.ocard,.panel,.infl-card,.stat-pill,.table-wrap,.nb-ai){
+      background:var(--surface) !important; backdrop-filter:var(--glass-blur) !important; -webkit-backdrop-filter:var(--glass-blur) !important;
+      border:1px solid var(--glass-edge) !important; box-shadow:var(--shadow-md) !important; border-radius:24px !important; }
+    html:not([data-theme="dark"]) :is(.ov-card,.nb-card,.nb-ai,.infl-card){ padding:26px !important; }
+    html:not([data-theme="dark"]) :is(.okpi,.nb-kpi,.rev-kpi){ padding:24px 26px !important; border-radius:22px !important; }
+    html:not([data-theme="dark"]) :is(.okpis,.ov-grid,.nb-grid,.nb-grid2){ gap:22px !important; }
+    html:not([data-theme="dark"]) .rev-metric-row{ gap:18px !important; }
+    /* KPI numbers larger, labels muted (reference proportions) */
+    html:not([data-theme="dark"]) .nb-kpi-v{ font-size:34px !important; margin-top:8px !important; }
+    html:not([data-theme="dark"]) :is(.nb-kpi-l,.rev-kpi-label,.okpi-l){ font-size:13px !important; font-weight:600 !important; color:var(--text-2) !important; text-transform:none !important; letter-spacing:0 !important; }
+    html:not([data-theme="dark"]) .rev-kpi-num{ font-size:30px !important; }
+
+    /* — sidebar: blends into the warm canvas, generous spacing — */
+    html:not([data-theme="dark"]) .sidebar{ background:transparent !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+      border-right:1px solid var(--border) !important; box-shadow:none !important; padding:26px 18px !important; }
+    html:not([data-theme="dark"]) .nav-label{ margin:22px 12px 10px !important; }
+    html:not([data-theme="dark"]) .tab{ color:var(--text-2) !important; font-size:14.5px !important; font-weight:600 !important; border-radius:14px !important; padding:11px 14px !important; margin:3px 0 !important; }
+    html:not([data-theme="dark"]) .tab:hover{ background:rgba(255,255,255,.5) !important; color:var(--text) !important; }
+    html:not([data-theme="dark"]) :is(.tab.active,.tab[class*="tab-"].active){
+      background:#fff !important; color:var(--text) !important; border:1px solid rgba(31,35,48,.05) !important;
+      box-shadow:0 6px 18px rgba(31,35,48,.08), 0 1px 0 rgba(255,255,255,.9) !important; }
+    html:not([data-theme="dark"]) .tab .ic-sm{ opacity:.6; }
+    html:not([data-theme="dark"]) :is(.tab:hover,.tab.active) .ic-sm{ opacity:1; }
+    html:not([data-theme="dark"]) .tab.active .ic-sm{ color:var(--blue) !important; }
+    html:not([data-theme="dark"]) .tab-badge{ background:var(--blue-soft) !important; color:var(--blue-text) !important; border:none !important; border-radius:999px !important; font-weight:700 !important; }
+
+    /* — header: profile / status / refresh — */
+    html:not([data-theme="dark"]) .nb-updated{ background:transparent !important; box-shadow:none !important; border:none !important; color:var(--text-2) !important; font-size:12px !important; }
+
+    /* — buttons: copper primary, soft-white secondary, pill — */
+    html:not([data-theme="dark"]) :is(.btn,.btn-primary,.btn-secondary,.btn-ghost,.rowbtn,.gdr-btn,.days-chip){ border-radius:999px !important; font-weight:600 !important; }
+    html:not([data-theme="dark"]) :is(.btn-primary,.nb-ai-cta){
+      background:linear-gradient(135deg,#b08b5a,#9a774a) !important; color:#fff !important; border:none !important;
+      box-shadow:0 10px 22px -8px rgba(154,119,74,.55) !important; padding:11px 20px !important; }
+    html:not([data-theme="dark"]) :is(.btn-primary,.nb-ai-cta):hover{ transform:translateY(-1px); box-shadow:0 14px 28px -8px rgba(154,119,74,.6) !important; }
+    html:not([data-theme="dark"]) :is(.btn-secondary,.btn-ghost){
+      background:rgba(255,255,255,.75) !important; color:var(--text) !important; border:1px solid var(--border) !important;
+      box-shadow:var(--shadow-sm) !important; }
+    html:not([data-theme="dark"]) .btn:active{ transform:translateY(0) scale(.985); }
+
+    /* — inputs / search — */
+    html:not([data-theme="dark"]) :is(.toolbar-input,.search-box input,input[type="text"],input[type="search"]){
+      background:rgba(255,255,255,.75) !important; border:1px solid var(--border) !important; border-radius:14px !important;
+      box-shadow:var(--shadow-sm) !important; color:var(--text) !important; }
+
+    /* — dropdowns / date pills — */
+    html:not([data-theme="dark"]) :is(.gdr-btn,.days-chip,.search-shortcut,.sort-select,.cmdk-trigger){
+      background:rgba(255,255,255,.78) !important; border:1px solid var(--border) !important; box-shadow:var(--shadow-sm) !important; color:var(--text-2) !important; }
+    html:not([data-theme="dark"]) :is(.gdr-drop,#gdrSharedDrop,.gdrSharedDrop,.cmdk,.modal-card){
+      background:var(--pop) !important; border:1px solid var(--border) !important; border-radius:18px !important; box-shadow:var(--shadow-lg) !important; backdrop-filter:blur(20px); }
+    html:not([data-theme="dark"]) .filter-bar{ background:rgba(255,255,255,.55) !important; border:1px solid var(--border) !important; border-radius:18px !important; box-shadow:var(--shadow-sm) !important; }
+
+    /* — badges: soft translucent pills — */
+    html:not([data-theme="dark"]) :is(.badge,.plan-badge,.li-tag,.sugg-tag,.count-pill,.infl-code,.nb-d){
+      border-radius:999px !important; font-weight:600 !important; border:none !important; padding:3px 10px !important; }
+
+    /* — tables: airy, hairline dividers, generous rows, soft hover — */
+    html:not([data-theme="dark"]) table{ border-collapse:separate !important; border-spacing:0 !important; }
+    html:not([data-theme="dark"]) :is(td,th){ border-color:var(--row-border) !important; }
+    html:not([data-theme="dark"]) thead th{ background:transparent !important; padding-bottom:12px !important; }
+    html:not([data-theme="dark"]) tbody td{ padding-top:15px !important; padding-bottom:15px !important; color:var(--text) !important; }
+    html:not([data-theme="dark"]) tbody tr{ transition:background .22s ease; }
+    html:not([data-theme="dark"]) tbody tr:hover{ background:var(--hover) !important; }
+
+    /* — bars: champagne→copper single-series (categorical channel bars keep colours) — */
+    html:not([data-theme="dark"]) :is(.fsbar-fill,.infl-conv-fill,.nb-rank-bar i){ background:linear-gradient(90deg,#caa06a,#a87a4a) !important; }
+    html:not([data-theme="dark"]) .rev-mc-bar{ background:linear-gradient(180deg,#caa06a,#a87a4a) !important; }
+    html:not([data-theme="dark"]) :is(.bar-track,.fsbar,.nb-rank-bar,.infl-conv-track){ background:rgba(31,35,48,.055) !important; }
+
+    /* — card hover lift (soft, reference easing) — */
+    html:not([data-theme="dark"]) :is(.okpi,.ocard,.ov-card,.rev-kpi,.nb-card,.infl-card){ transition:transform .28s cubic-bezier(.32,.72,0,1), box-shadow .28s cubic-bezier(.32,.72,0,1) !important; }
+    html:not([data-theme="dark"]) :is(.okpi,.ocard,.ov-card,.rev-kpi,.nb-card,.infl-card):hover{
+      transform:translateY(-3px) !important; box-shadow:0 14px 30px rgba(31,35,48,.07), 0 30px 64px rgba(31,35,48,.09) !important; border-color:rgba(255,255,255,.85) !important; }
+
+    /* ══════════════════════════════════════════════════════════════════
+       COLLAPSIBLE ICON RAIL (light theme · desktop ≥961px)
+       Slim icon-only rail by default; expands on hover to reveal labels +
+       group headers. Overlays content (absolute) so charts never reflow.
+       Warm/light palette. Dark mode + tablet + mobile drawer untouched.
+       ══════════════════════════════════════════════════════════════════ */
+    @media (min-width:961px){
+      html:not([data-theme="dark"]) .app-layout{ position:relative; }
+      html:not([data-theme="dark"]) .sidebar{
+        position:absolute; left:0; top:0; bottom:0; width:80px; z-index:90;
+        overflow:hidden;
+        background:rgba(255,255,255,.55) !important;
+        backdrop-filter:blur(22px) saturate(160%) !important; -webkit-backdrop-filter:blur(22px) saturate(160%) !important;
+        border-right:1px solid var(--border) !important; box-shadow:none !important;
+        transition:width .34s cubic-bezier(.32,.72,0,1), background .34s ease, box-shadow .34s ease;
+      }
+      html:not([data-theme="dark"]) .sidebar:hover{
+        width:256px;
+        background:rgba(250,246,240,.94) !important;
+        box-shadow:0 28px 64px rgba(31,35,48,.16) !important;
+      }
+      html:not([data-theme="dark"]) .app-body{ margin-left:80px; }
+      html:not([data-theme="dark"]) .sidebar-nav{ overflow-x:hidden; }
+
+      /* brand — logo mark only when collapsed */
+      html:not([data-theme="dark"]) .sidebar-brand{ padding:22px 0 16px !important; display:flex; justify-content:center; }
+      html:not([data-theme="dark"]) .sidebar:hover .sidebar-brand{ padding:20px 20px 16px !important; justify-content:flex-start; }
+      html:not([data-theme="dark"]) .brand-text{ opacity:0; width:0; margin:0; overflow:hidden; white-space:nowrap; transition:opacity .18s ease, width .3s cubic-bezier(.32,.72,0,1); }
+      html:not([data-theme="dark"]) .sidebar:hover .brand-text{ opacity:1; width:auto; margin-left:11px; }
+
+      /* profile — avatar chip only when collapsed */
+      html:not([data-theme="dark"]) .nb-profile{ margin:12px auto 6px !important; padding:0 !important; background:transparent !important; border:none !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; box-shadow:none !important; display:flex; justify-content:center; }
+      html:not([data-theme="dark"]) .nb-date, html:not([data-theme="dark"]) .nb-hi{ display:none; }
+      html:not([data-theme="dark"]) .nb-av{ flex:none; }
+      html:not([data-theme="dark"]) .sidebar:hover .nb-profile{ margin:2px 14px 6px !important; padding:14px !important; background:var(--surface) !important; border:1px solid var(--border) !important; justify-content:flex-start; }
+      html:not([data-theme="dark"]) .sidebar:hover .nb-date, html:not([data-theme="dark"]) .sidebar:hover .nb-hi{ display:block; }
+
+      /* search — icon only when collapsed */
+      html:not([data-theme="dark"]) .cmdk-trigger{ margin:2px auto 8px !important; padding:10px !important; width:46px; justify-content:center; overflow:hidden; font-size:0 !important; }
+      html:not([data-theme="dark"]) .cmdk-trigger svg{ width:18px; height:18px; flex:none; }
+      html:not([data-theme="dark"]) .cmdk-trigger .cmdk-kbd{ display:none; }
+      html:not([data-theme="dark"]) .sidebar:hover .cmdk-trigger{ margin:2px 14px 8px !important; padding:9px 12px !important; width:auto; justify-content:flex-start; font-size:12.5px !important; }
+      html:not([data-theme="dark"]) .sidebar:hover .cmdk-trigger .cmdk-kbd{ display:inline; }
+
+      /* group labels hidden collapsed; separators shrink to a centered tick */
+      html:not([data-theme="dark"]) .nav-label{ height:0; padding:0 !important; margin:0 !important; opacity:0; overflow:hidden; white-space:nowrap; transition:opacity .18s ease, height .22s ease; }
+      html:not([data-theme="dark"]) .sidebar:hover .nav-label{ height:auto; opacity:1; padding:12px 24px 3px !important; }
+      html:not([data-theme="dark"]) .nav-sep{ margin:8px auto !important; width:34px; }
+      html:not([data-theme="dark"]) .sidebar:hover .nav-sep{ margin:8px 16px !important; width:auto; }
+
+      /* nav items — compact centered icon; active = rounded highlight tile */
+      html:not([data-theme="dark"]) .tab{ width:50px; margin:3px auto !important; padding:12px 0 !important; gap:0 !important; justify-content:center; font-size:0 !important; border-radius:15px !important; transition:width .3s cubic-bezier(.32,.72,0,1), padding .3s cubic-bezier(.32,.72,0,1), background .16s ease, color .16s ease !important; }
+      html:not([data-theme="dark"]) .tab .ic-sm{ width:20px; height:20px; }
+      html:not([data-theme="dark"]) .tab .tab-badge{ display:none; }
+      html:not([data-theme="dark"]) .sidebar:hover .tab{ width:auto; margin:2px 10px !important; padding:10px 14px !important; gap:11px !important; justify-content:flex-start; font-size:14px !important; }
+      html:not([data-theme="dark"]) .sidebar:hover .tab .tab-badge{ display:inline-block; }
+
+      /* footer — stacked icon buttons collapsed */
+      html:not([data-theme="dark"]) .sidebar-footer{ flex-direction:column; align-items:center; gap:9px; padding:14px 0 !important; }
+      html:not([data-theme="dark"]) .settings-btn{ flex:none !important; width:46px; justify-content:center; padding:10px 0 !important; font-size:0 !important; }
+      html:not([data-theme="dark"]) .settings-btn > span{ display:none; }
+      html:not([data-theme="dark"]) .settings-btn .ic-sm{ width:18px; height:18px; }
+      html:not([data-theme="dark"]) .sidebar:hover .sidebar-footer{ flex-direction:row; align-items:center; padding:12px 14px !important; }
+      html:not([data-theme="dark"]) .sidebar:hover .settings-btn{ flex:1 !important; width:auto; justify-content:flex-start; padding:9px 12px !important; font-size:12.5px !important; }
+      html:not([data-theme="dark"]) .sidebar:hover .settings-btn > span{ display:inline; }
+
+      /* ── fixes: opaque drawer · profile stacking · no stray scrollbars ── */
+      /* collapsed rail reads as a clean light panel; ZERO horizontal padding so
+         the 80px rail's full width is usable (fixes tiles overflowing/clipping right) */
+      html:not([data-theme="dark"]) .sidebar{ background:rgba(255,255,255,.6) !important; padding:0 !important; }
+      /* expanded drawer fully opaque (no content bleed) + clear right shadow */
+      html:not([data-theme="dark"]) .sidebar:hover{
+        background:#f8f3ec !important;
+        box-shadow:1px 0 0 rgba(31,35,48,.06), 26px 0 70px -18px rgba(31,35,48,.30) !important;
+      }
+      /* fix: profile card must stack vertically when expanded (was mashing into a row) */
+      html:not([data-theme="dark"]) .sidebar:hover .nb-profile{ display:block !important; }
+      html:not([data-theme="dark"]) .sidebar:hover .nb-prof-top{ display:flex !important; }
+      /* remove the scrollbar sliver inside the rail */
+      html:not([data-theme="dark"]) .sidebar,
+      html:not([data-theme="dark"]) .sidebar-nav{ scrollbar-width:none !important; -ms-overflow-style:none !important; }
+      html:not([data-theme="dark"]) .sidebar::-webkit-scrollbar,
+      html:not([data-theme="dark"]) .sidebar-nav::-webkit-scrollbar{ width:0 !important; height:0 !important; display:none !important; }
+    }
+
+    /* ── rail alignment + fit pass ─────────────────────────────────────
+       - centre the logo (brand had gap:11px that shoved it left)
+       - collapsed rail = logo → nav → footer (avatar & search reveal on
+         hover), matching the reference and freeing vertical space
+       - tighten icon pitch so all 13 section icons fit with no scroll  */
+    @media (min-width:961px){
+      html:not([data-theme="dark"]) .sidebar-brand{ gap:0 !important; padding:20px 0 12px !important; justify-content:center; }
+      html:not([data-theme="dark"]) .sidebar:hover .sidebar-brand{ gap:11px !important; padding:20px 20px 14px !important; justify-content:flex-start; }
+
+      /* avatar + search hidden when collapsed, restored on hover */
+      html:not([data-theme="dark"]) .nb-profile,
+      html:not([data-theme="dark"]) .cmdk-trigger{ display:none !important; }
+      html:not([data-theme="dark"]) .sidebar:hover .nb-profile{ display:block !important; }
+      html:not([data-theme="dark"]) .sidebar:hover .cmdk-trigger{ display:flex !important; }
+
+      /* compact nav so every icon is visible (no overflow / no scrollbar) */
+      html:not([data-theme="dark"]) .tab{ padding:8px 0 !important; margin:2px auto !important; }
+      html:not([data-theme="dark"]) .sidebar:hover .tab{ padding:10px 14px !important; margin:2px 10px !important; }
+      html:not([data-theme="dark"]) .nav-sep{ margin:6px auto !important; }
+      html:not([data-theme="dark"]) .sidebar:hover .nav-sep{ margin:8px 16px !important; }
+      html:not([data-theme="dark"]) .sidebar-nav{ padding:6px 0 !important; }
+      html:not([data-theme="dark"]) .sidebar:hover .sidebar-nav{ padding:4px 12px !important; }
+
+      /* compact footer — two equal tiles, stacked when collapsed */
+      html:not([data-theme="dark"]) .sidebar-footer{ gap:8px !important; padding:10px 0 !important; }
+      html:not([data-theme="dark"]) .sidebar:hover .sidebar-footer{ padding:12px 14px !important; }
+      html:not([data-theme="dark"]) .icon-btn{ width:46px !important; height:40px !important; }
+      html:not([data-theme="dark"]) .sidebar:hover .icon-btn{ width:38px !important; }
+    }
+
+    /* ══════════════════════════════════════════════════════════════════
+       MOBILE + NATIVE APP POLISH — safe areas, one-column, native bottom
+       nav, pull-to-refresh, skeleton loaders, smooth transitions.
+       ══════════════════════════════════════════════════════════════════ */
+    /* skeleton shimmer (native loading feel, replaces bare spinners) */
+    @keyframes nrShimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    .nr-skel{ background:linear-gradient(90deg,var(--surface-2) 25%,var(--hover) 42%,var(--surface-2) 58%); background-size:200% 100%; animation:nrShimmer 1.25s ease-in-out infinite; border-radius:16px; }
+    .skel-box{ display:block; padding:8px 2px 4px; }
+    .skel-box .nr-skel-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px; margin-bottom:16px; }
+    .skel-box .nr-skel-card{ height:108px; }
+    .skel-box .nr-skel-wide{ height:220px; }
+    .skel-box .skel-cap{ margin-top:14px; color:var(--text-3); font-size:12.5px; text-align:center; }
+
+    /* page never scrolls sideways; tables scroll inside their own container */
+    html,body{ overflow-x:hidden; }
+    .table-wrap,.table-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+
+    /* smooth section entrance */
+    @keyframes nrPageIn{ from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+    /* pull-to-refresh indicator */
+    #nrPtr{ position:fixed; left:0; right:0; top:0; display:flex; align-items:flex-end; justify-content:center; height:0; overflow:hidden; z-index:60; pointer-events:none; transition:height .18s ease; padding-bottom:10px; }
+    #nrPtr .nr-ptr-spin{ width:26px; height:26px; border-radius:50%; border:2.5px solid var(--border-strong); border-top-color:var(--blue); opacity:0; transition:opacity .15s; }
+    #nrPtr.pull .nr-ptr-spin{ opacity:1; }
+    #nrPtr.spin .nr-ptr-spin{ opacity:1; animation:nrSpin .7s linear infinite; }
+    @keyframes nrSpin{ to{ transform:rotate(360deg) } }
+
+    /* native-app tweaks (Capacitor WebView) */
+    html.is-native *{ -webkit-tap-highlight-color:transparent; }
+    html.is-native .tab, html.is-native .mob-nav-item, html.is-native .btn, html.is-native .gdr-btn, html.is-native .days-chip{ -webkit-user-select:none; user-select:none; }
+    html.is-native .cmdk-kbd, html.is-native .search-shortcut{ display:none !important; }
+
+    @media (max-width:600px){
+      html,body{ overscroll-behavior-y:contain; }
+      .app-layout{ height:100dvh; }
+      /* safe-area top bar (notch / punch-hole / Dynamic Island) */
+      .mobile-topbar{ padding-top:env(safe-area-inset-top) !important; height:calc(54px + env(safe-area-inset-top)) !important; box-sizing:border-box; background:linear-gradient(180deg,var(--pop),var(--surface)) !important; backdrop-filter:blur(18px) saturate(150%); }
+      .app-body{ height:calc(100dvh - 54px - 62px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important; }
+      .page{ padding:16px 15px calc(22px + env(safe-area-inset-bottom)); }
+      .page.active{ animation:nrPageIn .26s cubic-bezier(.32,.72,0,1); }
+      /* one column, comfortable tap targets (≥44px) */
+      .okpis,.ov-grid,.nb-grid,.nb-grid2,.home-panels,.okpis-3,.stat-pills,.rev-kpis{ grid-template-columns:1fr !important; }
+      /* Revenue KPIs use a wrapping FLEX row (grid rule had no effect) → stack them */
+      .rev-metric-row{ flex-direction:column !important; flex-wrap:nowrap !important; }
+      .rev-metric-row > .rev-kpi{ width:100% !important; flex:1 1 auto !important; min-width:0 !important; }
+      .btn,.gdr-btn,.days-chip,.mob-hamburger,.icon-btn,.btn-primary,.btn-secondary{ min-height:44px; }
+      /* native-feel bottom nav */
+      .mob-bottom-nav{ background:var(--pop) !important; backdrop-filter:blur(20px) saturate(160%); border-top:1px solid var(--border); box-shadow:0 -6px 24px rgba(31,35,48,.08); }
+      .mob-nav-item{ min-height:56px; transition:color .18s ease, transform .1s ease; }
+      .mob-nav-item:active{ transform:scale(.9); }
+      .mob-nav-item.active{ color:var(--blue); }
+      .mob-nav-item.active::before{ background:var(--blue); }
+      .mob-nav-label{ font-size:10.5px; }
+    }
+
+    /* ── mobile bug fixes: opaque drawer · signup-row truncation · channel bars ── */
+    @media (max-width:600px){
+      /* slide-in "More" drawer must be a HARD opaque panel (no backdrop-filter — an
+         opaque bg + blur renders as see-through glass on iOS Safari/WKWebView). */
+      html:not([data-theme="dark"]) .sidebar.open,
+      html:not([data-theme="dark"]) .sidebar{ background:#f5efe6 !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; box-shadow:8px 0 40px rgba(0,0,0,.30) !important; }
+      html[data-theme="dark"] .sidebar.open,
+      html[data-theme="dark"] .sidebar{ background:#10141e !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+      /* darker scrim so nothing behind reads through (no blur — it can composite over the drawer) */
+      .sidebar-backdrop{ background:rgba(0,0,0,.5) !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+      /* CRITICAL: .app-layout has position:relative + z-index:1, which traps the drawer
+         (z-index:200) inside its stacking context BELOW the backdrop (z-index:199, a sibling
+         of .app-layout). That made the scrim paint OVER the menu — dimming it and eating every
+         tap (taps hit the backdrop → drawer closes). Dropping app-layout's stacking context on
+         mobile lets the drawer (200) sit above the backdrop (199) again. */
+      .app-layout{ z-index:auto !important; }
+      .sidebar{ z-index:260 !important; }
+      .sidebar-backdrop{ z-index:250 !important; }
+      /* drawer nav MUST scroll on touch so all 13 sections are reachable (Influencers, Pro…).
+         A flex child won't scroll unless min-height:0; touch hints stop stray taps closing it. */
+      .sidebar{ overflow:hidden !important; }
+      .sidebar-nav{ min-height:0 !important; flex:1 1 0% !important; overflow-y:auto !important; -webkit-overflow-scrolling:touch !important; overscroll-behavior:contain; touch-action:pan-y; }
+      .sidebar-brand, .cmdk-trigger, .sidebar-footer{ flex:0 0 auto; }
+      /* COMPACT the drawer so all 13 sections + footer FIT without needing to scroll
+         (touch-scroll inside the drawer was unreliable and stray swipes closed it).
+         The decorative "Welcome back" card is hidden in the menu to make room. */
+      .nb-profile{ display:none !important; }
+      .cmdk-trigger{ display:none !important; }   /* redundant with the "Search" nav item */
+      .sidebar-brand{ padding:14px 18px 8px !important; }
+      .sidebar-nav{ padding:4px 0 6px !important; }
+      .nav-label{ display:none !important; }   /* section headers hidden; the divider still groups them */
+      .nav-sep{ margin:5px 16px !important; }
+      .tab{ padding:9px 16px !important; margin:1px 8px !important; font-size:14.5px !important; }
+      .tab .ic-sm{ width:17px !important; height:17px !important; }
+      .sidebar-footer{ padding:8px 14px !important; }
+
+      /* Cards must respect their grid cell (grid items default to min-width:auto and
+         were ballooning past the screen when a row had long content). Higher-specificity
+         selector needed to beat the warm-theme padding rule. */
+      html:not([data-theme="dark"]) .nb-card,
+      html[data-theme="dark"] .nb-card,
+      .ov-card,.rev-kpi,.okpi,.ocard,.infl-card{ min-width:0 !important; max-width:100% !important; }
+      html:not([data-theme="dark"]) .nb-card{ padding:18px !important; }
+      /* Recent signups: truncate long name/email so badge + date never overlap or clip.
+         flex-basis:0 forces the middle column to shrink; auto-margins removed. */
+      .nb-tx{ gap:10px !important; overflow:hidden; }
+      .nb-txmid{ flex:1 1 0% !important; min-width:0 !important; }
+      .nb-txname, .nb-txsub{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+      .nb-tx .plan-badge{ flex:none; margin-left:8px !important; }
+      .nb-txwhen{ flex:none; margin-left:8px !important; white-space:nowrap; font-size:11.5px; }
+
+      /* (Data tables already collapse into stacked labeled cards on mobile — see the
+         "table → cards" rules above; no horizontal-scroll override needed.) */
+
+      /* Channel breakdown only (NOT the conversion-by-period list): label + count
+         on top, full-width bar below (the bar was hidden, leaving rows looking empty) */
+      .nb-ranks:not(.cvp) .nb-rank{ grid-template-columns:1fr auto !important; grid-template-areas:"lbl val" "bar bar" !important; gap:7px 10px !important; padding:12px 0 !important; }
+      .nb-ranks:not(.cvp) .nb-rank-l{ grid-area:lbl; }
+      .nb-ranks:not(.cvp) .nb-rank-v{ grid-area:val; text-align:right; }
+      .nb-ranks:not(.cvp) .nb-rank-bar{ grid-area:bar; display:block !important; height:8px; }
+      .nb-ranks:not(.cvp) .nb-rank-c{ display:none !important; }
+    }
+
+    /* ══ Opening / launch animation (branded intro on app open) ══ */
+    #nrLaunch{ position:fixed; inset:0; z-index:99999; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; gap:18px; background:#f2ebe0;
+      transition:opacity .45s ease; padding-bottom:6vh; }
+    #nrLaunch.hide{ opacity:0; pointer-events:none; }
+    html[data-theme="dark"] #nrLaunch{ background:#080b14; }
+    #nrLaunch .nrl-mark{ width:88px; height:88px; border-radius:24px; background:#0065F4;
+      display:grid; place-items:center; box-shadow:0 22px 48px -14px rgba(0,101,244,.65);
+      animation:nrlPop .72s cubic-bezier(.34,1.56,.64,1) both; }
+    #nrLaunch .nrl-mark svg{ width:54px; height:54px; }
+    #nrLaunch .nrl-word{ font-family:'Plus Jakarta Sans','Inter',sans-serif; font-weight:800;
+      font-size:23px; letter-spacing:-.02em; color:#1c2330; opacity:0; animation:nrlUp .5s ease .34s both; }
+    html[data-theme="dark"] #nrLaunch .nrl-word{ color:#fff; }
+    #nrLaunch .nrl-word span{ color:#0065F4; }
+    #nrLaunch .nrl-bar{ width:92px; height:3px; border-radius:3px; background:rgba(31,35,48,.12);
+      overflow:hidden; opacity:0; animation:nrlUp .5s ease .46s both; }
+    html[data-theme="dark"] #nrLaunch .nrl-bar{ background:rgba(255,255,255,.14); }
+    #nrLaunch .nrl-bar i{ position:absolute; display:block; height:100%; width:45%; border-radius:3px;
+      background:linear-gradient(90deg,#b08b5a,#0065F4); animation:nrlLoad 1.05s ease .55s infinite; }
+    @keyframes nrlPop{ 0%{ transform:scale(.45); opacity:0 } 55%{ opacity:1 } 100%{ transform:scale(1); opacity:1 } }
+    @keyframes nrlUp{ from{ opacity:0; transform:translateY(9px) } to{ opacity:1; transform:none } }
+    @keyframes nrlLoad{ 0%{ transform:translateX(-110%) } 100%{ transform:translateX(330%) } }
+    @media (prefers-reduced-motion:reduce){ #nrLaunch *{ animation:none !important } }
+
+    /* ── Influencers drill-down: fluid on narrow/mid widths ──────────────
+       The referred-user list used a fixed 332px column grid + a column header
+       that overflowed below ~900px — squeezing out names and overlapping the
+       header/summary. Below 900px: hide the header, let the right-side columns
+       take natural width (flex), and give the name room. */
+    @media (max-width:900px){
+      .infl-metric{ padding:0 12px; }
+      .infl-metric .m-num{ font-size:16px; }
+      .infl-ref-head{ display:none !important; }
+      .infl-ref-summary{ padding:10px 16px 8px; }
+      .infl-ref-row{ padding:10px 16px !important; gap:10px; align-items:center; }
+      .infl-ref-main{ flex:1 1 auto !important; min-width:0 !important; }
+      .infl-ref-side{ display:flex !important; grid-template-columns:none !important; align-items:center; justify-content:flex-end; gap:8px; flex-shrink:0; max-width:58%; }
+      .infl-ref-side .date-val{ display:none !important; }
+      .infl-ref-side .paid-sub{ display:none !important; }
+      .infl-ref-side .paid-val{ text-align:right; }
+    }
+    @media (max-width:520px){
+      /* very narrow: drop the status badge, keep plan badge + paid so the name always shows */
+      .infl-ref-side{ max-width:46%; }
+      .infl-ref-side .badge{ display:none !important; }
+    }
   </style>
   <script>
     // Apply the saved (or system) theme before first paint to avoid a flash.
@@ -3011,7 +3431,7 @@
   <div class="page" id="page-uninstalled">
     <div class="toolbar">
       <div class="toolbar-top">
-        <button class="btn btn-rose" id="uninstBtn" onclick="fetchUninstalled()">
+        <button class="btn btn-rose" id="uninstBtn" onclick="nrForce();fetchUninstalled()">
           <svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh
         </button>
         <input class="toolbar-input toolbar-input-orange" id="uninstFilter" type="text"
@@ -3454,7 +3874,7 @@
     <div class="ov-head">
       <div><div class="home-title" style="margin:0 0 3px;">Daily Metrics</div>
         <div class="ov-sub">Signups · activations · payments · revenue — last 30 days</div></div>
-      <button class="btn btn-secondary" onclick="_dlyLoaded=false;fetchDaily()"><svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh</button>
+      <button class="btn btn-secondary" onclick="nrForce();_dlyLoaded=false;fetchDaily()"><svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh</button>
     </div>
     <div id="dailyArea"><div class="state-box"><div class="spinner sp-blue"></div><p>Loading daily metrics…</p></div></div>
   </div>
@@ -3487,14 +3907,14 @@
     <div class="ov-head">
       <div>
         <div class="home-title" style="margin:0 0 3px;">Insights</div>
-        <div class="ov-sub">Signup → Onboarding → Activation → Pro · conversion funnel</div>
+        <div class="ov-sub">Signup → Onboarding → Résumé upload → Pro · conversion funnel</div>
         <button class="gdr-btn" id="gdrTabBtn-insights" onclick="openTabGdr(event,'insights')" style="margin-top:8px;">
           <svg class="ic-sm"><use href="#i-calendar"/></svg>
           <span class="gdr-tab-label">Last 7 days</span>
           <svg class="gdr-chevron"><use href="#i-chevron-down"/></svg>
         </button>
       </div>
-      <button class="btn btn-secondary" onclick="_insLoaded=false;fetchInsights()">
+      <button class="btn btn-secondary" onclick="nrForce();_insLoaded=false;fetchInsights()">
         <svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh
       </button>
     </div>
@@ -3511,7 +3931,7 @@
           <svg class="gdr-chevron"><use href="#i-chevron-down"/></svg>
         </button>
       </div>
-      <button class="btn btn-secondary" onclick="_acqLoaded=false;fetchAcquire()">
+      <button class="btn btn-secondary" onclick="nrForce();_acqLoaded=false;fetchAcquire()">
         <svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh
       </button>
     </div>
@@ -3523,7 +3943,7 @@
         <div class="home-title" style="margin:0 0 3px;">Retention</div>
         <div class="ov-sub">Weekly signup-cohort return grid · last 8 weeks</div>
       </div>
-      <button class="btn btn-secondary" onclick="_retLoaded=false;fetchRetention()">
+      <button class="btn btn-secondary" onclick="nrForce();_retLoaded=false;fetchRetention()">
         <svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh
       </button>
     </div>
@@ -3535,7 +3955,7 @@
         <div class="home-title" style="margin:0 0 3px;">Lifecycle</div>
         <div class="ov-sub">New · returning · resurrecting · dormant — weekly composition</div>
       </div>
-      <button class="btn btn-secondary" onclick="_lifLoaded=false;fetchLifecycle()">
+      <button class="btn btn-secondary" onclick="nrForce();_lifLoaded=false;fetchLifecycle()">
         <svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh
       </button>
     </div>
@@ -3545,7 +3965,7 @@
     <div class="ov-head">
       <div><div class="home-title" style="margin:0 0 3px;">Emails</div>
         <div class="ov-sub">Send → deliver → open → click · last 30 days</div></div>
-      <button class="btn btn-secondary" onclick="_emlLoaded=false;fetchEmails()"><svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh</button>
+      <button class="btn btn-secondary" onclick="nrForce();_emlLoaded=false;fetchEmails()"><svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh</button>
     </div>
     <div id="emailsArea"><div class="state-box"><div class="spinner sp-blue"></div><p>Loading email funnel…</p></div></div>
   </section>
@@ -3553,7 +3973,7 @@
     <div class="ov-head">
       <div><div class="home-title" style="margin:0 0 3px;">Referrals</div>
         <div class="ov-sub">Apply → discount → purchase → reward · last 90 days</div></div>
-      <button class="btn btn-secondary" onclick="_refLoaded=false;fetchReferrals()"><svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh</button>
+      <button class="btn btn-secondary" onclick="nrForce();_refLoaded=false;fetchReferrals()"><svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh</button>
     </div>
     <div id="referralsArea"><div class="state-box"><div class="spinner sp-blue"></div><p>Loading referral funnel…</p></div></div>
   </section>
@@ -3561,7 +3981,7 @@
     <div class="ov-head">
       <div><div class="home-title" style="margin:0 0 3px;">Features</div>
         <div class="ov-sub">Feature-usage leaderboard · last 30 days</div></div>
-      <button class="btn btn-secondary" onclick="_featLoaded=false;fetchFeatures()"><svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh</button>
+      <button class="btn btn-secondary" onclick="nrForce();_featLoaded=false;fetchFeatures()"><svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh</button>
     </div>
     <div id="featuresArea"><div class="state-box"><div class="spinner sp-blue"></div><p>Loading feature usage…</p></div></div>
   </section>
@@ -3569,7 +3989,7 @@
     <div class="ov-head">
       <div><div class="home-title" style="margin:0 0 3px;">Quality</div>
         <div class="ov-sub">Exceptions &amp; friction signals · last 7 days</div></div>
-      <button class="btn btn-secondary" onclick="_qualLoaded=false;fetchQuality()"><svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh</button>
+      <button class="btn btn-secondary" onclick="nrForce();_qualLoaded=false;fetchQuality()"><svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh</button>
     </div>
     <div id="qualityArea"><div class="state-box"><div class="spinner sp-blue"></div><p>Loading quality…</p></div></div>
   </section>
@@ -3577,7 +3997,7 @@
     <div class="ov-head">
       <div><div class="home-title" style="margin:0 0 3px;">Weekly Report</div>
         <div class="ov-sub">This week vs last week · 12-week trend</div></div>
-      <button class="btn btn-secondary" onclick="_wkLoaded=false;fetchWeekly()"><svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh</button>
+      <button class="btn btn-secondary" onclick="nrForce();_wkLoaded=false;fetchWeekly()"><svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh</button>
     </div>
     <div id="weeklyArea"><div class="state-box"><div class="spinner sp-blue"></div><p>Loading weekly report…</p></div></div>
   </section>
@@ -3585,7 +4005,7 @@
     <div class="ov-head">
       <div><div class="home-title" style="margin:0 0 3px;">Monthly Report</div>
         <div class="ov-sub">This month vs last month · 12-month trend</div></div>
-      <button class="btn btn-secondary" onclick="_moLoaded=false;fetchMonthly()"><svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh</button>
+      <button class="btn btn-secondary" onclick="nrForce();_moLoaded=false;fetchMonthly()"><svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh</button>
     </div>
     <div id="monthlyArea"><div class="state-box"><div class="spinner sp-blue"></div><p>Loading monthly report…</p></div></div>
   </section>
@@ -3672,8 +4092,8 @@
   }
 
   // ── Tab switching ─────────────────────────────────────────────────
-  const TAB_TITLES = { overview:'Dashboard', uninstalled:'Ext. Uninstalled', search:'Contacts', credits:'Exhausted Credits', pro:'Pro Users', power:'Power Users', influencers:'Influencers', abandoned:'Abandoned', salahkart:'Salahkart', skpro:'Salahkart Pro', daily:'Daily Metrics', revenue:'Revenue', expiring:'Expiring Soon', activation:'Activation' };
-  const MBN_TAB   = { overview:'mbn-overview', search:'mbn-search', credits:'mbn-credits', pro:'mbn-pro' };
+  const TAB_TITLES = { overview:'Overview', uninstalled:'Ext. Uninstalled', search:'Search', credits:'Exhausted Credits', pro:'Pro Users', power:'Power Users', influencers:'Influencers', abandoned:'Abandoned', salahkart:'Salahkart', skpro:'Salahkart Pro', daily:'Daily Metrics', insights:'Insights', revenue:'Monetization', retention:'Retention', lifecycle:'Lifecycle', emails:'Emails', referrals:'Referrals', acquire:'Acquire', expiring:'Expiring Soon', activation:'Activation' };
+  const MBN_TAB   = { overview:'mbn-overview', insights:'mbn-insights', revenue:'mbn-revenue', pro:'mbn-pro' };
 
   function switchTab(name) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -3762,7 +4182,7 @@
   }
 
   function syncMobBadges() {
-    [['credits','creditsTabBadge'],['pro','proTabBadge']].forEach(([tab, sid]) => {
+    [['revenue','revTabBadge'],['pro','proTabBadge']].forEach(([tab, sid]) => {
       const v = (document.getElementById(sid)||{}).textContent;
       const el = document.getElementById('mbn-' + tab + '-badge');
       if (!el) return;
@@ -3939,16 +4359,34 @@
     if (!resp.ok) throw new Error(json.detail || json.error || `HTTP ${resp.status}`);
     return json;
   }
+  // ── Query result cache (localStorage) ───────────────────────────────
+  // Repeat tab visits and app reopens within the TTL return instantly with no
+  // network — the single biggest mobile speed win. The Refresh button sets
+  // _bypassQueryCache to force live data.
+  const _qcache = {
+    TTL: 5 * 60 * 1000, MAXLEN: 350000,
+    key(sql){ let h=5381; for(let i=0;i<sql.length;i++) h=((h<<5)+h+sql.charCodeAt(i))|0; return 'nr_q_'+(h>>>0).toString(36); },
+    get(sql){ try{ const r=localStorage.getItem(this.key(sql)); if(!r) return null; const o=JSON.parse(r); return (Date.now()-o.t < this.TTL) ? o.d : null; }catch(_){ return null; } },
+    set(sql,d){ try{ const s=JSON.stringify({t:Date.now(),d}); if(s.length>this.MAXLEN) return; localStorage.setItem(this.key(sql),s); }
+      catch(e){ try{ Object.keys(localStorage).filter(k=>k.startsWith('nr_q_')).forEach(k=>localStorage.removeItem(k)); localStorage.setItem(this.key(sql), JSON.stringify({t:Date.now(),d})); }catch(_){} } }
+  };
+  let _bypassQueryCache = false;
+  // Refresh buttons call this so their fetch reads LIVE data (bypasses the query cache)
+  // for a short window, then re-enables caching. Prevents Refresh from showing a stale snapshot.
+  function nrForce(){ _bypassQueryCache = true; clearTimeout(window.__nrForceT); window.__nrForceT = setTimeout(function(){ _bypassQueryCache = false; }, 9000); }
   async function runHogQL(sql) {
     const apiKey = cfg('apiKey');
     if (!apiKey) throw new Error('No API key set — open API Settings (top right).');
+    if (!_bypassQueryCache) { const cached = _qcache.get(sql); if (cached) return cached; }
     await _hogAcquire();
     setBusy(true);
     try {
       let lastErr;
       for (let attempt = 0; attempt < 4; attempt++) {
         try {
-          return await _hogFetch(sql);
+          const json = await _hogFetch(sql);
+          _qcache.set(sql, json);
+          return json;
         } catch (e) {
           lastErr = e;
           const msg = e.message || '';
@@ -4178,7 +4616,10 @@
 
   function stateBox(icon, html, spinnerCls) {
     if (spinnerCls !== undefined)
-      return `<div class="state-box"><div class="spinner ${spinnerCls}"></div><p>${html}</p></div>`;
+      return `<div class="skel-box">
+        <div class="nr-skel-grid"><div class="nr-skel nr-skel-card"></div><div class="nr-skel nr-skel-card"></div><div class="nr-skel nr-skel-card"></div><div class="nr-skel nr-skel-card"></div></div>
+        <div class="nr-skel nr-skel-wide"></div>
+        <p class="skel-cap">${html}</p></div>`;
     return `<div class="state-box"><div class="state-ico"><svg><use href="#${icon}"/></svg></div><p>${html}</p></div>`;
   }
   function errorBox(msg) {
@@ -4229,8 +4670,10 @@
         const triggers = await Promise.all(Object.values(SCHEMA_IDS).map(sid =>
           fetch(`${base}/${sid}/reload/`, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: '{}' }).catch(() => null)));
         // API key lacks the external-data-schema scope (or endpoint failed) —
-        // don't sit polling for 2 minutes, just query what's already synced
-        if (!triggers.some(t => t && t.ok)) return false;
+        // don't sit polling for 2 minutes, just query what's already synced.
+        // Record capability so we never auto-sync (slow) on load for a key that can't.
+        if (!triggers.some(t => t && t.ok)) { try{ localStorage.setItem('nr_sync_ok','0'); }catch(_){} return false; }
+        try{ localStorage.setItem('nr_sync_ok','1'); }catch(_){}
         const t0 = Date.now();
         while (Date.now() - t0 < 120000) {
           await new Promise(r => setTimeout(r, 5000));
@@ -4269,7 +4712,9 @@
     }
     try { await syncMongoAndWait(); } finally { btn.disabled = false; setBusy(false); }
     _syncInfo = null;
-    conf.fetch();
+    // Refresh must fetch LIVE data, not the cached snapshot.
+    _bypassQueryCache = true;
+    try { await conf.fetch(); } finally { _bypassQueryCache = false; }
   }
 
   function syncNote() {
@@ -4515,6 +4960,67 @@
     if (s.includes('twitter') || s.includes('chatgpt') || s.includes('youtube')) return 'Organic Social';
     return 'Other';
   }
+
+  // ===== Attribution bucket engine (Influencer / Perf / Overall) =====
+  // Mirrors channelOf() precedence in SQL, mapping each person to infl|perf|other.
+  // Influencer = Direct + Organic Social + Influencer + Extension + Google kw campaign.
+  // Perf = Google Ads (non-kw) + Meta Ads. Overall = everyone (no filter).
+  const BUCKET_KW_CAMPAIGN = '23951249428';
+  let BUCKET_VIEW = 'overall';   // 'influencer' | 'perf' | 'overall'
+
+  // SQL expression classifying (s, m, c) into 'infl' | 'perf' | 'other'.
+  // s and m must already be lowercased; c is the raw $initial_utm_campaign.
+  // SYNC: this MUST mirror channelOf() above, branch-for-branch — change one, change the other.
+  // (Email/Referral/Other -> 'other' and appear only in Overall; paid_social -> 'infl'.)
+  function bucketExprSQL(s, m, c) {
+    const blank = v => `(${v}='' OR ${v} IN ('none','null','undefined','(none)','(direct)','false'))`;
+    const has = (v, sub) => `positionCaseInsensitive(${v},'${sub}')>0`;
+    return `multiIf(
+      (${blank(s)} AND ${blank(m)}) OR ${s}='direct', 'infl',
+      ${s}='chrome_extension' OR ${m}='extension', 'infl',
+      ${has(m,'influ')} OR ${has(s,'influ')}, 'infl',
+      ${has(s,'google')}, if(${c}='${BUCKET_KW_CAMPAIGN}','infl','perf'),
+      (${has(s,'meta')} OR ${has(s,'facebook')} OR ${s}='fb' OR ${s}='ig' OR ${has(s,'instagram')} OR ${has(s,'instagran')}),
+        if(${m}='social' OR ${m}='video','infl','perf'),
+      ${m}='email' OR ${s}='loops', 'other',
+      ${m}='referral' OR ${s}='affiliate' OR ${has(s,'auto_dm')}, 'other',
+      ${m}='social' OR ${m}='video' OR ${m}='paid_social', 'infl',
+      ${has(s,'twitter')} OR ${has(s,'chatgpt')} OR ${has(s,'youtube')}, 'infl',
+      'other')`;
+  }
+
+  // Person-level bucket set for the current view, scanning `scanDays` of events.
+  // Returns the inner SELECT (person_id) with the internal-user exclusions.
+  function bucketPersonSet(view, scanDays) {
+    const s = `lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!=''))`;
+    const m = `lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!=''))`;
+    const c = `argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='')`;
+    const want = view === 'perf' ? 'perf' : 'infl';
+    return `SELECT person_id FROM (
+      SELECT person_id, ${s} AS bs, ${m} AS bm, ${c} AS bc
+      FROM events
+      WHERE timestamp > now() - INTERVAL ${scanDays|0} DAY
+        AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
+        AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
+        AND person_id NOT IN COHORT 278743
+      GROUP BY person_id
+    ) WHERE ${bucketExprSQL('bs','bm','bc')}='${want}'`;
+  }
+
+  // WHERE fragment for events-based queries. '' when Overall (no filter).
+  function bucketPersonFilter(scanDays) {
+    if (BUCKET_VIEW === 'overall') return '';
+    return ` AND person_id IN (${bucketPersonSet(BUCKET_VIEW, scanDays)}) `;
+  }
+
+  // WHERE fragment for postgres.payments (email-keyed) queries.
+  function bucketEmailFilter(emailCol, scanDays) {
+    if (BUCKET_VIEW === 'overall') return '';
+    return ` AND ${emailCol} IN (
+      SELECT argMaxIf(toString(person.properties.email), timestamp, person.properties.email!='')
+      FROM events WHERE person_id IN (${bucketPersonSet(BUCKET_VIEW, scanDays)}) GROUP BY person_id) `;
+  }
+
   // "tamanna_instagram_influencer" / "vansh_youtube_influencer" → "Tamanna" / "Vansh"
   function influencerName(c) {
     if (!c) return 'Unknown';
@@ -5181,7 +5687,7 @@
 
     const txRows=_ovData.signups.slice(0,5).map(r=>{ const nm=r[1]||r[0];
       return `<div class="nb-tx"><div class="nb-txlogo">${initials(nm)}</div>
-        <div style="min-width:0"><div class="nb-txname">${h(nm)}</div><div class="nb-txsub">${h(r[0])}</div></div>
+        <div class="nb-txmid" style="min-width:0"><div class="nb-txname">${h(nm)}</div><div class="nb-txsub">${h(r[0])}</div></div>
         <span class="plan-badge ${planClass(r[2]||'')}" style="margin-left:auto">${h(planLabel(r[2]||''))}</span>
         <span class="nb-txwhen">${fmtDate(r[3])||''}</span></div>`; }).join('') || `<div class="panel-empty">No recent signups</div>`;
     const txCard=`<div class="nb-card"><div class="nb-cardh"><div class="nb-t">Recent signups</div></div>${txRows}</div>`;
@@ -8209,7 +8715,7 @@
       // payment_completed EVENTS undercount badly (many have missing/zero
       // amounts) — they were showing ~half the real revenue (₹1.09L vs ₹2.47L).
       const PW = `user_email NOT LIKE '%@nextraise.ai' AND user_email NOT LIKE '%@creditdharma.in' AND lower(user_email) NOT LIKE '%test%'`;
-      const [monthly, topPayers, planBreakdown, discountCodes, chanRev, resumeCount] = await Promise.all([
+      const [monthly, topPayers, planBreakdown, discountCodes, srcRev, resumeCount, periodRev] = await Promise.all([
         // Monthly revenue — postgres.payments (completed)
         runHogQL(`SELECT substring(toString(toStartOfMonth(toTimeZone(created_at,'Asia/Kolkata'))),1,7) AS month,
           count() AS cnt,
@@ -8249,16 +8755,25 @@
           AND timestamp >= ${tabGdrStart('revenue')} AND timestamp < ${tabGdrEnd('revenue')}
           GROUP BY code ORDER BY uses DESC LIMIT 10`).catch(()=>({results:[]})),
 
-        // Revenue by acquisition channel: [channel, payments, payers, inr, usd]
-        runHogQL(`SELECT coalesce(nullIf(argMaxIf(person.properties.acquisition_channel, timestamp,
-            person.properties.acquisition_channel != '' AND person.properties.acquisition_channel IS NOT NULL),''),
-            '(unknown)') AS channel,
-          count() AS payments, count(DISTINCT person_id) AS payers,
-          sumIf(toFloat64OrNull(properties.amount), properties.currency='INR') AS inr,
-          sumIf(toFloat64OrNull(properties.amount), properties.currency='USD') AS usd
-          FROM events WHERE event='payment_completed' AND ${EW}
-          AND timestamp >= ${tabGdrStart('revenue')} AND timestamp < ${tabGdrEnd('revenue')}
-          GROUP BY channel ORDER BY (coalesce(inr,0) + coalesce(usd,0)*${USD_TO_INR}) DESC LIMIT 10`).catch(()=>({results:[]})),
+        // Revenue by acquisition SOURCE — from postgres.payments (source of truth
+        // for amounts) joined to first-touch attribution. The old events-based
+        // query undercounted and often read empty; this joins each completed
+        // payment to the payer's first_touch source/medium so the amounts match
+        // the rest of the tab. Rows: [source, medium, payments, payers, inr, usd];
+        // bucketed into channels client-side via channelOf().
+        runHogQL(`SELECT
+          JSONExtractString(a.first_touch,'source') AS source,
+          JSONExtractString(a.first_touch,'medium') AS medium,
+          count() AS payments, count(DISTINCT p.user_email) AS payers,
+          ifNull(sumIf(p.amount, p.currency='INR'),0) AS inr,
+          ifNull(sumIf(p.amount, p.currency='USD'),0) AS usd
+          FROM postgres.payments p
+          LEFT JOIN postgres.users u ON u.email = p.user_email
+          LEFT JOIN postgres.user_attribution a ON a.user_id = u.id
+          WHERE p.status='completed'
+          AND p.user_email NOT LIKE '%@nextraise.ai' AND p.user_email NOT LIKE '%@creditdharma.in' AND lower(p.user_email) NOT LIKE '%test%'
+          AND p.created_at >= ${tabGdrStart('revenue')} AND p.created_at < ${tabGdrEnd('revenue')}
+          GROUP BY source, medium ORDER BY inr DESC LIMIT 200`).catch(()=>({results:[]})),
 
         // "Used product" = SIGNED-UP users who also uploaded a résumé. ALL-TIME
         // (since 1 May) to match the funnel's other steps — Signed Up and Paid
@@ -8269,6 +8784,15 @@
           AND timestamp >= toDateTime('2026-05-01 00:00:00')
           AND person_id IN (SELECT DISTINCT person_id FROM events WHERE event='signup_complete'
             AND timestamp >= toDateTime('2026-05-01 00:00:00'))`).catch(()=>({results:[[0]]})),
+
+        // Period revenue — total completed payments IN THE SELECTED RANGE. Powers
+        // the filter-aware headline card (e.g. "Today → ₹798, 2 payments").
+        // Row: [payments, payers, inr, usd].
+        runHogQL(`SELECT count() AS cnt, count(DISTINCT user_email) AS payers,
+          ifNull(sumIf(amount, currency='INR'),0) AS inr,
+          ifNull(sumIf(amount, currency='USD'),0) AS usd
+          FROM postgres.payments WHERE status='completed' AND ${PW}
+          AND created_at >= ${tabGdrStart('revenue')} AND created_at < ${tabGdrEnd('revenue')}`).catch(()=>({results:[[0,0,0,0]]})),
       ]);
 
       _revData = {
@@ -8276,8 +8800,9 @@
         topPayers:     (topPayers.results||[]).filter(r=>r[0]),
         planBreakdown: planBreakdown.results || [],
         discountCodes: discountCodes.results || [],
-        chanRev:       chanRev.results || [],
+        srcRev:        srcRev.results || [],
         resumeCount:   +((resumeCount.results||[[0]])[0][0] || 0),
+        periodRev:     (periodRev.results||[[0,0,0,0]])[0] || [0,0,0,0],
       };
       _revLoaded = true;
       renderRevenue();
@@ -8429,12 +8954,24 @@
     // range so ₹ figures don't read as "since 1 May" when a day/week is selected.
     const rlbl = tabGdrKey('revenue')==='all' ? 'since 1 May 2026' : tabGdrPreset('revenue').label;
 
-    // Revenue by acquisition channel — [channel, payments, payers, inr, usd]
-    const crItems = (_revData.chanRev||[]).map(r=>{
-      const ch = r[0]||'(unknown)';
-      const rev = Math.round((+r[3]||0) + (+r[4]||0)*USD_TO_INR);
-      return { label: ch, rev, payers: +r[2]||0, cssVar: BAR_COLOR_VAR[CH_COLOR[channelOf(ch,'')]||'c-gray']||'--blue' };
-    }).filter(i=>i.rev>0).sort((a,b)=>b.rev-a.rev);
+    // Revenue by acquisition SOURCE — postgres.payments rows joined to first-touch
+    // attribution: [source, medium, payments, payers, inr, usd]. Bucketed into
+    // channels via channelOf() (blank attribution → "Direct"), then summed.
+    // Direct + Extension + Influencer are merged into one bucket per request.
+    const SRC_MERGE = { 'Direct':1, 'Extension':1, 'Influencer':1 };
+    const SRC_MERGE_LABEL = 'Direct / Extension / Influencer';
+    const srcAgg = {};
+    (_revData.srcRev||[]).forEach(r=>{
+      let ch = channelOf(r[0], r[1]);
+      if (SRC_MERGE[ch]) ch = SRC_MERGE_LABEL;
+      const rev = Math.round((+r[4]||0) + (+r[5]||0)*USD_TO_INR);
+      if (!srcAgg[ch]) srcAgg[ch] = { label: ch, rev: 0, payers: 0 };
+      srcAgg[ch].rev    += rev;
+      srcAgg[ch].payers += (+r[3]||0);
+    });
+    const crItems = Object.values(srcAgg)
+      .map(i=>({ ...i, cssVar: i.label===SRC_MERGE_LABEL ? '--teal' : (BAR_COLOR_VAR[CH_COLOR[i.label]||'c-gray']||'--blue') }))
+      .filter(i=>i.rev>0).sort((a,b)=>b.rev-a.rev);
     const crMax = Math.max(1, ...crItems.map(i=>i.rev));
     const crBars = crItems.map(i=>`
         <div class="bar-row">
@@ -8443,9 +8980,9 @@
           <span class="bar-val">${inrToL(i.rev)}${i.payers?`<span class="bv-sub">${i.payers} payer${i.payers>1?'s':''}</span>`:''}</span>
         </div>`).join('');
     const chanRevCard = `<div class="ov-card"><div class="ov-card-head">
-        <span class="ov-card-title"><svg class="ic-sm"><use href="#i-megaphone"/></svg> Revenue by Channel</span>
+        <span class="ov-card-title"><svg class="ic-sm"><use href="#i-megaphone"/></svg> Revenue by Source</span>
         <span class="ov-card-note">Pro · ${rlbl}</span></div>
-        ${crItems.length ? `<div class="bars">${crBars}</div>` : `<div class="panel-empty">No channel-attributed revenue yet</div>`}</div>`;
+        ${crItems.length ? `<div class="bars">${crBars}</div>` : `<div class="panel-empty">No payments in this range</div>`}</div>`;
 
     // Revenue by plan — [plan, payments, payers, inr, usd]
     const planItems = (_revData.planBreakdown||[]).filter(r=>r[0]);
@@ -8490,8 +9027,29 @@
         <th>#</th><th>User</th><th style="text-align:right">Payments</th><th style="text-align:right">Revenue</th>
       </tr></thead><tbody>${tpBody}</tbody></table></div></div>`;
 
+    // Filter-aware headline: total revenue for the SELECTED range (Today, 7d, …).
+    // The KPI row above is intentionally period-independent (run rate / ARR /
+    // total since 1 May), so this is the only figure that answers "how much did
+    // we get in this range". Row: [payments, payers, inr, usd].
+    const pr = _revData.periodRev || [0,0,0,0];
+    const prPayments = +pr[0]||0, prPayers = +pr[1]||0, prUsd = +pr[3]||0;
+    const prTotal = Math.round((+pr[2]||0) + prUsd*USD_TO_INR);
+    const nfact = (n,l)=>`<div><div style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text-1)">${n}</div><div class="rev-kpi-label">${l}</div></div>`;
+    const periodCard = `<div class="ov-card" style="margin-bottom:16px">
+      <div class="ov-card-head">
+        <span class="ov-card-title"><svg class="ic-sm"><use href="#i-coins"/></svg> Revenue · ${rlbl}</span>
+        <span class="ov-card-note">Completed payments</span></div>
+      <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px 44px;padding:6px 2px 2px">
+        <div class="rev-kpi-num" style="font-size:40px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;color:var(--text-1)">${inrToL(prTotal)}</div>
+        <div style="display:flex;gap:36px">
+          ${nfact(prPayments.toLocaleString('en-IN'), 'payment'+(prPayments===1?'':'s'))}
+          ${nfact(prPayers.toLocaleString('en-IN'), 'payer'+(prPayers===1?'':'s'))}
+          ${prUsd>0 ? nfact('$'+Math.round(prUsd).toLocaleString('en-US'), 'in USD') : ''}
+        </div>
+      </div></div>`;
+
     document.getElementById('revenueArea').innerHTML =
-      kpis + financeRow +
+      periodCard + kpis + financeRow +
       `<div class="ov-grid">${chartCard}${funnelCard}${chanRevCard}${planCard}${discountCard}</div>` +
       topTable;
 
@@ -9086,7 +9644,11 @@
     } else {
       loadOverview();
     }
-    // Only sync MongoDB if it hasn't been synced in the last 5 minutes
+    // Auto-sync on load ONLY for keys already confirmed sync-capable (a prior manual
+    // Refresh succeeded). Otherwise it fires slow reload POSTs that 403 for this key and
+    // hog the mobile connection pool. The server cron keeps the warehouse fresh; users
+    // can force a sync via the Refresh button any time.
+    if (localStorage.getItem('nr_sync_ok') !== '1') return;
     if (!shouldSync()) return;
     markSynced();
     syncMongoAndWait().then(ok => {
@@ -9101,26 +9663,26 @@
   });
 </script>
 <nav class="mob-bottom-nav" id="mobBottomNav" aria-label="Mobile navigation">
-  <button class="mob-nav-item active" id="mbn-overview" onclick="switchTab('overview')">
+  <button class="mob-nav-item active" id="mbn-overview" onclick="switchTab('overview')" aria-label="Overview">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
     <span class="mob-nav-label">Overview</span>
   </button>
-  <button class="mob-nav-item" id="mbn-search" onclick="switchTab('search')">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
-    <span class="mob-nav-label">Contacts</span>
+  <button class="mob-nav-item" id="mbn-insights" onclick="switchTab('insights')" aria-label="Insights">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+    <span class="mob-nav-label">Insights</span>
   </button>
-  <button class="mob-nav-item" id="mbn-credits" onclick="switchTab('credits')">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-    <span class="mob-nav-badge" id="mbn-credits-badge"></span>
-    <span class="mob-nav-label">Credits</span>
+  <button class="mob-nav-item" id="mbn-revenue" onclick="switchTab('revenue')" aria-label="Monetization">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 0 0-2.5-1.5c-1.5 0-2.5.8-2.5 2s1 1.7 2.5 2 2.5.8 2.5 2-1 2-2.5 2A2.5 2.5 0 0 1 9.5 15"/><path d="M12 6v1.5M12 16.5V18"/></svg>
+    <span class="mob-nav-badge" id="mbn-revenue-badge"></span>
+    <span class="mob-nav-label">Revenue</span>
   </button>
-  <button class="mob-nav-item" id="mbn-pro" onclick="switchTab('pro')">
+  <button class="mob-nav-item" id="mbn-pro" onclick="switchTab('pro')" aria-label="Pro users">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
     <span class="mob-nav-badge" id="mbn-pro-badge"></span>
     <span class="mob-nav-label">Pro</span>
   </button>
-  <button class="mob-nav-item" id="mbn-more" onclick="toggleSidebar()">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>
+  <button class="mob-nav-item" id="mbn-more" onclick="toggleSidebar()" aria-label="More sections">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     <span class="mob-nav-label">More</span>
   </button>
 </nav>
@@ -9156,7 +9718,7 @@
       {g:'Go to',l:'Pro users',t:'pro',i:'i-star'},
       {g:'Actions',l:'Toggle light / dark theme',fn:()=>{try{toggleTheme()}catch(_){}} ,i:'i-sun'},
       {g:'Actions',l:'Open settings (API key)',fn:()=>{try{openSettings()}catch(_){}},i:'i-gear'},
-      {g:'Actions',l:'Refresh dashboard',fn:()=>{try{location.reload()}catch(_){}},i:'i-refresh'},
+      {g:'Actions',l:'Refresh dashboard',fn:()=>{try{Object.keys(localStorage).filter(k=>k.indexOf('nr_q_')===0).forEach(k=>localStorage.removeItem(k));location.reload()}catch(_){}},i:'i-refresh'},
     ];
     const ov=document.getElementById('cmdkOv'), inp=document.getElementById('cmdkInput'), list=document.getElementById('cmdkList');
     if(!ov||!inp||!list) return;
@@ -9219,6 +9781,8 @@
 
   /* ---- ACQUIRE ---- */
   var _acqLoaded=false, _acqData=null;
+  // Source multi-select filter state: null = all channels shown; else a Set of labels.
+  var _acqSrcSel=null, _acqSrcOpen=false, _acqLabels=[];
   async function fetchAcquire(){
     const area=document.getElementById('acquireArea'); if(!area) return;
     if(typeof updateTabGdrBtn==='function') updateTabGdrBtn('acquire');
@@ -9265,37 +9829,55 @@
     if(!blank(c))     return c;                                   // ad campaign name when present
     return (blank(s)?'unknown':s)+(blank(m)?'':' · '+m);
   }
+  // The combined channel bucket: Organic Social + Influencer + Extension + Direct,
+  // plus the single Google Ads campaign 23951249428 (moved out of Google Ads).
+  const ACQ_COMBINE_CH = new Set(['Organic Social','Influencer','Extension','Direct']);
+  const ACQ_COMBINE_LABEL = 'Organic / Influencer / Extension / Direct';
+  const ACQ_COMBINE_GADS_CAMPAIGN = '23951249428';
+  const acqCV = lbl => lbl===ACQ_COMBINE_LABEL ? '--teal' : (CHIP_VAR[lbl]||'--text-3');
   function renderAcquire(){
     const area=document.getElementById('acquireArea'); if(!area||!_acqData) return;
     // group raw rows → channel → merged sub-sources
     const G={};
     for(const r of _acqData){
       const src=r[0], med=r[1], camp=r[2], val=+r[3]||0, conv=+r[4]||0;
-      const ch=channelOf(src,med);
-      const g=G[ch]||(G[ch]={value:0,conv:0,subs:{}});
+      const origCh=channelOf(src,med);
+      // Route the organic-ish channels + the one branded Google campaign into the combined bucket.
+      const intoCombined = ACQ_COMBINE_CH.has(origCh) || (origCh==='Google Ads' && String(camp).trim()===ACQ_COMBINE_GADS_CAMPAIGN);
+      const ch = intoCombined ? ACQ_COMBINE_LABEL : origCh;
+      const g=G[ch]||(G[ch]={value:0,conv:0,subs:{},_infl:0});
       g.value+=val; g.conv+=conv;
-      const lbl=acqSubLabel(ch,src,med,camp);
+      if(origCh==='Influencer') g._infl+=val;   // preserve true influencer signups for the KPI
+      const lbl=acqSubLabel(origCh,src,med,camp);
       const sub=g.subs[lbl]||(g.subs[lbl]={label:lbl,value:0,conv:0});
       sub.value+=val; sub.conv+=conv;
     }
-    const items=Object.entries(G).map(([label,g])=>({label,value:g.value,conv:g.conv,
+    const allItems=Object.entries(G).map(([label,g])=>({label,value:g.value,conv:g.conv,_infl:g._infl||0,
       subs:Object.values(g.subs).sort((a,b)=>b.value-a.value)})).sort((a,b)=>b.value-a.value);
-    const total=items.reduce((a,i)=>a+i.value,0)||1;
+    _acqLabels=allItems.map(i=>i.label);   // keep the filter's option list in sync with displayed channels
+    // Close the source dropdown on any outside click (bound once).
+    if (!window._acqSrcClose){ window._acqSrcClose=true;
+      document.addEventListener('click', e=>{ if(!_acqSrcOpen) return;
+        const dd=document.getElementById('acqSrcDd');
+        if(dd && !dd.contains(e.target)){ _acqSrcOpen=false; const p=document.getElementById('acqSrcPanel'); if(p) p.hidden=true; } }); }
+    // Apply the source multi-select filter — list + all KPIs recompute for the subset.
+    const items = _acqSrcSel===null ? allItems : allItems.filter(i=>_acqSrcSel.has(i.label));
+    const totalRaw=items.reduce((a,i)=>a+i.value,0); const total=totalRaw||1;
     const totalConv=items.reduce((a,i)=>a+i.conv,0);
     const paidSet=new Set(['Google Ads','Meta Ads']);
     const paid=items.filter(i=>paidSet.has(i.label)).reduce((a,i)=>a+i.value,0);
     const organic=Math.max(0,total-paid);
-    const infl=items.find(i=>i.label==='Influencer'); const inflV=infl?infl.value:0;
+    const inflV=items.reduce((a,i)=>a+(i._infl||0),0);   // true influencer signups within the selected channels
     const top=items[0]||{label:'—',value:0};
     const kpis=[
-      oKpi('i-users','var(--blue)','Total Signups',tabGdrPreset('acquire').label,_nf(total)),
+      oKpi('i-users','var(--blue)','Total Signups',tabGdrPreset('acquire').label,_nf(totalRaw)),
       oKpi('i-globe','var(--teal)','Top Channel',top.label,_nf(top.value)),
       oKpi('i-megaphone','var(--rose)','Paid vs Organic',`${(paid/total*100).toFixed(0)}% paid`,`${_nf(paid)} / ${_nf(organic)}`),
       oKpi('i-share','var(--violet)','Influencer Share',`${(inflV/total*100).toFixed(1)}% of signups`,_nf(inflV)),
     ].join('');
     const max=Math.max(1,...items.map(i=>i.value));
     const chBlocks=items.map(i=>{
-      const cv=CHIP_VAR[i.label]||'--text-3';
+      const cv=acqCV(i.label);
       const subsShown=i.subs.slice(0,15), moreN=i.subs.length-subsShown.length;
       const subMax=Math.max(1,...i.subs.map(s=>s.value));
       const canExpand=i.subs.length>1 || (i.subs[0] && i.subs[0].label!==i.label);
@@ -9320,16 +9902,51 @@
         ${canExpand?`<div class="acq-ch-subs" hidden>${subRows}</div>`:''}
       </div>`;
     }).join('');
+    // Source multi-select dropdown — options are every channel present in the data.
+    const nSel = _acqSrcSel===null ? allItems.length : allItems.filter(i=>_acqSrcSel.has(i.label)).length;
+    const allSel = _acqSrcSel===null || nSel===allItems.length;
+    const srcOpts = allItems.map(i=>{
+      const on = _acqSrcSel===null || _acqSrcSel.has(i.label);
+      const cvv = acqCV(i.label);
+      return `<label class="acq-src-opt">
+        <input type="checkbox" ${on?'checked':''} data-src="${h(i.label)}" onchange="acqSrcPick(this.dataset.src,this.checked)">
+        <span class="acq-src-sw" style="background:var(${cvv})"></span>
+        <span class="acq-src-ol">${h(i.label)}</span>
+        <span class="acq-src-on">${_nf(i.value)}</span>
+      </label>`;
+    }).join('');
+    const srcDd = `<div class="acq-src" id="acqSrcDd">
+      <button class="acq-src-btn" onclick="acqSrcToggle(event)">Sources <b>${allSel?'All':nSel}</b><span class="acq-src-car">▾</span></button>
+      <div class="acq-src-panel" id="acqSrcPanel" ${_acqSrcOpen?'':'hidden'}>
+        <div class="acq-src-actions"><button onclick="acqSrcAll()">Select all</button><button onclick="acqSrcClear()">Clear</button></div>
+        ${srcOpts}
+      </div></div>`;
+    const listInner = items.length
+      ? chBlocks
+      : `<div class="acq-empty">No sources selected — pick one or more from the <b>Sources</b> menu.</div>`;
     area.innerHTML=`<div class="okpis">${kpis}</div>
-      <div class="ocard"><div class="ocard-h"><div class="ocard-t">Channels</div><div class="ocard-note">${_nf(total)} signups · ${_nf(totalConv)} → Pro · tap a channel to expand</div></div>
+      <div class="ocard"><div class="ocard-h"><div class="ocard-t">Channels</div>
+        <div class="acq-hd-right"><div class="ocard-note">${_nf(totalRaw)} signups · ${_nf(totalConv)} → Pro${allSel?' · tap a channel to expand':' · filtered'}</div>${srcDd}</div></div>
         <div class="acq-list">
           <div class="acq-ch-head acq-hd"><span></span><span></span><span class="acq-ch-l">Channel</span><span></span><span class="acq-v">Signups</span><span class="acq-share">Share</span><span class="acq-conv">→ Pro</span></div>
-          ${chBlocks}
+          ${listInner}
         </div></div>`;
   }
   function toggleAcqCh(head){ const ch=head.parentElement; const open=ch.classList.toggle('open');
     head.querySelector('.acq-caret').textContent=open?'▾':'▸';
     const subs=ch.querySelector('.acq-ch-subs'); if(subs) subs.hidden=!open; }
+  // Source multi-select filter (Acquire tab).
+  function _acqAllLabels(){ return _acqLabels.slice(); }   // displayed channel labels (post-combine), kept in sync by renderAcquire
+  function acqSrcToggle(e){ e.stopPropagation(); _acqSrcOpen=!_acqSrcOpen;
+    const p=document.getElementById('acqSrcPanel'); if(p) p.hidden=!_acqSrcOpen; }
+  function acqSrcPick(label,checked){
+    if(_acqSrcSel===null) _acqSrcSel=new Set(_acqAllLabels());   // materialise "all" before removing one
+    if(checked) _acqSrcSel.add(label); else _acqSrcSel.delete(label);
+    if(_acqSrcSel.size===_acqAllLabels().length) _acqSrcSel=null; // back to "all"
+    _acqSrcOpen=true; renderAcquire();
+  }
+  function acqSrcAll(){ _acqSrcSel=null; _acqSrcOpen=true; renderAcquire(); }
+  function acqSrcClear(){ _acqSrcSel=new Set(); _acqSrcOpen=true; renderAcquire(); }
 
   /* ---- INSIGHTS (funnel) ---- */
   var _insLoaded=false, _insData=null;
@@ -9340,33 +9957,50 @@
     if(!_insData) area.innerHTML=stateBox(null,'Loading funnel…','sp-blue');
     try{
       const start=tabGdrStartDate('insights'), end=tabGdrEndDate('insights');
+      // ORDERED funnel (matches PostHog): each step must happen AFTER the previous, in
+      // sequence, within a 14-day conversion window. windowFunnel() returns the deepest
+      // step each person reached; we then count persons at each level. This is why résumé
+      // (which usually happens DURING onboarding, not after) correctly drops here — an
+      // unordered "ever did X" count wrongly inflated it.
       const res=await runHogQL(`
         SELECT
-          uniqIf(person_id, event='signup_complete')      AS signed,
-          uniqIf(person_id, event='onboarding_start')     AS onb_start,
-          uniqIf(person_id, event='onboarding_complete')  AS onb_done,
-          uniqIf(person_id, event='payment_completed')    AS paid
-        FROM events
-        WHERE timestamp > now() - INTERVAL 400 DAY
-          AND person_id IN (
-            SELECT person_id FROM events
-            WHERE event='signup_complete'
-              AND toDate(toTimeZone(timestamp,'Asia/Kolkata')) >= toDate('${start}')
-              AND toDate(toTimeZone(timestamp,'Asia/Kolkata')) < toDate('${end}')
-          )
-          AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
-          AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
-          AND lower(coalesce(person.properties.email,'')) NOT LIKE '%test%'`);
-      _insData=(res.results||[])[0]||[0,0,0,0]; _insLoaded=true; renderInsights();
+          countIf(level>=1) AS signed,
+          countIf(level>=2) AS onb_start,
+          countIf(level>=3) AS onb_done,
+          countIf(level>=4) AS resume_up,
+          sum(paid_flag)    AS paid
+        FROM (
+          SELECT person_id,
+            windowFunnel(1209600)(toDateTime(timestamp),
+              event='signup_complete',
+              event='onboarding_start',
+              event='onboarding_complete',
+              event='resume_upload') AS level,
+            max(event='payment_completed') AS paid_flag
+          FROM events
+          WHERE timestamp > now() - INTERVAL 400 DAY
+            AND person_id IN (
+              SELECT person_id FROM events
+              WHERE event='signup_complete'
+                AND toDate(toTimeZone(timestamp,'Asia/Kolkata')) >= toDate('${start}')
+                AND toDate(toTimeZone(timestamp,'Asia/Kolkata')) < toDate('${end}')
+            )
+            AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
+            AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
+            AND lower(coalesce(person.properties.email,'')) NOT LIKE '%test%'
+          GROUP BY person_id
+        )`);
+      _insData=(res.results||[])[0]||[0,0,0,0,0]; _insLoaded=true; renderInsights();
     }catch(e){ area.innerHTML=errorBox('Could not load funnel — '+e.message); }
   }
   function renderInsights(){
     const area=document.getElementById('insightsArea'); if(!area||!_insData) return;
-    const [signed, onbStart, onbDone, paid] = _insData.map(x=>+x||0);
+    const [signed, onbStart, onbDone, resumeUp, paid] = _insData.map(x=>+x||0);
     const steps=[
       {label:'Signed up',           v:signed,   c:'var(--blue)'},
       {label:'Onboarding started',  v:onbStart, c:'var(--teal)'},
       {label:'Onboarding complete', v:onbDone,  c:'var(--amber)'},
+      {label:'Résumé upload',       v:resumeUp, c:'var(--violet)'},
       {label:'Paid (Pro)',          v:paid,     c:'var(--green)'},
     ];
     const base=signed||1;
@@ -9891,6 +10525,82 @@
     });
     const start=()=>obs.observe(document.body,{subtree:true,childList:true,characterData:true});
     if(document.readyState==='loading') window.addEventListener('DOMContentLoaded',start); else start();
+  })();
+</script>
+<script>
+  /* ===== Opening / launch animation ===== */
+  (function(){
+    try{
+      if(window.__nrLaunched) return; window.__nrLaunched=1;
+      var o=document.createElement('div'); o.id='nrLaunch';
+      o.innerHTML='<div class="nrl-mark"><svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M135.74 93.1967C135.74 111.376 135.345 126.295 134.95 126.295C134.456 126.295 133.566 123.924 132.875 121.058C129.516 106.436 116.869 89.2447 102.346 79.7599C95.0344 74.9187 83.376 70.4727 75.472 69.4847C73.002 69.1883 69.544 68.6943 67.8644 68.3979L64.604 67.9039L64.4064 84.0083L64.11 100.113L48.1044 100.409L32 100.607V120.367V140.127H48.302H64.604V120.268V100.31L69.3464 101.002C75.3732 101.792 84.858 106.436 90.5884 111.475C96.22 116.415 101.654 126.888 102.543 134.594L103.235 140.127H135.345H167.356L167.158 100.31L166.862 60.5927L151.35 60.2963L135.74 59.9999V93.1967Z" fill="#fff"/></svg></div><div class="nrl-word">Next<span>Raise</span></div><div class="nrl-bar"><i></i></div>';
+      var mount=function(){ if(document.body){ document.body.appendChild(o); setTimeout(function(){ o.classList.add('hide'); setTimeout(function(){ o.remove(); }, 460); }, 1250); } else { requestAnimationFrame(mount); } };
+      mount();
+    }catch(e){}
+  })();
+
+  /* ===== Native app bridge (Capacitor) + mobile gestures ===== */
+  (function(){
+    var C = window.Capacitor;
+    var native = !!(C && (C.isNativePlatform ? C.isNativePlatform() : C.isNative));
+    var P = (C && C.Plugins) || {};
+
+    function haptic(){
+      try{ if(native && P.Haptics) P.Haptics.impact({ style:'LIGHT' }); }catch(e){}
+      if(!native && navigator.vibrate){ try{ navigator.vibrate(8); }catch(e){} }
+    }
+
+    if(native){
+      document.documentElement.classList.add('is-native');
+      // hide the native splash once the web app has painted
+      requestAnimationFrame(function(){ setTimeout(function(){
+        try{ P.SplashScreen && P.SplashScreen.hide({ fadeOutDuration:280 }); }catch(e){}
+      }, 250); });
+      // status bar: dark icons on the light dashboard
+      try{ if(P.StatusBar){
+        P.StatusBar.setStyle({ style:'LIGHT' });          // LIGHT = dark icons for light bg
+        P.StatusBar.setBackgroundColor({ color:'#f2ebe0' });
+        P.StatusBar.setOverlaysWebView && P.StatusBar.setOverlaysWebView({ overlay:false });
+      }}catch(e){}
+      // Android hardware back button: close overlays → go to Overview → exit
+      try{ P.App && P.App.addListener('backButton', function(){
+        var cmdk=document.getElementById('cmdkOv');
+        if(cmdk && cmdk.classList.contains('open')){ try{ document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'})); }catch(e){} return; }
+        if(document.querySelector('.sidebar.open')){ try{ closeSidebar(); }catch(e){} return; }
+        var hash=(location.hash||'').replace('#','');
+        if(hash && hash!=='overview'){ try{ switchTab('overview'); }catch(e){} }
+        else { try{ P.App.exitApp(); }catch(e){} }
+      }); }catch(e){}
+    }
+
+    // light haptic on primary nav / action taps
+    document.addEventListener('click', function(e){
+      if(e.target.closest('.mob-nav-item,.tab,.btn-primary,.gdr-btn,.days-chip')) haptic();
+    }, true);
+
+    // ── Pull-to-refresh (touch devices) ──
+    if('ontouchstart' in window){
+      var body=document.querySelector('.app-body');
+      if(body){
+        var ptr=document.createElement('div'); ptr.id='nrPtr';
+        ptr.innerHTML='<div class="nr-ptr-spin"></div>';
+        document.body.appendChild(ptr);
+        var spin=ptr.querySelector('.nr-ptr-spin');
+        var startY=0, pulling=false, dist=0, TH=70;
+        body.addEventListener('touchstart', function(e){ if(body.scrollTop>0){ pulling=false; return; } startY=e.touches[0].clientY; pulling=true; dist=0; }, {passive:true});
+        body.addEventListener('touchmove', function(e){
+          if(!pulling) return;
+          dist=e.touches[0].clientY-startY;
+          if(dist>0 && body.scrollTop<=0){ var hh=Math.min(dist*0.5, 84); ptr.style.height=hh+'px'; ptr.classList.add('pull'); if(spin) spin.style.transform='rotate('+Math.min(dist*2,360)+'deg)'; }
+          else { ptr.style.height='0px'; ptr.classList.remove('pull'); }
+        }, {passive:true});
+        body.addEventListener('touchend', function(){
+          if(!pulling) return; pulling=false;
+          if(dist>TH){ ptr.classList.remove('pull'); ptr.classList.add('spin'); ptr.style.height='58px'; haptic(); try{ Object.keys(localStorage).filter(function(k){return k.indexOf('nr_q_')===0;}).forEach(function(k){localStorage.removeItem(k);}); }catch(e){} setTimeout(function(){ location.reload(); }, 320); }
+          else { ptr.classList.remove('pull'); ptr.style.height='0px'; }
+        }, {passive:true});
+      }
+    }
   })();
 </script>
 </body>
