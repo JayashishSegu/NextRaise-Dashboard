@@ -10975,7 +10975,9 @@
           countIf(event IN ('email_unsubscribed','$workflows_email_unsubscribed')) AS unsub
         FROM events
         WHERE timestamp > now() - INTERVAL 30 DAY
-          AND event IN ('email_sent','$workflows_email_sent','email_delivered','$workflows_email_delivered','email_opened','$workflows_email_opened','$workflows_email_link_clicked','email_bounced','$workflows_email_bounced','email_unsubscribed','$workflows_email_unsubscribed')`);
+          AND event IN ('email_sent','$workflows_email_sent','email_delivered','$workflows_email_delivered','email_opened','$workflows_email_opened','$workflows_email_link_clicked','email_bounced','$workflows_email_bounced','email_unsubscribed','$workflows_email_unsubscribed')
+          AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
+          AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')${bucketPersonFilter(30)}`);
       _emlData=(res.results||[])[0]||[0,0,0,0,0,0]; _emlLoaded=true; renderEmails();
     }catch(e){ area.innerHTML=errorBox('Could not load emails — '+e.message); }
   }
