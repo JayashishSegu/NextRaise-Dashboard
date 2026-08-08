@@ -7621,6 +7621,8 @@
     try {
       const evList = POWER_EVENTS.map(e=>`'${esc(e)}'`).join(',');
       const aiList = POWER_AI_EVENTS.map(e=>`'${esc(e)}'`).join(',');
+      // Bucket attribution: scan window for person classification matches the tab range.
+      const sd = tabGdrPreset('power').scanDays;
       // 1. aggregate high-value actions per user from PostHog events, then join
       //    the account name + plan from the MongoDB warehouse copy.
       const r1 = await fetchAllPages(`
@@ -7634,6 +7636,7 @@
           WHERE event IN (${evList})
             AND timestamp >= ${tabGdrStart('power')} AND timestamp < ${tabGdrEnd('power')}
             AND person.properties.email != '' AND person.properties.email IS NOT NULL
+            ${bucketPersonFilter(sd)}
           GROUP BY email
           HAVING actions >= ${POWER_MIN_ACTIONS}
         )
