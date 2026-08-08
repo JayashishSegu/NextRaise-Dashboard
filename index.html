@@ -1721,6 +1721,12 @@
     .modal-overlay{ background:rgba(4,7,14,.72)!important; backdrop-filter:blur(6px); }
     .spinner{ border-top-color:var(--blue)!important; }
 
+    /* ── Bucket attribution toggle ──────────────────────────────────────── */
+    .bucket-seg{ display:inline-flex; background:var(--surface-2); border:1px solid var(--sep); border-radius:999px; padding:3px; gap:2px; }
+    .bucket-seg .bkt{ border:0; background:transparent; color:var(--text-2); font:600 12.5px/1 'Plus Jakarta Sans',sans-serif; padding:7px 14px; border-radius:999px; cursor:pointer; transition:all .3s cubic-bezier(.32,.72,0,1); }
+    .bucket-seg .bkt.is-on{ background:var(--surface); color:var(--text); box-shadow:0 2px 8px rgba(31,35,48,.08); }
+    @media(max-width:600px){ .bucket-seg .bkt{ padding:6px 10px; font-size:11.5px; } }
+
     /* Sidebar profile card */
     .nb-profile{ margin:2px 14px 6px; padding:14px; border-radius:18px; background:var(--surface); border:1px solid var(--border); backdrop-filter:var(--glass-blur); }
     .nb-prof-top{ display:flex; align-items:center; justify-content:space-between; }
@@ -2686,6 +2692,11 @@
           <span class="gdr-tab-label">Last 7 days</span>
           <svg class="gdr-chevron"><use href="#i-chevron-down"/></svg>
         </button>
+        <div class="bucket-seg" id="bucketSeg" role="tablist" aria-label="Attribution view" style="margin-top:8px;">
+          <button class="bkt" data-view="influencer" onclick="setBucketView('influencer')">Influencer</button>
+          <button class="bkt" data-view="perf" onclick="setBucketView('perf')">Perf</button>
+          <button class="bkt is-on" data-view="overall" onclick="setBucketView('overall')">Overall</button>
+        </div>
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
         <span class="nb-updated" id="ovUpdated"></span>
@@ -5019,6 +5030,45 @@
     return ` AND ${emailCol} IN (
       SELECT argMaxIf(toString(person.properties.email), timestamp, person.properties.email!='')
       FROM events WHERE person_id IN (${bucketPersonSet(BUCKET_VIEW, scanDays)}) GROUP BY person_id) `;
+  }
+
+  // ── Bucket toggle state ─────────────────────────────────────────────────
+  function _syncBucketSeg() {
+    document.querySelectorAll('#bucketSeg .bkt').forEach(b =>
+      b.classList.toggle('is-on', b.dataset.view === BUCKET_VIEW));
+  }
+  function initBucketView() {
+    const u = new URLSearchParams(location.search).get('view');
+    const saved = u || localStorage.getItem('nr_bucket_view') || 'overall';
+    BUCKET_VIEW = ['influencer','perf','overall'].includes(saved) ? saved : 'overall';
+    _syncBucketSeg();
+  }
+  function setBucketView(v) {
+    if (BUCKET_VIEW === v) return;
+    BUCKET_VIEW = v;
+    localStorage.setItem('nr_bucket_view', v);
+    const url = new URL(location.href); url.searchParams.set('view', v);
+    history.replaceState(null, '', url);
+    _syncBucketSeg();
+    if (typeof nrForce === 'function') nrForce();   // bust query cache for ~9s if that helper exists
+    _refreshAllLoadedTabs();
+  }
+  function _refreshAllLoadedTabs() {
+    // Reset loaded flags for Overview and the bucket-aware tabs (acquire, revenue, activation)
+    // that will be wired in subsequent tasks. Guard each with typeof to avoid ReferenceError.
+    // Overview uses _ovData (null = unloaded); others use boolean flags.
+    if (typeof _ovData !== 'undefined') { _ovData = null; }
+    if (typeof _acqLoaded !== 'undefined') { _acqLoaded = false; }
+    if (typeof _revLoaded !== 'undefined') { _revLoaded = false; }
+    if (typeof _actLoaded !== 'undefined') { _actLoaded = false; }
+    // Determine the active tab from the page with class "active", then re-run it.
+    const activePage = document.querySelector('.page.active');
+    if (!activePage) return;
+    const activeName = activePage.id.replace('page-', '');
+    // Overview has a stale-while-revalidate guard (OV_FRESH_TTL) that would otherwise
+    // re-render cached wrong-bucket numbers; force a live refetch when the view changes.
+    if (activeName === 'overview' && typeof loadOverview === 'function') { loadOverview(true); return; }
+    if (typeof switchTab === 'function') switchTab(activeName);
   }
 
   // "tamanna_instagram_influencer" / "vansh_youtube_influencer" → "Tamanna" / "Vansh"
@@ -9636,6 +9686,7 @@
   window.addEventListener('DOMContentLoaded', () => {
     renderRecentChips();
     fetchFxRate();
+    initBucketView();
     if (!cfg('apiKey')) { openSettings(); return; }
     // Honour URL hash — lets "Open in New Tab" land on the right tab
     const _hashTab = window.location.hash.replace('#', '');
