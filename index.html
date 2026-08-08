@@ -5327,6 +5327,9 @@
     if (typeof _reportData !== 'undefined') { _reportData = null; }  // null it so fetchReport shows the spinner, not stale wrong-bucket KPIs
     if (typeof _revLoaded !== 'undefined') { _revLoaded = false; }
     if (typeof _actLoaded !== 'undefined') { _actLoaded = false; }
+    if (typeof _insLoaded !== 'undefined') { _insLoaded = false; }
+    if (typeof _lifLoaded !== 'undefined') { _lifLoaded = false; }
+    if (typeof _dlyLoaded !== 'undefined') { _dlyLoaded = false; }
     // Determine the active tab from the page with class "active", then re-run it.
     const activePage = document.querySelector('.page.active');
     if (!activePage) return;
@@ -10720,6 +10723,12 @@
       // step each person reached; we then count persons at each level. This is why résumé
       // (which usually happens DURING onboarding, not after) correctly drops here — an
       // unordered "ever did X" count wrongly inflated it.
+      //
+      // Bucket attribution: the derived table already groups per-person, so we add the
+      // three bucket columns (_bs, _bm, _bc) INLINE and filter in the outer WHERE with
+      // bucketExprSQL — avoids a second per-person scan that would time out.
+      const bktWhere = BUCKET_VIEW==='overall' ? '' :
+        ` WHERE ${bucketExprSQL('_bs','_bm','_bc')}='${BUCKET_VIEW==='perf'?'perf':'infl'}'`;
       const res=await runHogQL(`
         SELECT
           countIf(level>=1) AS signed,
@@ -10729,6 +10738,9 @@
           sum(paid_flag)    AS paid
         FROM (
           SELECT person_id,
+            lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
+            lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+            argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc,
             windowFunnel(1209600)(toDateTime(timestamp),
               event='signup_complete',
               event='onboarding_start',
@@ -10747,7 +10759,7 @@
             AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
             AND lower(coalesce(person.properties.email,'')) NOT LIKE '%test%'
           GROUP BY person_id
-        )`);
+        )${bktWhere}`);
       _insData=(res.results||[])[0]||[0,0,0,0,0]; _insLoaded=true; renderInsights();
     }catch(e){ area.innerHTML=errorBox('Could not load funnel — '+e.message); }
   }
