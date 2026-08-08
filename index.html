@@ -11016,7 +11016,9 @@
           uniqIf(person_id, event='referral_code_apply_attempt') AS ppl
         FROM events
         WHERE timestamp > now() - INTERVAL 90 DAY
-          AND event IN ('referral_code_apply_attempt','referral_discount_applied','referral_purchase','referral_reward_granted')`);
+          AND event IN ('referral_code_apply_attempt','referral_discount_applied','referral_purchase','referral_reward_granted')
+          AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
+          AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')${bucketPersonFilter(90)}`);
       _refData=(res.results||[])[0]||[0,0,0,0,0]; _refLoaded=true; renderReferrals();
     }catch(e){ area.innerHTML=errorBox('Could not load referrals — '+e.message); }
   }
