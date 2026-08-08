@@ -11187,6 +11187,9 @@
     if(!cfg('apiKey')){ area.innerHTML=stateBox(null,'Add your PostHog key in Settings.','sp-blue'); return; }
     if(!_dlyData) area.innerHTML=stateBox(null,'Loading daily metrics…','sp-blue');
     try{
+      // Bucket attribution: events query is a simple FROM events, so append bucketPersonFilter.
+      // Payments query is email-keyed (postgres.payments), so append bucketEmailFilter.
+      // Both use scanDays=31 to match the query's own INTERVAL 31 DAY.
       const [ev,pay]=await Promise.all([
         runHogQL(`
           SELECT toString(toDate(toTimeZone(timestamp,'Asia/Kolkata'))) AS d,
@@ -11195,7 +11198,7 @@
           FROM events
           WHERE event IN ('signup_complete','onboarding_complete')
             AND toDate(toTimeZone(timestamp,'Asia/Kolkata')) >= toDate(toTimeZone(now(),'Asia/Kolkata')) - 30
-            AND ${_EXCL}
+            AND ${_EXCL}${bucketPersonFilter(31)}
           GROUP BY d ORDER BY d`),
         runHogQL(`
           SELECT toString(toDate(toTimeZone(created_at,'Asia/Kolkata'))) AS d,
@@ -11203,7 +11206,7 @@
             count() AS pays
           FROM postgres.payments
           WHERE status='completed' AND created_at > now() - INTERVAL 31 DAY
-            AND user_email NOT LIKE '%@nextraise.ai' AND user_email NOT LIKE '%@creditdharma.in' AND lower(user_email) NOT LIKE '%test%'
+            AND user_email NOT LIKE '%@nextraise.ai' AND user_email NOT LIKE '%@creditdharma.in' AND lower(user_email) NOT LIKE '%test%'${bucketEmailFilter('user_email', 31)}
           GROUP BY d ORDER BY d`).catch(()=>({results:[]}))
       ]);
       _dlyData={ev:ev.results||[], pay:pay.results||[]}; _dlyLoaded=true; renderDaily();
