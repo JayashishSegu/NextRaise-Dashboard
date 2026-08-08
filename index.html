@@ -2575,6 +2575,15 @@
       .infl-ref-side{ max-width:46%; }
       .infl-ref-side .badge{ display:none !important; }
     }
+    @media print {
+      body * { visibility: hidden !important; }
+      #page-report, #page-report * { visibility: visible !important; }
+      #page-report { position: absolute; left: 0; top: 0; width: 100%; padding: 0 !important; }
+      .no-print { display: none !important; }
+      .sidebar, .mobile-topbar, .mobile-bottom-nav, .sidebar-backdrop { display: none !important; }
+      @page { size: A4; margin: 12mm; }
+    }
+    .nr-exporting .no-print { display: none !important; }
   </style>
   <script>
     // Apply the saved (or system) theme before first paint to avoid a flash.
@@ -4081,17 +4090,19 @@
       <div>
         <div class="home-title" style="margin:0 0 3px;">Marketing report</div>
         <div class="ov-sub">CEO-level marketing performance: signups, revenue, channel spend</div>
-        <button class="gdr-btn" id="gdrTabBtn-report" onclick="openTabGdr(event,'report')" style="margin-top:8px;">
+        <button class="gdr-btn no-print" id="gdrTabBtn-report" onclick="openTabGdr(event,'report')" style="margin-top:8px;">
           <svg class="ic-sm"><use href="#i-calendar"/></svg><span class="gdr-tab-label">Last 7 days</span><svg class="gdr-chevron"><use href="#i-chevron-down"/></svg>
         </button>
-        <div class="bucket-seg" id="bucketSegReport" role="tablist" aria-label="Attribution view" style="margin-top:8px;">
+        <div class="bucket-seg no-print" id="bucketSegReport" role="tablist" aria-label="Attribution view" style="margin-top:8px;">
           <button class="bkt" data-view="influencer" onclick="setBucketView('influencer')">Influencer</button>
           <button class="bkt" data-view="perf" onclick="setBucketView('perf')">Perf</button>
           <button class="bkt is-on" data-view="overall" onclick="setBucketView('overall')">Overall</button>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
-        <button class="btn btn-ghost" onclick="openCreatorForm()" title="Log manual influencer campaign metrics">Influencer data</button>
+        <button class="btn btn-ghost no-print" onclick="openCreatorForm()" title="Log manual influencer campaign metrics">Influencer data</button>
+        <button class="btn btn-secondary no-print" onclick="exportReport('pdf')">Export PDF</button>
+        <button class="btn btn-secondary no-print" onclick="exportReport('png')">Export PNG</button>
         <button class="btn btn-secondary" onclick="nrForce();_reportLoaded=false;fetchReport()">
           <svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh
         </button>
@@ -10499,6 +10510,30 @@
       ch.render();
       window._reportCharts.push(ch);
     }, 30);
+  }
+
+  function exportReport(fmt) {
+    if (fmt === 'pdf') { window.print(); return; }   // user picks "Save as PDF"
+    const target = document.getElementById('page-report');
+    if (!target) return;
+    const run = () => {
+      document.body.classList.add('nr-exporting');
+      const bg = getComputedStyle(document.body).backgroundColor || '#ffffff';
+      window.html2canvas(target, { scale: 2, backgroundColor: bg, useCORS: true,
+        ignoreElements: el => el.classList && el.classList.contains('no-print') })
+        .then(canvas => {
+          document.body.classList.remove('nr-exporting');
+          const a = document.createElement('a');
+          a.download = `nextraise-report-${BUCKET_VIEW}-${_tabRanges['report'] || '7d'}.png`;
+          a.href = canvas.toDataURL('image/png');
+          a.click();
+        }).catch(e => { document.body.classList.remove('nr-exporting'); alert('Export failed: ' + e.message); });
+    };
+    if (window.html2canvas) return run();
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    s.onload = run; s.onerror = () => alert('Could not load the image exporter (offline?).');
+    document.head.appendChild(s);
   }
 
   /* ---- ACQUIRE ---- */
