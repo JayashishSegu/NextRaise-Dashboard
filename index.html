@@ -5327,6 +5327,12 @@
     if (typeof _reportData !== 'undefined') { _reportData = null; }  // null it so fetchReport shows the spinner, not stale wrong-bucket KPIs
     if (typeof _revLoaded !== 'undefined') { _revLoaded = false; }
     if (typeof _actLoaded !== 'undefined') { _actLoaded = false; }
+    if (typeof _proLoaded !== 'undefined') { _proLoaded = false; }
+    if (typeof _proRows !== 'undefined') { _proRows = []; }
+    if (typeof _powerLoaded !== 'undefined') { _powerLoaded = false; }
+    if (typeof _powerRows !== 'undefined') { _powerRows = []; }
+    if (typeof _expiringLoaded !== 'undefined') { _expiringLoaded = false; }
+    if (typeof _expiringRows !== 'undefined') { _expiringRows = []; }
     if (typeof _insLoaded !== 'undefined') { _insLoaded = false; }
     if (typeof _lifLoaded !== 'undefined') { _lifLoaded = false; }
     if (typeof _dlyLoaded !== 'undefined') { _dlyLoaded = false; }
@@ -7221,6 +7227,8 @@
       // ── Phase 1: postgres.users (fast — milliseconds vs 30s events scan) ──────
       const pgStartDate = tabGdrStartDate('pro');
       const pgEndDate   = tabGdrEndDate('pro');
+      // Bucket filter: scan window mirrors the pro tab's date range scan.
+      const sd = tabGdrPreset('pro').scanDays;
       const [pgUsersRes, pgPayRes] = await Promise.all([
         runHogQL(`
           SELECT lower(email) AS email, name, plan_cache AS plan, sub_status AS st,
@@ -7231,6 +7239,7 @@
             AND email NOT LIKE '%@nextraise.ai'
             AND email NOT LIKE '%@creditdharma.in'
             AND lower(email) NOT LIKE '%test%'
+            ${bucketEmailFilter('email', sd)}
           ORDER BY created_at DESC LIMIT 2000`).catch(()=>({results:[]})),
         runHogQL(`
           SELECT lower(user_email) AS email,
@@ -7244,6 +7253,7 @@
             AND user_email NOT LIKE '%@nextraise.ai'
             AND user_email NOT LIKE '%@creditdharma.in'
             AND lower(user_email) NOT LIKE '%test%'
+            ${bucketEmailFilter('user_email', sd)}
           GROUP BY email LIMIT 2000`).catch(()=>({results:[]}))
       ]);
 
