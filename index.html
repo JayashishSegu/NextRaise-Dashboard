@@ -953,6 +953,16 @@
     .rev-mc-val { font-size:9px; font-weight:700; color:var(--text-2); text-align:center; white-space:nowrap; }
     .rev-section-head { font-size:12px; font-weight:700; color:var(--text); margin:18px 0 10px; display:flex; align-items:center; gap:8px; }
 
+    /* ── CEO Report page ───────────────────────────────────────── */
+    .rep-hero { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:14px; margin-bottom:20px; }
+    .rep-kpi { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 18px; position:relative; overflow:hidden; box-shadow:var(--shadow-sm); }
+    .rep-kpi::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:var(--radius-lg) var(--radius-lg) 0 0; background:var(--blue); }
+    .rep-kpi-num { font-size:24px; font-weight:800; letter-spacing:-0.04em; font-variant-numeric:tabular-nums; line-height:1.1; margin-bottom:4px; color:var(--blue-text); }
+    .rep-kpi-label { font-size:10.5px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:0.07em; }
+    .rep-social { padding:14px 16px; background:var(--blue-soft); border:1px solid var(--border); border-radius:var(--radius-lg); margin-bottom:20px; }
+    .rep-social-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:12px; }
+    .rep-social-head { font-size:11px; font-weight:700; color:var(--blue-text); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px; }
+
     /* ── Expiring Soon page ─────────────────────────────────────── */
     .exp-urgent  { border-left:3px solid var(--red); }
     .exp-warn    { border-left:3px solid var(--amber); }
@@ -2643,6 +2653,9 @@
       <a class="tab active" id="tab-overview" onclick="switchTab('overview')"href="#overview" title="Live business overview">
         <svg class="ic-sm"><use href="#i-grid"/></svg> Overview
       </a>
+      <a class="tab" id="tab-report" onclick="switchTab('report')"href="#report" title="CEO Marketing Report — hero KPIs + channel spend">
+        <svg class="ic-sm"><use href="#i-trending"/></svg> Report
+      </a>
       <a class="tab" id="tab-daily" onclick="switchTab('daily')"href="#daily" title="Daily metrics dashboard">
         <svg class="ic-sm"><use href="#i-calendar"/></svg> Daily
       </a>
@@ -4038,6 +4051,32 @@
     <div id="monthlyArea"><div class="state-box"><div class="spinner sp-blue"></div><p>Loading monthly report…</p></div></div>
   </section>
 
+
+  <!-- ── CEO Report page ── -->
+  <section class="page" id="page-report">
+    <div class="ov-head">
+      <div>
+        <div class="home-title" style="margin:0 0 3px;">Marketing report</div>
+        <div class="ov-sub">CEO-level marketing performance: signups, revenue, channel spend</div>
+        <button class="gdr-btn" id="gdrTabBtn-report" onclick="openTabGdr(event,'report')" style="margin-top:8px;">
+          <svg class="ic-sm"><use href="#i-calendar"/></svg><span class="gdr-tab-label">Last 7 days</span><svg class="gdr-chevron"><use href="#i-chevron-down"/></svg>
+        </button>
+        <div class="bucket-seg" id="bucketSegReport" role="tablist" aria-label="Attribution view" style="margin-top:8px;">
+          <button class="bkt" data-view="influencer" onclick="setBucketView('influencer')">Influencer</button>
+          <button class="bkt" data-view="perf" onclick="setBucketView('perf')">Perf</button>
+          <button class="bkt is-on" data-view="overall" onclick="setBucketView('overall')">Overall</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="btn btn-ghost" onclick="openCreatorForm()" title="Log manual influencer campaign metrics">Influencer data</button>
+        <button class="btn btn-secondary" onclick="nrForce();_reportLoaded=false;fetchReport()">
+          <svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh
+        </button>
+      </div>
+    </div>
+    <div id="reportArea"></div>
+  </section>
+
   </div><!-- /.app-body -->
   </div><!-- /.app-layout -->
 
@@ -4197,7 +4236,7 @@
   }
 
   // ── Tab switching ─────────────────────────────────────────────────
-  const TAB_TITLES = { overview:'Overview', uninstalled:'Ext. Uninstalled', search:'Search', credits:'Exhausted Credits', pro:'Pro Users', power:'Power Users', influencers:'Influencers', abandoned:'Abandoned', salahkart:'Salahkart', skpro:'Salahkart Pro', daily:'Daily Metrics', insights:'Insights', revenue:'Monetization', retention:'Retention', lifecycle:'Lifecycle', emails:'Emails', referrals:'Referrals', acquire:'Acquire', expiring:'Expiring Soon', activation:'Activation' };
+  const TAB_TITLES = { overview:'Overview', report:'Marketing Report', uninstalled:'Ext. Uninstalled', search:'Search', credits:'Exhausted Credits', pro:'Pro Users', power:'Power Users', influencers:'Influencers', abandoned:'Abandoned', salahkart:'Salahkart', skpro:'Salahkart Pro', daily:'Daily Metrics', insights:'Insights', revenue:'Monetization', retention:'Retention', lifecycle:'Lifecycle', emails:'Emails', referrals:'Referrals', acquire:'Acquire', expiring:'Expiring Soon', activation:'Activation' };
   const MBN_TAB   = { overview:'mbn-overview', insights:'mbn-insights', revenue:'mbn-revenue', pro:'mbn-pro' };
 
   function switchTab(name) {
@@ -4324,6 +4363,7 @@
   function autoFetch(name) {
     if (!cfg('apiKey')) return;
     if (name === 'acquire'   && !_acqLoaded) { fetchAcquire();   return; }
+    if (name === 'report'    && !_reportLoaded) { fetchReport();   return; }
     if (name === 'insights'  && !_insLoaded) { fetchInsights();  return; }
     if (name === 'retention' && !_retLoaded) { fetchRetention(); return; }
     if (name === 'lifecycle' && !_lifLoaded) { fetchLifecycle(); return; }
@@ -5052,6 +5092,7 @@
       case 'abandoned':   _abandLoaded = false; fetchAbandoned(); break;
       case 'uninstalled': _uninstLoaded = false; fetchUninstalled(); break;
       case 'acquire':     _acqLoaded = false; fetchAcquire(); break;
+      case 'report':      _reportLoaded = false; fetchReport(); break;
       case 'insights':    _insLoaded = false; fetchInsights(); break;
     }
   }
@@ -5222,7 +5263,7 @@
 
   // ── Bucket toggle state ─────────────────────────────────────────────────
   function _syncBucketSeg() {
-    document.querySelectorAll('#bucketSeg .bkt').forEach(b =>
+    document.querySelectorAll('.bucket-seg .bkt').forEach(b =>
       b.classList.toggle('is-on', b.dataset.view === BUCKET_VIEW));
   }
   function initBucketView() {
@@ -5248,6 +5289,7 @@
     // Overview uses _ovData (null = unloaded); others use boolean flags.
     if (typeof _ovData !== 'undefined') { _ovData = null; }
     if (typeof _acqLoaded !== 'undefined') { _acqLoaded = false; }
+    if (typeof _reportLoaded !== 'undefined') { _reportLoaded = false; }
     if (typeof _revLoaded !== 'undefined') { _revLoaded = false; }
     if (typeof _actLoaded !== 'undefined') { _actLoaded = false; }
     // Determine the active tab from the page with class "active", then re-run it.
@@ -10074,8 +10116,108 @@
         { budget: 0, views: 0, likes: 0, comments: 0, shares: 0 });
   }
 
+  // Sum manual metrics across ALL creators within [startISO, endISO). Used by CEO Report (Task 6).
+  function manualTotals(startISO, endISO) {
+    return (_creatorData || []).filter(e => e.date >= startISO && e.date < endISO)
+      .reduce((a, e) => ({ budget: a.budget + (+e.budget||0), views: a.views + (+e.views||0), likes: a.likes + (+e.likes||0),
+        comments: a.comments + (+e.comments||0), shares: a.shares + (+e.shares||0) }),
+        { budget: 0, views: 0, likes: 0, comments: 0, shares: 0 });
+  }
+
+  /* ---- CEO REPORT ---- */
+  async function fetchReport() {
+    const area = document.getElementById('reportArea'); if (!area) return;
+    if (typeof updateTabGdrBtn === 'function') updateTabGdrBtn('report');
+    if (!cfg('apiKey')) { area.innerHTML = stateBox(null,'Add your PostHog key in Settings to load data.','sp-blue'); return; }
+    if (!_reportData) area.innerHTML = stateBox(null,'Loading report…','sp-blue');
+    try {
+      const sd = tabGdrPreset('report').scanDays;
+      const startD = tabGdrStartDate('report'), endD = tabGdrEndDate('report');
+      const EXCL = `person.properties.email NOT ILIKE '%@nextraise.ai' AND person.properties.email NOT ILIKE '%@creditdharma.in' AND person.properties.email NOT ILIKE '%test%' AND person_id NOT IN COHORT 278743`;
+      const PW = `user_email NOT LIKE '%@nextraise.ai' AND user_email NOT LIKE '%@creditdharma.in' AND lower(user_email) NOT LIKE '%test%'`;
+      await fetchCreatorData();
+      const [signupsR, salesR, googleR, metaR] = await Promise.all([
+        runHogQL(`SELECT count(DISTINCT person_id) AS n FROM events WHERE event='signup_complete' AND ${EXCL} AND timestamp >= ${tabGdrStart('report')} AND timestamp < ${tabGdrEnd('report')} ${bucketPersonFilter(sd)}`).catch(()=>({results:[[0]]})),
+        runHogQL(`SELECT count() AS sales, count(DISTINCT user_email) AS payers, ifNull(sumIf(amount,currency='INR'),0) AS inr, ifNull(sumIf(amount,currency='USD'),0) AS usd FROM postgres.payments WHERE status='completed' AND ${PW} AND created_at >= ${tabGdrStart('report')} AND created_at < ${tabGdrEnd('report')} ${bucketEmailFilter('user_email', sd)}`).catch(()=>({results:[[0,0,0,0]]})),
+        runHogQL(`SELECT toString(campaign_id) AS cid, round(sum(metrics_cost_micros)/1e6) AS spend, sum(metrics_impressions) AS impr, sum(metrics_clicks) AS clicks FROM googleads_campaign_stats WHERE segments_date >= '${startD}' AND segments_date < '${endD}' GROUP BY cid`).catch(()=>({results:[]})),
+        runHogQL(`SELECT round(sum(toFloat64OrNull(spend))) AS spend, round(sum(toFloat64OrNull(impressions))) AS impr, round(sum(toFloat64OrNull(clicks))) AS clicks FROM metaads_ad_stats WHERE date_start >= '${startD}' AND date_start < '${endD}'`).catch(()=>({results:[[0,0,0]]})),
+      ]);
+      const s = signupsR.results?.[0]||[0], sal = salesR.results?.[0]||[0,0,0,0], meta = metaR.results?.[0]||[0,0,0];
+      _reportData = {
+        signups: +s[0]||0, sales:+sal[0]||0, payers:+sal[1]||0, inr:+sal[2]||0, usd:+sal[3]||0,
+        google: (googleR.results||[]).map(r=>({cid:r[0], spend:+r[1]||0, impr:+r[2]||0, clicks:+r[3]||0})),
+        meta: { spend:+meta[0]||0, impr:+meta[1]||0, clicks:+meta[2]||0 },
+        startD, endD,
+      };
+      _reportLoaded = true;
+      renderCeoReport();
+    } catch(e) {
+      if (!_reportData) area.innerHTML = typeof errorBox === 'function' ? errorBox('Could not load report — '+e.message) : stateBox(null,'Error: '+e.message,'sp-blue');
+    }
+  }
+
+  function renderCeoReport() {
+    const area = document.getElementById('reportArea'); if (!area) return;
+    const d = _reportData; if (!d) return;
+    const { signups, sales, inr, usd, google, meta, startD, endD } = d;
+
+    // Revenue
+    const revenue = Math.round(inr + usd * USD_TO_INR);
+
+    // Google spend excluding the KW campaign (belongs to influencer bucket)
+    const googleSpendExclKw = (google||[]).filter(r => r.cid !== BUCKET_KW_CAMPAIGN).reduce((s,r)=>s+r.spend, 0);
+    const perfSpend = googleSpendExclKw + (meta.spend||0);
+
+    // Manual influencer totals
+    const manual = manualTotals(startD, endD);
+
+    // Budget by view
+    const budget = BUCKET_VIEW === 'influencer' ? manual.budget
+                 : BUCKET_VIEW === 'perf'       ? perfSpend
+                 : manual.budget + perfSpend;
+
+    // Derived KPIs
+    const conv  = signups ? sales / signups * 100 : 0;
+    const roas  = budget  ? revenue / budget : 0;
+    const cac   = sales   ? budget / sales   : 0;
+
+    const kpiCard = (num, label) =>
+      `<div class="rep-kpi"><div class="rep-kpi-num">${num}</div><div class="rep-kpi-label">${label}</div></div>`;
+
+    const heroHtml = `<div class="rep-hero">
+      ${kpiCard(_nf(signups),            'Signups')}
+      ${kpiCard(_nf(sales),              'Sales')}
+      ${kpiCard(conv.toFixed(1)+'%',     'Conversion')}
+      ${kpiCard('₹'+_nf(revenue),    'Revenue')}
+      ${kpiCard('₹'+_nf(Math.round(budget)), 'Budget spent')}
+      ${kpiCard(roas.toFixed(2)+'×', 'ROAS')}
+      ${kpiCard('₹'+_nf(Math.round(cac)),    'CAC')}
+    </div>`;
+
+    let socialHtml = '';
+    if (BUCKET_VIEW === 'influencer') {
+      const { views, likes, comments, shares } = manual;
+      const engagement = views ? ((likes + comments + shares) / views * 100) : 0;
+      const cpv = views ? budget / views : 0;
+      socialHtml = `<div class="rep-social">
+        <div class="rep-social-head">Influencer social metrics</div>
+        <div class="rep-hero" style="margin-bottom:0;">
+          ${kpiCard(_nf(views),               'Views')}
+          ${kpiCard(_nf(likes),               'Likes')}
+          ${kpiCard(_nf(comments),            'Comments')}
+          ${kpiCard(_nf(shares),              'Shares')}
+          ${kpiCard(engagement.toFixed(2)+'%','Engagement')}
+          ${kpiCard('₹'+cpv.toFixed(2),   'Cost/view')}
+        </div>
+      </div>`;
+    }
+
+    area.innerHTML = heroHtml + socialHtml + '<div id="reportSections"></div>';
+  }
+
   /* ---- ACQUIRE ---- */
   var _acqLoaded=false, _acqData=null;
+  var _reportLoaded=false, _reportData=null;
   // Source multi-select filter state: null = all channels shown; else a Set of labels.
   var _acqSrcSel=null, _acqSrcOpen=false, _acqLabels=[];
   async function fetchAcquire(){
