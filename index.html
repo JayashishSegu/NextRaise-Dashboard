@@ -9065,8 +9065,13 @@
       // payment_completed EVENTS undercount badly (many have missing/zero
       // amounts) — they were showing ~half the real revenue (₹1.09L vs ₹2.47L).
       const PW = `user_email NOT LIKE '%@nextraise.ai' AND user_email NOT LIKE '%@creditdharma.in' AND lower(user_email) NOT LIKE '%test%'`;
+      // Bucket attribution: sd is the scan window for the event-side person lookup.
+      const sd = tabGdrPreset('revenue').scanDays;
       const [monthly, topPayers, planBreakdown, discountCodes, srcRev, resumeCount, periodRev] = await Promise.all([
-        // Monthly revenue — postgres.payments (completed)
+        // Monthly revenue — postgres.payments (completed). NOT bucket-filtered:
+        // the monthly chart is always all-channel so the bars don't collapse when
+        // Influencer / Perf is active. Bucket filtering applies to the per-period
+        // detail queries below.
         runHogQL(`SELECT substring(toString(toStartOfMonth(toTimeZone(created_at,'Asia/Kolkata'))),1,7) AS month,
           count() AS cnt,
           sumIf(amount, currency='INR') AS inr,
@@ -9085,6 +9090,7 @@
           FROM postgres.payments WHERE status='completed' AND ${PW}
           AND user_email != '' AND user_email IS NOT NULL
           AND created_at >= ${tabGdrStart('revenue')} AND created_at < ${tabGdrEnd('revenue')}
+          ${bucketEmailFilter('user_email', sd)}
           GROUP BY email ORDER BY (coalesce(inr,0) + coalesce(usd,0)*${USD_TO_INR}) DESC LIMIT 20`).catch(()=>({results:[]})),
 
         // Revenue by plan: [plan, payments, payers, inr, usd] — postgres.payments
@@ -9094,15 +9100,17 @@
           sumIf(amount, currency='USD') AS usd
           FROM postgres.payments WHERE status='completed' AND ${PW}
           AND created_at >= ${tabGdrStart('revenue')} AND created_at < ${tabGdrEnd('revenue')}
+          ${bucketEmailFilter('user_email', sd)}
           GROUP BY plan ORDER BY (coalesce(inr,0) + coalesce(usd,0)*${USD_TO_INR}) DESC LIMIT 10`).catch(()=>({results:[]})),
 
-        // Discount codes: [code, uses, payers, inr]
+        // Discount codes: [code, uses, payers, inr] — events-keyed by person_id
         runHogQL(`SELECT properties.discount_code AS code,
           count() AS uses, count(DISTINCT person_id) AS payers,
           sumIf(toFloat64OrNull(properties.amount), properties.currency='INR') AS inr
           FROM events WHERE event='payment_completed' AND ${EW}
           AND properties.discount_code IS NOT NULL AND properties.discount_code != ''
           AND timestamp >= ${tabGdrStart('revenue')} AND timestamp < ${tabGdrEnd('revenue')}
+          ${bucketPersonFilter(sd)}
           GROUP BY code ORDER BY uses DESC LIMIT 10`).catch(()=>({results:[]})),
 
         // Revenue by acquisition SOURCE — from postgres.payments (source of truth
@@ -9110,7 +9118,9 @@
         // query undercounted and often read empty; this joins each completed
         // payment to the payer's first_touch source/medium so the amounts match
         // the rest of the tab. Rows: [source, medium, payments, payers, inr, usd];
-        // bucketed into channels client-side via channelOf().
+        // bucketed into channels client-side via channelOf(). NOT bucket-filtered
+        // here: the client-side channelOf() merge already splits by channel, so
+        // filtering would double-count and break the source breakdown rendering.
         runHogQL(`SELECT
           JSONExtractString(a.first_touch,'source') AS source,
           JSONExtractString(a.first_touch,'medium') AS medium,
@@ -9126,9 +9136,8 @@
           GROUP BY source, medium ORDER BY inr DESC LIMIT 200`).catch(()=>({results:[]})),
 
         // "Used product" = SIGNED-UP users who also uploaded a résumé. ALL-TIME
-        // (since 1 May) to match the funnel's other steps — Signed Up and Paid
-        // come from the all-time overview counts, so this must be all-time too,
-        // otherwise the funnel mixes scopes (e.g. Used Product '2%' on a day filter).
+        // (since 1 May) to match the funnel's other steps. Not bucket-filtered:
+        // this feeds the overall funnel denominator and must stay consistent.
         runHogQL(`SELECT count(DISTINCT person_id) AS n FROM events
           WHERE event='resume_upload_success' AND ${EW}
           AND timestamp >= toDateTime('2026-05-01 00:00:00')
@@ -9137,12 +9146,13 @@
 
         // Period revenue — total completed payments IN THE SELECTED RANGE. Powers
         // the filter-aware headline card (e.g. "Today → ₹798, 2 payments").
-        // Row: [payments, payers, inr, usd].
+        // Row: [payments, payers, inr, usd]. Bucket-filtered via email column.
         runHogQL(`SELECT count() AS cnt, count(DISTINCT user_email) AS payers,
           ifNull(sumIf(amount, currency='INR'),0) AS inr,
           ifNull(sumIf(amount, currency='USD'),0) AS usd
           FROM postgres.payments WHERE status='completed' AND ${PW}
-          AND created_at >= ${tabGdrStart('revenue')} AND created_at < ${tabGdrEnd('revenue')}`).catch(()=>({results:[[0,0,0,0]]})),
+          AND created_at >= ${tabGdrStart('revenue')} AND created_at < ${tabGdrEnd('revenue')}
+          ${bucketEmailFilter('user_email', sd)}`).catch(()=>({results:[[0,0,0,0]]})),
       ]);
 
       _revData = {
