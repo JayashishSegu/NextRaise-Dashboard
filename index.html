@@ -9624,26 +9624,40 @@
       `<div class="state-box"><div class="spinner sp-blue"></div><p>Loading engagement data…</p></div>`;
     try {
       const aiList = POWER_AI_EVENTS.map(e=>`'${esc(e)}'`).join(',');
+      // Bucket attribution: scan window mirrors the activation tab's date range.
+      const sd = tabGdrPreset('activation').scanDays;
       const [engage, activated, resume, ttc] = await Promise.all([
         // Active users by recency window (DAU/WAU/MAU) from PostHog events.
+        // Bucket-filtered: only persons who entered via the selected channel.
         runHogQL(`
           SELECT count(DISTINCT if(timestamp >= now() - INTERVAL 1 DAY,  lower(person.properties.email), NULL)) AS dau,
                  count(DISTINCT if(timestamp >= now() - INTERVAL 7 DAY,  lower(person.properties.email), NULL)) AS wau,
                  count(DISTINCT lower(person.properties.email)) AS mau
           FROM events
           WHERE timestamp >= now() - INTERVAL 30 DAY
-            AND person.properties.email != '' AND person.properties.email IS NOT NULL`).catch(()=>({results:[]})),
+            AND person.properties.email != '' AND person.properties.email IS NOT NULL
+            AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
+            AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
+            AND person_id NOT IN COHORT 278743
+            ${bucketPersonFilter(sd)}`).catch(()=>({results:[]})),
         // Post-launch users who performed an AI-fix action (real activation).
+        // Bucket-filtered via person_id on the events WHERE clause.
         runHogQL(`
           WITH ai AS (
             SELECT DISTINCT lower(person.properties.email) AS email
             FROM events
             WHERE event IN (${aiList}) AND person.properties.email != '' AND person.properties.email IS NOT NULL
+              AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
+              AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
+              AND person_id NOT IN COHORT 278743
+              ${bucketPersonFilter(sd)}
           )
           SELECT count(DISTINCT ai.email) AS activated
           FROM ai INNER JOIN mongodb.users u ON lower(JSONExtractString(u.data,'email')) = ai.email
           WHERE JSONExtractString(u.data,'createdAt') >= '${PRODUCT_LAUNCH}'`).catch(()=>({results:[]})),
-        // Post-launch users who uploaded a résumé (used the product).
+        // Post-launch users who uploaded a résumé (used the product). NOT bucket-
+        // filtered: mongodb.resumes has no person_id and this feeds the fixed
+        // funnel denominator which must stay consistent with the Signed-Up count.
         runHogQL(`
           SELECT count(DISTINCT lower(JSONExtractString(r.data,'userId'))) AS resume_users
           FROM mongodb.resumes r
@@ -9651,6 +9665,7 @@
           WHERE JSONExtractString(r.data,'userId')!='' AND JSONExtractString(r.data,'userId')!='null'
             AND JSONExtractString(u.data,'createdAt') >= '${PRODUCT_LAUNCH}'`).catch(()=>({results:[]})),
         // Signup → first Pro payment pairs, for time-to-convert (median computed client-side).
+        // Bucket-filtered via bucketEmailFilter on the payments CTE's user_email.
         runHogQL(`
           WITH fp AS (
             SELECT user_id, toString(min(created_at)) AS first_pay
@@ -9660,6 +9675,7 @@
               AND user_email NOT LIKE '%@nextraise.ai'
               AND user_email NOT LIKE '%@creditdharma.in'
               AND lower(user_email) NOT LIKE '%test%'
+              ${bucketEmailFilter('user_email', sd)}
             GROUP BY user_id
           )
           SELECT toString(u.created_at) AS signup, fp.first_pay
