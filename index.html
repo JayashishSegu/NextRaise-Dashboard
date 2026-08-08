@@ -5342,6 +5342,8 @@
     if (typeof _featLoaded !== 'undefined') { _featLoaded = false; }
     if (typeof _uninstLoaded !== 'undefined') { _uninstLoaded = false; }
     if (typeof _uninstRows !== 'undefined') { _uninstRows = []; }
+    if (typeof _abandLoaded !== 'undefined') { _abandLoaded = false; }
+    if (typeof _abandRows !== 'undefined') { _abandRows = []; }
     // Determine the active tab from the page with class "active", then re-run it.
     const activePage = document.querySelector('.page.active');
     if (!activePage) return;
@@ -8584,6 +8586,7 @@
             AND lower(person.properties.email) NOT LIKE '%creditdharma.in%'
             AND lower(person.properties.email) NOT LIKE '%test%'
             AND lower(person.properties.email) NOT LIKE '%hainextraise%'
+            ${bucketPersonFilter(365)}
           GROUP BY email
         )
         SELECT email, toString(last_order) AS last_order_str,
