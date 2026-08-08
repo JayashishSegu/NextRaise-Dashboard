@@ -5347,6 +5347,9 @@
     if (typeof _creditsLoaded !== 'undefined') { _creditsLoaded = false; }
     if (typeof _allRows !== 'undefined') { _allRows = []; }
     if (typeof _sessionsLoaded !== 'undefined') { _sessionsLoaded = false; }
+    if (typeof _qualLoaded !== 'undefined') { _qualLoaded = false; }
+    if (typeof _qualData !== 'undefined') { _qualData = null; }
+    if (typeof _qualTrend !== 'undefined') { _qualTrend = null; }
     // Determine the active tab from the page with class "active", then re-run it.
     const activePage = document.querySelector('.page.active');
     if (!activePage) return;
@@ -11183,10 +11186,18 @@
             countIf(event IN ('$rageclick','rage_click')) AS rage,
             countIf(event='$dead_click') AS dead
           FROM events WHERE timestamp > now() - INTERVAL 7 DAY
-            AND event IN ('$exception','oauth_error','payment_failed','payment_checkout_error','resume_upload_failed','jobs_resume_upload_failed','$rageclick','rage_click','$dead_click')`),
+            AND event IN ('$exception','oauth_error','payment_failed','payment_checkout_error','resume_upload_failed','jobs_resume_upload_failed','$rageclick','rage_click','$dead_click')
+            AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
+            AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
+            AND person_id NOT IN COHORT 278743
+            ${bucketPersonFilter(7)}`),
         runHogQL(`
           SELECT toString(toDate(toTimeZone(timestamp,'Asia/Kolkata'))) AS d, count() AS c
           FROM events WHERE event='$exception' AND timestamp > now() - INTERVAL 14 DAY
+            AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
+            AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
+            AND person_id NOT IN COHORT 278743
+            ${bucketPersonFilter(14)}
           GROUP BY d ORDER BY d`)
       ]);
       _qualData=(sum.results||[])[0]||[0,0,0,0,0,0,0]; _qualTrend=trend.results||[]; _qualLoaded=true; renderQuality();
