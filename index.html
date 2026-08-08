@@ -4103,7 +4103,7 @@
         <button class="btn btn-ghost no-print" onclick="openCreatorForm()" title="Log manual influencer campaign metrics">Influencer data</button>
         <button class="btn btn-secondary no-print" onclick="exportReport('pdf')">Export PDF</button>
         <button class="btn btn-secondary no-print" onclick="exportReport('png')">Export PNG</button>
-        <button class="btn btn-secondary" onclick="nrForce();_reportLoaded=false;fetchReport()">
+        <button class="btn btn-secondary" onclick="nrForce();_reportLoaded=false;fetchCeoReport()">
           <svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh
         </button>
       </div>
@@ -4397,7 +4397,7 @@
   function autoFetch(name) {
     if (!cfg('apiKey')) return;
     if (name === 'acquire'   && !_acqLoaded) { fetchAcquire();   return; }
-    if (name === 'report'    && !_reportLoaded) { fetchReport();   return; }
+    if (name === 'report'    && !_reportLoaded) { fetchCeoReport();   return; }
     if (name === 'insights'  && !_insLoaded) { fetchInsights();  return; }
     if (name === 'retention' && !_retLoaded) { fetchRetention(); return; }
     if (name === 'lifecycle' && !_lifLoaded) { fetchLifecycle(); return; }
@@ -5126,7 +5126,7 @@
       case 'abandoned':   _abandLoaded = false; fetchAbandoned(); break;
       case 'uninstalled': _uninstLoaded = false; fetchUninstalled(); break;
       case 'acquire':     _acqLoaded = false; fetchAcquire(); break;
-      case 'report':      _reportLoaded = false; fetchReport(); break;
+      case 'report':      _reportLoaded = false; fetchCeoReport(); break;
       case 'insights':    _insLoaded = false; fetchInsights(); break;
     }
   }
@@ -10160,7 +10160,7 @@
   }
 
   /* ---- CEO REPORT ---- */
-  async function fetchReport() {
+  async function fetchCeoReport() {
     const area = document.getElementById('reportArea'); if (!area) return;
     if (typeof updateTabGdrBtn === 'function') updateTabGdrBtn('report');
     if (!cfg('apiKey')) { area.innerHTML = stateBox(null,'Add your PostHog key in Settings to load data.','sp-blue'); return; }
