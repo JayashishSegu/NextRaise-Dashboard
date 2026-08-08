@@ -5344,6 +5344,9 @@
     if (typeof _uninstRows !== 'undefined') { _uninstRows = []; }
     if (typeof _abandLoaded !== 'undefined') { _abandLoaded = false; }
     if (typeof _abandRows !== 'undefined') { _abandRows = []; }
+    if (typeof _creditsLoaded !== 'undefined') { _creditsLoaded = false; }
+    if (typeof _allRows !== 'undefined') { _allRows = []; }
+    if (typeof _sessionsLoaded !== 'undefined') { _sessionsLoaded = false; }
     // Determine the active tab from the page with class "active", then re-run it.
     const activePage = document.querySelector('.page.active');
     if (!activePage) return;
@@ -6719,6 +6722,25 @@
   // ══════════════════════════════════════════════════════════════════
   // ── EXHAUSTED CREDITS TAB ─────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════
+
+  // Returns a Set<lowercase email> for the current bucket (or null when Overall).
+  // Used by screens whose primary source is MongoDB (no person_id) — those cannot
+  // use bucketPersonFilter/bucketEmailFilter inline without timing out. Instead we
+  // fetch the email set once in JS and filter _allRows client-side.
+  // The outer FROM events must carry the same timestamp bound as the inner
+  // bucketPersonSet subquery to avoid a full-table scan.
+  async function _fetchBucketPersonEmails(scanDays) {
+    if (BUCKET_VIEW === 'overall') return null;
+    const res = await runHogQL(`
+      SELECT argMaxIf(toString(person.properties.email), timestamp, person.properties.email!='') AS em
+      FROM events
+      WHERE timestamp > now() - INTERVAL ${scanDays|0} DAY
+        AND person_id IN (${bucketPersonSet(BUCKET_VIEW, scanDays)})
+      GROUP BY person_id
+      HAVING em != ''`);
+    return new Set((res.results||[]).map(r=>String(r[0]).toLowerCase()));
+  }
+
   let _allRows = [];
   let _creditsFilters = { text:'', reason:'all', phone:'all', plan:'all', payment:'all', dateRange:'all', sessions:'all' };
   let _creditsSort    = { col:'exhaustedAt', dir:'desc' };
@@ -6786,6 +6808,12 @@
           subStatus:subStatus||'', aiFixes:aiFixes||'0', phone:'', reason,
           amount:amount||'', paymentId:paymentId||'', isPaid, exhaustedAt, createdAt:createdAt||'', sessionCount:null };
       });
+      // Bucket filter: mongodb.users has no person_id so we fetch the bucket
+      // email set from events and filter _allRows client-side.
+      const _bktEmails = await _fetchBucketPersonEmails(365).catch(()=>null);
+      if (_bktEmails !== null) {
+        _allRows = _allRows.filter(r => _bktEmails.has(r.email.toLowerCase()));
+      }
       _sessionsLoaded = false; _creditsLoaded = true;
       document.getElementById('creditsTabBadge').textContent = _allRows.length; syncMobBadges();
       updateCreditsStats(_allRows); creditsApply();
@@ -6850,6 +6878,7 @@
             FROM events
             WHERE lower(person.properties.email) IN (${inClause})
               AND $session_id IS NOT NULL AND $session_id != ''
+              ${bucketPersonFilter(365)}
             GROUP BY email LIMIT 500`);
           for (const [email, cnt] of (r.results || [])) {
             if (email) sessionMap[email] = Number(cnt);
