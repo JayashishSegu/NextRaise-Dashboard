@@ -1029,6 +1029,23 @@
     .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
     .btn-secondary:hover { background: var(--border); }
 
+    /* ── Creator-data modal (wider, scrollable list) ─────────────── */
+    #creatorModal { max-width: 560px; max-height: 88vh; overflow-y: auto; }
+    .cf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+    .cf-grid .field-input { margin-bottom: 12px; }
+    .cf-msg { font-size: 12.5px; min-height: 18px; margin: 4px 0 8px; }
+    .cf-msg.ok  { color: var(--teal,#22d3a0); }
+    .cf-msg.err { color: var(--red,#ef4444); }
+    .cf-list { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 14px; }
+    .cf-list-title { font-size: 12.5px; font-weight: 700; color: var(--text-2); margin-bottom: 10px; }
+    .cf-entry { display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+      border-radius: 8px; background: var(--bg); border: 1px solid var(--border);
+      margin-bottom: 6px; font-size: 12.5px; }
+    .cf-entry-info { flex: 1; min-width: 0; }
+    .cf-entry-name { font-weight: 600; color: var(--text); }
+    .cf-entry-meta { color: var(--text-2); margin-top: 2px; }
+    .cf-del { flex-shrink: 0; font-size: 11px; padding: 3px 9px; }
+
     /* ── Global progress bar ─────────────────────────────────────── */
     #topProgress {
       position: fixed; top: 0; left: 0; right: 0; height: 3px;
@@ -4042,9 +4059,86 @@
       <input class="field-input" id="burnInput" type="number" min="0" placeholder="e.g. 800000" />
       <div class="field-label">Monthly marketing spend (₹) — for blended CAC</div>
       <input class="field-input" id="spendInput" type="number" min="0" placeholder="e.g. 300000" />
-      <div class="modal-actions">
-        <button class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+      <div class="modal-actions" style="justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <button class="btn btn-ghost" onclick="closeSettings();openCreatorForm();" title="Log manual influencer campaign metrics">Influencer data</button>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Creator-data entry modal -->
+  <div class="modal-overlay" id="creatorModalOverlay">
+    <div class="modal" id="creatorModal">
+      <h2><svg class="ic"><use href="#i-megaphone"/></svg> Influencer Data</h2>
+      <p class="modal-desc">Log manual campaign metrics per creator per day. Used by the CEO Report.</p>
+      <div class="cf-grid">
+        <div>
+          <div class="field-label">Creator name *</div>
+          <input class="field-input" id="cfCreator" type="text" placeholder="e.g. Tamanna" required />
+        </div>
+        <div>
+          <div class="field-label">UTM code</div>
+          <input class="field-input" id="cfCode" type="text" list="cfCodeList" placeholder="e.g. tamanna_ig" />
+          <datalist id="cfCodeList"></datalist>
+        </div>
+      </div>
+      <div class="cf-grid">
+        <div>
+          <div class="field-label">Platform</div>
+          <select class="field-input" id="cfPlatform">
+            <option value="Instagram">Instagram</option>
+            <option value="YouTube">YouTube</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <div class="field-label">Date *</div>
+          <input class="field-input" id="cfDate" type="date" required />
+        </div>
+      </div>
+      <div class="cf-grid">
+        <div>
+          <div class="field-label">Budget (₹)</div>
+          <input class="field-input" id="cfBudget" type="number" min="0" placeholder="0" />
+        </div>
+        <div>
+          <div class="field-label">Views</div>
+          <input class="field-input" id="cfViews" type="number" min="0" placeholder="0" />
+        </div>
+      </div>
+      <div class="cf-grid">
+        <div>
+          <div class="field-label">Likes</div>
+          <input class="field-input" id="cfLikes" type="number" min="0" placeholder="0" />
+        </div>
+        <div>
+          <div class="field-label">Comments</div>
+          <input class="field-input" id="cfComments" type="number" min="0" placeholder="0" />
+        </div>
+      </div>
+      <div class="cf-grid">
+        <div>
+          <div class="field-label">Shares</div>
+          <input class="field-input" id="cfShares" type="number" min="0" placeholder="0" />
+        </div>
+        <div>
+          <div class="field-label">Note</div>
+          <input class="field-input" id="cfNote" type="text" placeholder="optional" />
+        </div>
+      </div>
+      <div class="modal-actions" style="justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div class="cf-msg" id="cfMsg"></div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-secondary" onclick="closeCreatorForm()">Close</button>
+          <button class="btn btn-primary" id="cfSaveBtn" onclick="cfSave()">Save entry</button>
+        </div>
+      </div>
+      <div class="cf-list">
+        <div class="cf-list-title">Logged entries (most recent first)</div>
+        <div id="cfEntryList"><div style="color:var(--text-2);font-size:12.5px;">Loading…</div></div>
       </div>
     </div>
   </div>
@@ -4330,6 +4424,97 @@
   document.getElementById('modalOverlay').addEventListener('click', e => {
     if (e.target === document.getElementById('modalOverlay')) closeSettings();
   });
+
+  // ── Creator-data form ─────────────────────────────────────────────
+  function _cfTodayIST() {
+    return new Date(Date.now() + 5.5 * 3600000).toISOString().slice(0, 10);
+  }
+  function _cfPopulateCodelist() {
+    const dl = document.getElementById('cfCodeList');
+    if (!dl) return;
+    const codes = new Set();
+    // pull codes from loaded influencer rows if available
+    if (typeof _inflRows !== 'undefined') _inflRows.forEach(r => { if (r.code) codes.add(r.code); });
+    // also pull from already-stored creator entries
+    (_creatorData || []).forEach(e => { if (e.code) codes.add(e.code); });
+    dl.innerHTML = [...codes].sort().map(c => `<option value="${c}"></option>`).join('');
+  }
+  function _cfRenderList() {
+    const el = document.getElementById('cfEntryList');
+    if (!el) return;
+    const entries = (_creatorData || []).slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    if (!entries.length) { el.innerHTML = '<div style="color:var(--text-2);font-size:12.5px;">No entries yet.</div>'; return; }
+    el.innerHTML = entries.map(e => `
+      <div class="cf-entry">
+        <div class="cf-entry-info">
+          <div class="cf-entry-name">${h(e.creator || e.code || '—')} <span style="font-weight:400;color:var(--text-2)">(${h(e.platform || '—')})</span></div>
+          <div class="cf-entry-meta">${h(e.date||'')} &middot; ₹${(+e.budget||0).toLocaleString('en-IN')} budget &middot; ${(+e.views||0).toLocaleString('en-IN')} views &middot; ${(+e.likes||0).toLocaleString('en-IN')} likes &middot; ${(+e.comments||0).toLocaleString('en-IN')} comments &middot; ${(+e.shares||0).toLocaleString('en-IN')} shares${e.note ? ' &middot; ' + h(e.note) : ''}</div>
+        </div>
+        <button class="btn btn-secondary cf-del" onclick="cfDelete(${JSON.stringify(e.id)})">Delete</button>
+      </div>`).join('');
+  }
+  async function openCreatorForm() {
+    document.getElementById('cfDate').value = _cfTodayIST();
+    document.getElementById('cfMsg').textContent = '';
+    document.getElementById('cfMsg').className = 'cf-msg';
+    document.getElementById('creatorModalOverlay').classList.add('open');
+    await fetchCreatorData();
+    _cfPopulateCodelist();
+    _cfRenderList();
+  }
+  function closeCreatorForm() {
+    document.getElementById('creatorModalOverlay').classList.remove('open');
+  }
+  document.getElementById('creatorModalOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('creatorModalOverlay')) closeCreatorForm();
+  });
+  async function cfSave() {
+    const creator = document.getElementById('cfCreator').value.trim();
+    const date    = document.getElementById('cfDate').value.trim();
+    const msg     = document.getElementById('cfMsg');
+    if (!creator) { msg.textContent = 'Creator name is required.'; msg.className = 'cf-msg err'; return; }
+    if (!date)    { msg.textContent = 'Date is required.'; msg.className = 'cf-msg err'; return; }
+    const entry = {
+      creator,
+      code:     document.getElementById('cfCode').value.trim(),
+      platform: document.getElementById('cfPlatform').value,
+      date,
+      budget:   +document.getElementById('cfBudget').value   || 0,
+      views:    +document.getElementById('cfViews').value    || 0,
+      likes:    +document.getElementById('cfLikes').value    || 0,
+      comments: +document.getElementById('cfComments').value || 0,
+      shares:   +document.getElementById('cfShares').value   || 0,
+      note:     document.getElementById('cfNote').value.trim(),
+    };
+    const btn = document.getElementById('cfSaveBtn');
+    btn.disabled = true;
+    msg.textContent = 'Saving…'; msg.className = 'cf-msg';
+    try {
+      await saveCreatorEntry(entry);
+      // reset form fields
+      ['cfCreator','cfCode','cfBudget','cfViews','cfLikes','cfComments','cfShares','cfNote'].forEach(id => { document.getElementById(id).value = ''; });
+      document.getElementById('cfDate').value = _cfTodayIST();
+      msg.textContent = 'Entry saved.'; msg.className = 'cf-msg ok';
+      _cfPopulateCodelist();
+      _cfRenderList();
+    } catch (err) {
+      msg.textContent = 'Error: ' + (err.message || 'save failed'); msg.className = 'cf-msg err';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+  async function cfDelete(id) {
+    if (!id) return;
+    const msg = document.getElementById('cfMsg');
+    msg.textContent = 'Deleting…'; msg.className = 'cf-msg';
+    try {
+      await deleteCreatorEntry(id);
+      msg.textContent = 'Deleted.'; msg.className = 'cf-msg ok';
+      _cfRenderList();
+    } catch (err) {
+      msg.textContent = 'Error deleting entry.'; msg.className = 'cf-msg err';
+    }
+  }
 
   // ── Global busy indicator (thin bar at the very top of the page) ──
   let _busyCount = 0;
@@ -9859,6 +10044,34 @@
       <div class="okpi-chip" style="background:${bg}"><svg class="ic-sm"><use href="#${icoUse}"/></svg></div>
       <div class="okpi-lbl">${label}<small>${sub||''}</small></div></div>
       ${delta||''}<div class="okpi-val">${value}</div></div>`;
+  }
+
+  /* ---- CREATOR DATA (manual influencer metrics) ---- */
+  var _creatorData = null, _creatorLoaded = false;
+  async function fetchCreatorData(force) {
+    if (_creatorLoaded && !force) return _creatorData;
+    try {
+      const r = await fetch('/api/creator-data', { cache: 'no-store' });
+      const j = await r.json();
+      _creatorData = j.entries || [];
+    } catch (_) { _creatorData = []; }
+    _creatorLoaded = true; return _creatorData;
+  }
+  async function saveCreatorEntry(entry) {
+    const r = await fetch('/api/creator-data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entry) });
+    if (!r.ok) throw new Error('save failed');
+    await fetchCreatorData(true); return r.json();
+  }
+  async function deleteCreatorEntry(id) {
+    await fetch('/api/creator-data?id=' + encodeURIComponent(id), { method: 'DELETE' });
+    await fetchCreatorData(true);
+  }
+  // Sum manual metrics for a creator code within [startISO, endISO). Used by the CEO Report (Task 6).
+  function manualForCode(code, startISO, endISO) {
+    return (_creatorData || []).filter(e => e.code === code && e.date >= startISO && e.date < endISO)
+      .reduce((a, e) => ({ budget: a.budget + (+e.budget||0), views: a.views + (+e.views||0), likes: a.likes + (+e.likes||0),
+        comments: a.comments + (+e.comments||0), shares: a.shares + (+e.shares||0) }),
+        { budget: 0, views: 0, likes: 0, comments: 0, shares: 0 });
   }
 
   /* ---- ACQUIRE ---- */
