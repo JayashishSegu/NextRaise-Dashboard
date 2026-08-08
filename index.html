@@ -4924,11 +4924,14 @@
   // Save under the range the data was actually fetched for (NOT the current
   // global) — otherwise a fetch that finishes after the user switches ranges
   // writes its data into the new range's slot and poisons it.
-  function saveOvCache(d, range) { try { localStorage.setItem(OV_CACHE_BASE + '_' + (range || _tabRanges['overview']), JSON.stringify({ ts: Date.now(), d })); } catch(_) {} }
-  function loadOvCache() { try { const r = JSON.parse(localStorage.getItem(OV_CACHE_BASE + '_' + _tabRanges['overview'])||'null'); return r && (Date.now()-r.ts < OV_CACHE_TTL) ? r.d : null; } catch(_) { return null; } }
+  // Cache key is scoped by BUCKET_VIEW so each view (Influencer/Perf/Overall)
+  // keeps its own snapshot and switching views never shows another view's numbers.
+  function ovCacheKey(range) { return OV_CACHE_BASE + '_' + BUCKET_VIEW + '_' + (range || _tabRanges['overview']); }
+  function saveOvCache(d, range) { try { localStorage.setItem(ovCacheKey(range), JSON.stringify({ ts: Date.now(), d })); } catch(_) {} }
+  function loadOvCache() { try { const r = JSON.parse(localStorage.getItem(ovCacheKey())||'null'); return r && (Date.now()-r.ts < OV_CACHE_TTL) ? r.d : null; } catch(_) { return null; } }
   // Raw snapshot for the current range, IGNORING TTL — used to paint instantly
   // (stale-while-revalidate) so the heavy live queries never block first paint.
-  function loadOvCacheRaw() { try { return JSON.parse(localStorage.getItem(OV_CACHE_BASE + '_' + _tabRanges['overview'])||'null'); } catch(_) { return null; } }
+  function loadOvCacheRaw() { try { return JSON.parse(localStorage.getItem(ovCacheKey())||'null'); } catch(_) { return null; } }
 
   function getRecent() { try { return JSON.parse(localStorage.getItem('nr_recent')||'[]'); } catch(_) { return []; } }
   function saveRecent(q) {
@@ -5044,6 +5047,7 @@
     _syncBucketSeg();
   }
   function setBucketView(v) {
+    if (!['influencer','perf','overall'].includes(v)) return;   // allowlist: 'infl'/'perf' SQL labels derive from these
     if (BUCKET_VIEW === v) return;
     BUCKET_VIEW = v;
     localStorage.setItem('nr_bucket_view', v);
@@ -5264,32 +5268,37 @@
     // queries off the browser entirely (no client PostHog key, no 429/timeout
     // risk here). If it isn't configured yet or errors, fall through to the
     // direct-query path below — no regression.
-    try {
-      const api = await fetchOverviewFromAPI(reqRange, force);
-      if (api && stillCurrent()) {
-        _ovData = api.data;
-        _ovDataTs = api.ts;
-        saveOvCache(_ovData, reqRange);
-        (document.getElementById('skTabBadge')||{}).textContent = _ovData.counts[1];
-        renderOverview();
-        _warmOverviewTabs();
-        // The edge copy can be stale (the cron only warms it intermittently).
-        // If it's older than ~6 min, quietly recompute live in the background so
-        // passive loads converge to current numbers without a manual Refresh.
-        if (!force && (Date.now() - api.ts) > 6*60000) {
-          fetchOverviewFromAPI(reqRange, true).then(fresh => {
-            if (fresh && _tabRanges['overview'] === reqRange) {
-              _ovData = fresh.data; _ovDataTs = fresh.ts;
-              saveOvCache(fresh.data, reqRange);
-              (document.getElementById('skTabBadge')||{}).textContent = _ovData.counts[1];
-              renderOverview();
-            }
-          }).catch(()=>{});
+    // ONLY for Overall: /api/overview (lib/overview.js) has NO bucket awareness
+    // and would return Overall numbers. Influencer/Perf must fall through to the
+    // bucket-filtered direct queries below.
+    if (BUCKET_VIEW === 'overall') {
+      try {
+        const api = await fetchOverviewFromAPI(reqRange, force);
+        if (api && stillCurrent()) {
+          _ovData = api.data;
+          _ovDataTs = api.ts;
+          saveOvCache(_ovData, reqRange);
+          (document.getElementById('skTabBadge')||{}).textContent = _ovData.counts[1];
+          renderOverview();
+          _warmOverviewTabs();
+          // The edge copy can be stale (the cron only warms it intermittently).
+          // If it's older than ~6 min, quietly recompute live in the background so
+          // passive loads converge to current numbers without a manual Refresh.
+          if (!force && (Date.now() - api.ts) > 6*60000) {
+            fetchOverviewFromAPI(reqRange, true).then(fresh => {
+              if (fresh && _tabRanges['overview'] === reqRange) {
+                _ovData = fresh.data; _ovDataTs = fresh.ts;
+                saveOvCache(fresh.data, reqRange);
+                (document.getElementById('skTabBadge')||{}).textContent = _ovData.counts[1];
+                renderOverview();
+              }
+            }).catch(()=>{});
+          }
+          return;
         }
-        return;
-      }
-      if (api) return; // range changed mid-fetch — a newer load owns the screen
-    } catch(_) { /* fall through to direct client-side queries */ }
+        if (api) return; // range changed mid-fetch — a newer load owns the screen
+      } catch(_) { /* fall through to direct client-side queries */ }
+    }
 
     // Direct client-side queries (fallback). These need the user's own key.
     if (!cfg('apiKey')) {
@@ -5324,6 +5333,16 @@
     const paidCond = `(JSONExtractString(data,'paymentStatus','paymentId')!='' AND JSONExtractString(data,'paymentStatus','status')='success')`;
     // Real paying customer = active Pro sub, excluding internal/test accounts.
     const extOnly = `JSONExtractString(data,'email') NOT LIKE '%@nextraise.ai' AND JSONExtractString(data,'email') NOT LIKE '%@creditdharma.in' AND lower(JSONExtractString(data,'email')) NOT LIKE '%test%'`;
+    // Bucket predicate for the counts derived table (inline — avoids a second
+    // person_id-IN scan that would risk the ~60s ceiling). Empty for Overall.
+    // NOTE: the counts query classifies in a MIDDLE layer (_bkt column) and
+    // filters in the OUTER WHERE (countsBucketOuter). Putting the multiIf
+    // directly in the derived table's HAVING blows the ~60s ceiling on the
+    // fixed 400-day scan; the middle-layer form stays well under it (verified).
+    const wantB = BUCKET_VIEW==='perf' ? 'perf' : 'infl';
+    // Middle-layer classifier column + outer filter for the counts/sources queries.
+    const countsBktCol = BUCKET_VIEW==='overall' ? '' : `, ${bucketExprSQL('_bs','_bm','_bc')} AS _bkt`;
+    const countsBucketOuter = BUCKET_VIEW==='overall' ? '' : `WHERE _bkt='${wantB}'`;
     try {
       // The counts query is the heaviest — a 400-day person-level scan with
       // per-person argMax aggregation. Run it SOLO first so it gets ClickHouse's
@@ -5349,18 +5368,24 @@
                    + `countIf(su>=toDate('${b.startDate}') AND su<toDate('${b.endDate}') AND plan LIKE '%pro%') AS cp${i}`;
             }).join(', ')}
           FROM (
-            SELECT person_id,
-              minIf(toDate(toTimeZone(timestamp,'Asia/Kolkata')), event = 'signup_complete') AS su,
-              argMaxIf(toString(person.properties.plan), timestamp, person.properties.plan!='') AS plan,
-              argMaxIf(toString(person.properties.subscription_status), timestamp, person.properties.subscription_status!='') AS status
-            FROM events
-            WHERE timestamp > now() - INTERVAL 400 DAY
-              AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
-              AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
-              AND person_id NOT IN COHORT 278743
-              AND lower(coalesce(person.properties.email,'')) NOT LIKE '%test%'
-            GROUP BY person_id
-            HAVING su > toDate('2000-01-01')
+            SELECT person_id, su, plan, status${countsBktCol}
+            FROM (
+              SELECT person_id,
+                minIf(toDate(toTimeZone(timestamp,'Asia/Kolkata')), event = 'signup_complete') AS su,
+                argMaxIf(toString(person.properties.plan), timestamp, person.properties.plan!='') AS plan,
+                argMaxIf(toString(person.properties.subscription_status), timestamp, person.properties.subscription_status!='') AS status,
+                lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
+                lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+                argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc
+              FROM events
+              WHERE timestamp > now() - INTERVAL 400 DAY
+                AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
+                AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
+                AND person_id NOT IN COHORT 278743
+                AND lower(coalesce(person.properties.email,'')) NOT LIKE '%test%'
+              GROUP BY person_id
+              HAVING su > toDate('2000-01-01')
+            ) ${countsBucketOuter}
           )`);
       // The remaining 8 queries are lighter — run them together (gated to 2).
       const [signups, payments, revenue, sources, growth, dailyPay, influencers, pgSubscribers] = await Promise.all([
@@ -5372,7 +5397,7 @@
               toString(maxIf(timestamp, event='signup_complete')) AS created_at
             FROM events
             WHERE person_id IN (SELECT person_id FROM events WHERE event='signup_complete' AND timestamp > now() - INTERVAL 21 DAY)
-              AND timestamp > now() - INTERVAL 400 DAY
+              AND timestamp > now() - INTERVAL 400 DAY${bucketPersonFilter(_ovGdr.scanDays)}
             GROUP BY person_id
           ) WHERE email NOT LIKE '%@nextraise.ai' AND email NOT LIKE '%@creditdharma.in' AND email!=''
           ORDER BY created_at DESC LIMIT 7`),
@@ -5389,7 +5414,7 @@
             AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
             AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
             AND coalesce(person.properties.email,'') NOT ILIKE '%test%'
-            AND person_id NOT IN COHORT 278743
+            AND person_id NOT IN COHORT 278743${bucketPersonFilter(_ovGdr.scanDays)}
           ORDER BY timestamp DESC LIMIT 7`),
         // Pro revenue for selected range — source of truth: postgres.payments.
         runHogQL(`
@@ -5401,25 +5426,31 @@
             AND ${pgRangeFilter}
             AND user_email NOT LIKE '%@nextraise.ai'
             AND user_email NOT LIKE '%@creditdharma.in'
-            AND lower(user_email) NOT LIKE '%test%'`),
+            AND lower(user_email) NOT LIKE '%test%'${bucketEmailFilter('user_email', _ovGdr.scanDays)}`),
         // Acquisition source/medium pairs (bucketed into channels client-side).
         runHogQL(`
           SELECT source, medium, count() AS c,
                  countIf(plan LIKE '%pro%' AND status='active') AS conv
           FROM (
-            SELECT person_id,
-              argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='') AS source,
-              argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='') AS medium,
-              argMaxIf(toString(person.properties.plan), timestamp, person.properties.plan!='') AS plan,
-              argMaxIf(toString(person.properties.subscription_status), timestamp, person.properties.subscription_status!='') AS status,
-              minIf(toDate(toTimeZone(timestamp,'Asia/Kolkata')), event = 'signup_complete') AS su
-            FROM events
-            WHERE timestamp > now() - INTERVAL 400 DAY
-              AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
-              AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
-              AND person_id NOT IN COHORT 278743
-            GROUP BY person_id
-            HAVING ${evRangeHaving}
+            SELECT person_id, source, medium, plan, status${countsBktCol}
+            FROM (
+              SELECT person_id,
+                argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='') AS source,
+                argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='') AS medium,
+                argMaxIf(toString(person.properties.plan), timestamp, person.properties.plan!='') AS plan,
+                argMaxIf(toString(person.properties.subscription_status), timestamp, person.properties.subscription_status!='') AS status,
+                minIf(toDate(toTimeZone(timestamp,'Asia/Kolkata')), event = 'signup_complete') AS su,
+                lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
+                lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+                argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc
+              FROM events
+              WHERE timestamp > now() - INTERVAL 400 DAY
+                AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
+                AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
+                AND person_id NOT IN COHORT 278743
+              GROUP BY person_id
+              HAVING ${evRangeHaving}
+            ) ${countsBucketOuter}
           ) GROUP BY source, medium ORDER BY c DESC LIMIT 100`),
         // Daily signups for selected range.
         runHogQL(`
@@ -5430,7 +5461,7 @@
             AND toDate(toTimeZone(timestamp,'Asia/Kolkata')) < toDate('${rangeEnd}')
             AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
             AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
-            AND person_id NOT IN COHORT 278743
+            AND person_id NOT IN COHORT 278743${bucketPersonFilter(_ovGdr.scanDays)}
           GROUP BY day ORDER BY day LIMIT 200`),
         // Daily payments + revenue for selected range (for chart tooltip).
         runHogQL(`
@@ -5443,7 +5474,7 @@
             AND ${pgRangeFilter}
             AND user_email NOT LIKE '%@nextraise.ai'
             AND user_email NOT LIKE '%@creditdharma.in'
-            AND lower(user_email) NOT LIKE '%test%'
+            AND lower(user_email) NOT LIKE '%test%'${bucketEmailFilter('user_email', _ovGdr.scanDays)}
           GROUP BY day ORDER BY day LIMIT 200`),
         // Influencer campaigns: users reached + active-pro conversions, filtered by range.
         runHogQL(`
@@ -5460,7 +5491,7 @@
               AND timestamp > now() - INTERVAL ${evRangeInterval}
               AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
               AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
-              AND person_id NOT IN COHORT 278743
+              AND person_id NOT IN COHORT 278743${bucketPersonFilter(_ovGdr.scanDays)}
             GROUP BY person_id
             HAVING ${evRangeHaving}
           ) GROUP BY campaign ORDER BY c DESC LIMIT 40`),
@@ -5473,7 +5504,7 @@
           FROM postgres.users
           WHERE email NOT LIKE '%@nextraise.ai'
             AND email NOT LIKE '%@creditdharma.in'
-            AND lower(email) NOT LIKE '%test%'`).catch(()=>({results:[]})),
+            AND lower(email) NOT LIKE '%test%'${bucketEmailFilter('email', _ovGdr.scanDays)}`).catch(()=>({results:[]})),
       ]);
       const revRow = (revenue.results||[])[0] || [0,0];
       // Override Active Pro/Basic with postgres (more accurate than PostHog person props)
