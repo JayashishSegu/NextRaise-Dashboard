@@ -9468,7 +9468,14 @@
       const today = new Date(baseUtc - IST_MS).toISOString().slice(0,10);
       const in30  = new Date(baseUtc + 30*86400000 - IST_MS).toISOString().slice(0,10);
 
-      // Live source: PostHog person properties (MongoDB warehouse frozen)
+      // Live source: PostHog person properties (MongoDB warehouse frozen).
+      // Bucket attribution uses INLINE filter: the per-person derived table spans
+      // 2026-04-01 (~130 days), too wide for an outer person_id IN (subquery).
+      // _bs/_bm/_bc are the person's first-touch source/medium/campaign; the
+      // outer WHERE applies bucketExprSQL to classify and filter by bucket.
+      const wantBkt = BUCKET_VIEW==='perf' ? 'perf' : 'infl';
+      const expBktWhere = BUCKET_VIEW==='overall' ? '' :
+        ` AND ${bucketExprSQL('_bs','_bm','_bc')}='${wantBkt}'`;
       const r1 = await fetchAllPages(`
         SELECT email, name, plan, end_date, ph
         FROM (
@@ -9478,7 +9485,10 @@
             argMaxIf(toString(person.properties.subscription_plan), timestamp, person.properties.subscription_plan IS NOT NULL) AS plan,
             substring(argMaxIf(toString(person.properties.subscription_ends_at), timestamp, person.properties.subscription_ends_at IS NOT NULL),1,10) AS end_date,
             argMaxIf(toString(person.properties.subscription_status), timestamp, person.properties.subscription_status IS NOT NULL) AS st,
-            argMaxIf(toString(person.properties.mobile_number), timestamp, person.properties.mobile_number IS NOT NULL AND toString(person.properties.mobile_number) NOT IN ('','null')) AS ph
+            argMaxIf(toString(person.properties.mobile_number), timestamp, person.properties.mobile_number IS NOT NULL AND toString(person.properties.mobile_number) NOT IN ('','null')) AS ph,
+            lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
+            lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+            argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc
           FROM events
           WHERE timestamp >= '2026-04-01'
             AND person.properties.subscription_plan LIKE '%pro%'
@@ -9489,6 +9499,7 @@
         )
         WHERE st='active' AND plan LIKE '%pro%' AND email != ''
           AND end_date >= '${today}' AND end_date <= '${in30}'
+          ${expBktWhere}
         ORDER BY end_date ASC`);
 
       const todayMs = new Date(today).getTime();
