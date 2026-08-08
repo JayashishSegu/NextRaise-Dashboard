@@ -963,6 +963,29 @@
     .rep-social-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:12px; }
     .rep-social-head { font-size:11px; font-weight:700; color:var(--blue-text); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px; }
 
+    /* ── CEO Report 6b sections ────────────────────────────────────── */
+    .rep-section { margin-bottom:24px; }
+    .rep-section-title { font-size:12px; font-weight:700; color:var(--text-2); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+    .rep-section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+    /* creator + campaign tables: reuse .table-wrap / .table-scroll but with a modest max-height */
+    .rep-table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow-sm); overflow:hidden; }
+    .rep-table-scroll { overflow:auto; max-height:340px; }
+    .rep-table-scroll table { min-width:640px; }
+    /* compare panel: two equal columns */
+    .rep-compare { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    @media(max-width:580px){ .rep-compare { grid-template-columns:1fr; } }
+    .rep-compare-col { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 18px; box-shadow:var(--shadow-sm); }
+    .rep-compare-col-head { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+    .rep-compare-col.rc-infl .rep-compare-col-head { color:var(--violet); }
+    .rep-compare-col.rc-perf .rep-compare-col-head { color:var(--blue-text); }
+    .rep-compare-row { display:flex; justify-content:space-between; align-items:baseline; padding:5px 0; border-bottom:1px solid var(--row-border); font-size:13px; }
+    .rep-compare-row:last-child { border-bottom:none; }
+    .rep-compare-lbl { color:var(--text-2); font-weight:500; }
+    .rep-compare-val { font-weight:700; font-variant-numeric:tabular-nums; color:var(--text); }
+    /* trend chart container */
+    .rep-trend-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow-sm); padding:16px 18px; }
+    .rep-kw-label { font-size:11px; color:var(--text-3); font-style:italic; }
+
     /* ── Expiring Soon page ─────────────────────────────────────── */
     .exp-urgent  { border-left:3px solid var(--red); }
     .exp-warn    { border-left:3px solid var(--amber); }
@@ -5290,6 +5313,7 @@
     if (typeof _ovData !== 'undefined') { _ovData = null; }
     if (typeof _acqLoaded !== 'undefined') { _acqLoaded = false; }
     if (typeof _reportLoaded !== 'undefined') { _reportLoaded = false; }
+    if (typeof _reportData !== 'undefined') { _reportData = null; }  // null it so fetchReport shows the spinner, not stale wrong-bucket KPIs
     if (typeof _revLoaded !== 'undefined') { _revLoaded = false; }
     if (typeof _actLoaded !== 'undefined') { _actLoaded = false; }
     // Determine the active tab from the page with class "active", then re-run it.
@@ -10150,7 +10174,78 @@
         startD, endD,
       };
       _reportLoaded = true;
-      renderCeoReport();
+      renderCeoReport(); // render hero immediately while extra queries run
+
+      // ── 6b: extra queries (per-creator, trend, compare) ─────────────
+      const extraQueries = [
+        // 1. Per-creator: signups + sales by utm_campaign (influencer persons only)
+        runHogQL(`SELECT code, count() AS signups, sum(paid) AS sales FROM (
+          SELECT person_id,
+            argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS code,
+            max(event='payment_completed') AS paid,
+            max(event='signup_complete') AS signed
+          FROM events
+          WHERE ${EXCL} AND timestamp >= ${tabGdrStart('report')} AND timestamp < ${tabGdrEnd('report')}
+            AND person_id IN (${bucketPersonSet('influencer', sd)})
+          GROUP BY person_id
+        ) WHERE code != '' AND signed=1 GROUP BY code ORDER BY signups DESC LIMIT 100`).catch(()=>({results:[]})),
+        // 2a. Daily signups trend
+        runHogQL(`SELECT toDate(toTimeZone(timestamp,'Asia/Kolkata')) AS d, count(DISTINCT person_id) AS n
+          FROM events WHERE event='signup_complete' AND ${EXCL}
+            AND timestamp >= ${tabGdrStart('report')} AND timestamp < ${tabGdrEnd('report')}
+            ${bucketPersonFilter(sd)}
+          GROUP BY d ORDER BY d`).catch(()=>({results:[]})),
+        // 2b. Daily revenue trend
+        runHogQL(`SELECT toDate(toTimeZone(created_at,'Asia/Kolkata')) AS d,
+            ifNull(sumIf(amount,currency='INR'),0) + ifNull(sumIf(amount,currency='USD'),0)*${USD_TO_INR} AS rev
+          FROM postgres.payments WHERE status='completed' AND ${PW}
+            AND created_at >= ${tabGdrStart('report')} AND created_at < ${tabGdrEnd('report')}
+            ${bucketEmailFilter('user_email', sd)}
+          GROUP BY d ORDER BY d`).catch(()=>({results:[]})),
+      ];
+
+      // 3. Compare totals — only when Overall view (avoids redundant queries in single-bucket views)
+      let compareQueries = [];
+      if (BUCKET_VIEW === 'overall') {
+        for (const B of ['influencer', 'perf']) {
+          compareQueries.push(
+            runHogQL(`SELECT count(DISTINCT person_id) AS signups FROM events
+              WHERE event='signup_complete' AND ${EXCL}
+                AND timestamp >= ${tabGdrStart('report')} AND timestamp < ${tabGdrEnd('report')}
+                AND person_id IN (${bucketPersonSet(B, sd)})`).catch(()=>({results:[[0]]})),
+            runHogQL(`SELECT count() AS sales, ifNull(sumIf(amount,currency='INR'),0) AS inr, ifNull(sumIf(amount,currency='USD'),0) AS usd
+              FROM postgres.payments WHERE status='completed' AND ${PW}
+                AND created_at >= ${tabGdrStart('report')} AND created_at < ${tabGdrEnd('report')}
+                AND user_email IN (
+                  SELECT argMaxIf(toString(person.properties.email),timestamp,person.properties.email!='')
+                  FROM events WHERE person_id IN (${bucketPersonSet(B, sd)}) GROUP BY person_id
+                )`).catch(()=>({results:[[0,0,0]]}))
+          );
+        }
+      }
+
+      const [creatorsR, trendSuR, trendRevR, ...cmpRaw] = await Promise.all([...extraQueries, ...compareQueries]);
+
+      _reportData.creators = (creatorsR.results||[]).map(r=>({code:r[0], signups:+r[1]||0, sales:+r[2]||0}));
+      _reportData.trend = {
+        signups: (trendSuR.results||[]).map(r=>[r[0], +r[1]||0]),
+        revenue: (trendRevR.results||[]).map(r=>[r[0], +r[1]||0]),
+      };
+      if (BUCKET_VIEW === 'overall' && cmpRaw.length === 4) {
+        const [inflSuR, inflSalR, perfSuR, perfSalR] = cmpRaw;
+        const inflSu = inflSuR.results?.[0]||[0], inflSal = inflSalR.results?.[0]||[0,0,0];
+        const perfSu = perfSuR.results?.[0]||[0], perfSal = perfSalR.results?.[0]||[0,0,0];
+        const googleSpendExclKw = (_reportData.google||[]).filter(r=>r.cid!==BUCKET_KW_CAMPAIGN).reduce((a,r)=>a+r.spend,0);
+        const manualT = manualTotals(startD, endD);
+        _reportData.compare = {
+          influencer: { signups:+inflSu[0]||0, sales:+inflSal[0]||0, revenue:Math.round((+inflSal[1]||0)+(+inflSal[2]||0)*USD_TO_INR), spend:manualT.budget },
+          perf:       { signups:+perfSu[0]||0, sales:+perfSal[0]||0, revenue:Math.round((+perfSal[1]||0)+(+perfSal[2]||0)*USD_TO_INR), spend:googleSpendExclKw+(_reportData.meta.spend||0) },
+        };
+      } else {
+        _reportData.compare = null;
+      }
+
+      renderReportSections(); // populate #reportSections with tables + chart
     } catch(e) {
       if (!_reportData) area.innerHTML = typeof errorBox === 'function' ? errorBox('Could not load report — '+e.message) : stateBox(null,'Error: '+e.message,'sp-blue');
     }
@@ -10213,6 +10308,197 @@
     }
 
     area.innerHTML = heroHtml + socialHtml + '<div id="reportSections"></div>';
+    // If extra data is already loaded (e.g. re-render on toggle), populate sections immediately
+    if (_reportData && (_reportData.creators !== undefined)) renderReportSections();
+  }
+
+  // ── 6b: render per-creator table, per-campaign table, compare panel, trend chart
+  function renderReportSections() {
+    const el = document.getElementById('reportSections'); if (!el) return;
+    const d = _reportData; if (!d) return;
+    const { startD, endD, google, meta, compare, creators, trend } = d;
+
+    // ── Friendly campaign name map (add more as needed) ────────────
+    const CAMPAIGN_NAMES = {
+      [BUCKET_KW_CAMPAIGN]: 'Keyword search (→ influencer)',
+    };
+    function campaignName(cid) { return CAMPAIGN_NAMES[cid] || cid; }
+    function pct(a, b) { return b ? (a/b*100).toFixed(1)+'%' : '—'; }
+    function inrFmt(v) { return '₹'+_nf(Math.round(v||0)); }
+
+    let html = '';
+
+    // ── 1. Per-creator table (influencer + overall views) ───────────
+    if (BUCKET_VIEW === 'influencer' || BUCKET_VIEW === 'overall') {
+      // Build merged code list: union of auto (HogQL) + manual (_creatorData)
+      const autoMap = new Map((creators||[]).map(r=>[r.code, r]));
+      const manualCodes = new Set((_creatorData||[]).filter(e=>e.date>=startD&&e.date<endD).map(e=>e.code));
+      const allCodes = new Set([...autoMap.keys(), ...manualCodes]);
+
+      const rows = [...allCodes].map(code => {
+        const auto = autoMap.get(code) || { signups:0, sales:0 };
+        const m = manualForCode(code, startD, endD);
+        return { code, budget:m.budget, views:m.views, likes:m.likes, comments:m.comments, shares:m.shares,
+                 signups:auto.signups, sales:auto.sales,
+                 conv: auto.signups ? (auto.sales/auto.signups*100) : 0,
+                 cps: auto.signups && m.budget ? m.budget/auto.signups : null };
+      }).sort((a,b)=>b.signups-a.signups);
+
+      const tbody = rows.map(r=>`<tr>
+        <td style="font-weight:600">${h(r.code)}</td>
+        <td style="text-align:right">${r.budget ? inrFmt(r.budget) : '<span style="color:var(--text-3)">—</span>'}</td>
+        <td style="text-align:right">${r.views ? _nf(r.views) : '<span style="color:var(--text-3)">—</span>'}</td>
+        <td style="text-align:right">${r.likes ? _nf(r.likes) : '<span style="color:var(--text-3)">—</span>'}</td>
+        <td style="text-align:right">${r.comments ? _nf(r.comments) : '<span style="color:var(--text-3)">—</span>'}</td>
+        <td style="text-align:right">${r.shares ? _nf(r.shares) : '<span style="color:var(--text-3)">—</span>'}</td>
+        <td style="text-align:right;font-weight:700">${_nf(r.signups)}</td>
+        <td style="text-align:right">${_nf(r.sales)}</td>
+        <td style="text-align:right">${r.conv.toFixed(1)}%</td>
+        <td style="text-align:right">${r.cps !== null ? inrFmt(r.cps) : '<span style="color:var(--text-3)">—</span>'}</td>
+      </tr>`).join('');
+
+      html += `<div class="rep-section">
+        <div class="rep-section-title">Per-creator breakdown</div>
+        <div class="rep-table-wrap"><div class="rep-table-scroll"><table>
+          <thead><tr>
+            <th>Creator / Code</th>
+            <th style="text-align:right">Budget</th>
+            <th style="text-align:right">Views</th>
+            <th style="text-align:right">Likes</th>
+            <th style="text-align:right">Comments</th>
+            <th style="text-align:right">Shares</th>
+            <th style="text-align:right">Signups</th>
+            <th style="text-align:right">Sales</th>
+            <th style="text-align:right">Conv%</th>
+            <th style="text-align:right">Cost/Signup</th>
+          </tr></thead>
+          <tbody>${rows.length ? tbody : '<tr><td colspan="10" style="text-align:center;color:var(--text-3);padding:20px">No creator data for this period</td></tr>'}</tbody>
+        </table></div></div>
+      </div>`;
+    }
+
+    // ── 2. Per-campaign perf table (perf + overall views) ──────────
+    if (BUCKET_VIEW === 'perf' || BUCKET_VIEW === 'overall') {
+      // In perf view, exclude KW campaign (it routes to influencer bucket)
+      const googleRows = (google||[]).filter(r => BUCKET_VIEW === 'perf' ? r.cid !== BUCKET_KW_CAMPAIGN : true);
+      const campTbody = googleRows.map(r => {
+        const isKw = r.cid === BUCKET_KW_CAMPAIGN;
+        const nameCell = isKw
+          ? `<span style="font-weight:600">${h(campaignName(r.cid))}</span> <span class="rep-kw-label">(keyword budget routed to influencer)</span>`
+          : `<span style="font-weight:600">${h(campaignName(r.cid))}</span>`;
+        return `<tr>
+          <td>${nameCell}</td>
+          <td style="text-align:right">Google</td>
+          <td style="text-align:right">${inrFmt(r.spend)}</td>
+          <td style="text-align:right">${_nf(r.impr)}</td>
+          <td style="text-align:right">${_nf(r.clicks)}</td>
+          <td style="text-align:right">${pct(r.clicks, r.impr)}</td>
+        </tr>`;
+      }).join('');
+      const metaRow = `<tr>
+        <td><span style="font-weight:600">Meta (aggregate)</span></td>
+        <td style="text-align:right">Meta</td>
+        <td style="text-align:right">${inrFmt(meta.spend)}</td>
+        <td style="text-align:right">${_nf(meta.impr)}</td>
+        <td style="text-align:right">${_nf(meta.clicks)}</td>
+        <td style="text-align:right">${pct(meta.clicks, meta.impr)}</td>
+      </tr>`;
+
+      html += `<div class="rep-section">
+        <div class="rep-section-title">Per-campaign performance</div>
+        <div class="rep-table-wrap"><div class="rep-table-scroll"><table>
+          <thead><tr>
+            <th>Campaign</th>
+            <th style="text-align:right">Network</th>
+            <th style="text-align:right">Spend</th>
+            <th style="text-align:right">Impressions</th>
+            <th style="text-align:right">Clicks</th>
+            <th style="text-align:right">CTR%</th>
+          </tr></thead>
+          <tbody>${campTbody}${metaRow}</tbody>
+        </table></div></div>
+      </div>`;
+    }
+
+    // ── 3. Influencer vs Perf compare panel (overall only) ─────────
+    if (BUCKET_VIEW === 'overall' && compare) {
+      const { influencer: inf, perf: pf } = compare;
+      function colRows(b) {
+        const cac  = b.sales ? inrFmt(b.spend/b.sales) : '—';
+        const roas = b.spend ? (b.revenue/b.spend).toFixed(2)+'×' : '—';
+        return `
+          <div class="rep-compare-row"><span class="rep-compare-lbl">Spend</span><span class="rep-compare-val">${inrFmt(b.spend)}</span></div>
+          <div class="rep-compare-row"><span class="rep-compare-lbl">Signups</span><span class="rep-compare-val">${_nf(b.signups)}</span></div>
+          <div class="rep-compare-row"><span class="rep-compare-lbl">Sales</span><span class="rep-compare-val">${_nf(b.sales)}</span></div>
+          <div class="rep-compare-row"><span class="rep-compare-lbl">Revenue</span><span class="rep-compare-val">${inrFmt(b.revenue)}</span></div>
+          <div class="rep-compare-row"><span class="rep-compare-lbl">CAC</span><span class="rep-compare-val">${cac}</span></div>
+          <div class="rep-compare-row"><span class="rep-compare-lbl">ROAS</span><span class="rep-compare-val">${roas}</span></div>`;
+      }
+      html += `<div class="rep-section">
+        <div class="rep-section-title">Influencer vs Performance</div>
+        <div class="rep-compare">
+          <div class="rep-compare-col rc-infl">
+            <div class="rep-compare-col-head">Influencer</div>
+            ${colRows(inf)}
+          </div>
+          <div class="rep-compare-col rc-perf">
+            <div class="rep-compare-col-head">Performance (paid)</div>
+            ${colRows(pf)}
+          </div>
+        </div>
+      </div>`;
+    }
+
+    // ── 4. Trend chart (all views) ──────────────────────────────────
+    html += `<div class="rep-section">
+      <div class="rep-section-title">Daily trend</div>
+      <div class="rep-trend-wrap"><div id="reportTrendChart"></div></div>
+    </div>`;
+
+    el.innerHTML = html;
+
+    // Destroy any prior trend chart, then render
+    (window._reportCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}});
+    window._reportCharts = [];
+    setTimeout(()=>{
+      if (!window.ApexCharts) return;
+      const trendEl = document.getElementById('reportTrendChart');
+      if (!trendEl) return;
+      const DK2 = document.documentElement.dataset.theme === 'dark';
+      const BLUE = DK2 ? '#5f8bff' : '#2563eb';
+      const GRN  = DK2 ? '#37e0a6' : '#15803d';
+      const fmtInr = v => v >= 100000 ? '₹'+(v/100000).toFixed(1)+'L' : v >= 1000 ? '₹'+(v/1000).toFixed(0)+'k' : '₹'+Math.round(v);
+      const suData  = (trend&&trend.signups||[]).map(p=>({x:p[0], y:p[1]}));
+      const revData = (trend&&trend.revenue||[]).map(p=>({x:p[0], y:p[1]}));
+      const ch = new ApexCharts(trendEl, {
+        chart:{ type:'area', height:240, toolbar:{show:false}, zoom:{enabled:false},
+          fontFamily:'General Sans', foreColor:DK2?'rgba(240,243,250,.55)':'rgba(44,38,32,.62)',
+          animations:{enabled:true,speed:900} },
+        series:[
+          {name:'Signups', data:suData},
+          {name:'Revenue (₹)', data:revData},
+        ],
+        stroke:{ curve:'smooth', width:[2,2], colors:[BLUE,GRN] },
+        fill:{ type:'gradient', gradient:{shadeIntensity:1,opacityFrom:.22,opacityTo:0,stops:[0,95]} },
+        colors:[BLUE,GRN],
+        markers:{size:0,hover:{size:4}},
+        dataLabels:{enabled:false},
+        grid:{ borderColor:DK2?'rgba(255,255,255,.06)':'rgba(44,38,32,.10)', strokeDashArray:4 },
+        tooltip:{ theme:DK2?'dark':'light', shared:true, intersect:false,
+          y:[{formatter:v=>_nf(v)},{formatter:fmtInr}] },
+        xaxis:{ type:'datetime', axisBorder:{show:false}, axisTicks:{show:false},
+          labels:{style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}, datetimeUTC:false} },
+        yaxis:[
+          {seriesName:'Signups', title:{text:'Signups',style:{fontSize:'11px'}},
+           labels:{formatter:v=>_nf(Math.round(v)),style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}}},
+          {seriesName:'Revenue (₹)', opposite:true, title:{text:'Revenue',style:{fontSize:'11px'}},
+           labels:{formatter:fmtInr,style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}}},
+        ],
+        legend:{ position:'top', fontSize:'12px', labels:{colors:DK2?'rgba(240,243,250,.7)':'rgba(17,23,38,.7)'} },
+      });
+      ch.render();
+      window._reportCharts.push(ch);
+    }, 30);
   }
 
   /* ---- ACQUIRE ---- */
