@@ -11054,7 +11054,7 @@
         FROM events
         WHERE timestamp > now() - INTERVAL 30 DAY
           AND event IN (${keys.map(k=>`'${k}'`).join(',')})
-          AND ${_EXCL}
+          AND ${_EXCL}${bucketPersonFilter(30)}
         GROUP BY event ORDER BY c DESC`);
       _featData=res.results||[]; _featLoaded=true; renderFeatures();
     }catch(e){ area.innerHTML=errorBox('Could not load features — '+e.message); }
