@@ -5340,6 +5340,8 @@
     if (typeof _refLoaded !== 'undefined') { _refLoaded = false; }
     if (typeof _emlLoaded !== 'undefined') { _emlLoaded = false; }
     if (typeof _featLoaded !== 'undefined') { _featLoaded = false; }
+    if (typeof _uninstLoaded !== 'undefined') { _uninstLoaded = false; }
+    if (typeof _uninstRows !== 'undefined') { _uninstRows = []; }
     // Determine the active tab from the page with class "active", then re-run it.
     const activePage = document.querySelector('.page.active');
     if (!activePage) return;
@@ -8376,6 +8378,7 @@
             AND lower(person.properties.email) NOT LIKE '%nextraise.ai%'
             AND lower(person.properties.email) NOT LIKE '%creditdharma.in%'
             AND lower(person.properties.email) NOT LIKE '%test%'
+            ${bucketPersonFilter(365)}
           GROUP BY email
         )
         SELECT email, toString(last_uninstall) AS uninstall_date,
