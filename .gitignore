@@ -3,3 +3,4 @@ concept-overview.html
 concept-orca.html
 .playwright-mcp/
 .vercel
+node_modules
