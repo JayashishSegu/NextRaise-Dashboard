@@ -5330,6 +5330,10 @@
     if (typeof _insLoaded !== 'undefined') { _insLoaded = false; }
     if (typeof _lifLoaded !== 'undefined') { _lifLoaded = false; }
     if (typeof _dlyLoaded !== 'undefined') { _dlyLoaded = false; }
+    if (typeof _retLoaded !== 'undefined') { _retLoaded = false; }
+    if (typeof _refLoaded !== 'undefined') { _refLoaded = false; }
+    if (typeof _emlLoaded !== 'undefined') { _emlLoaded = false; }
+    if (typeof _featLoaded !== 'undefined') { _featLoaded = false; }
     // Determine the active tab from the page with class "active", then re-run it.
     const activePage = document.querySelector('.page.active');
     if (!activePage) return;
@@ -10557,6 +10561,9 @@
       // person scan and hits ClickHouse's ~60s limit. person.properties.* are
       // denormalised onto every event, so a narrower scan keeps attribution intact.
       const scanDays=_gdr.scanDays;
+      // Bucket attribution: per-person derived table → add _bs/_bm/_bc inline, filter in outer WHERE.
+      const acqBktWhere = BUCKET_VIEW==='overall' ? '' :
+        ` AND ${bucketExprSQL('_bs','_bm','_bc')}='${BUCKET_VIEW==='perf'?'perf':'infl'}'`;
       const res=await runHogQL(`
         SELECT source, medium, campaign, count() AS c,
                countIf(plan LIKE '%pro%' AND status='active') AS conv
@@ -10567,6 +10574,9 @@
             argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS campaign,
             argMaxIf(toString(person.properties.plan), timestamp, person.properties.plan!='') AS plan,
             argMaxIf(toString(person.properties.subscription_status), timestamp, person.properties.subscription_status!='') AS status,
+            lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
+            lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+            argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc,
             minIf(toDate(toTimeZone(timestamp,'Asia/Kolkata')), event = 'signup_complete') AS su
           FROM events
           WHERE timestamp > now() - INTERVAL ${scanDays} DAY
@@ -10575,7 +10585,8 @@
             AND lower(coalesce(person.properties.email,'')) NOT LIKE '%test%'
           GROUP BY person_id
           HAVING su >= toDate('${start}') AND su < toDate('${end}')
-        ) GROUP BY source, medium, campaign ORDER BY c DESC LIMIT 500`);
+        ) WHERE 1=1${acqBktWhere}
+        GROUP BY source, medium, campaign ORDER BY c DESC LIMIT 500`);
       _acqData=res.results||[]; _acqLoaded=true; renderAcquire();
     }catch(e){ area.innerHTML=errorBox('Could not load acquisition — '+e.message); }
   }
