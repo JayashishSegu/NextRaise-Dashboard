@@ -6804,6 +6804,10 @@
   }
 
   let _allRows = [];
+  // Set true when a non-Overall Credits view could NOT be bucket-scoped (email-set
+  // query timed out). creditsApply() re-injects the "unscoped" notice on every
+  // re-render so it survives the phone/session background refreshes.
+  let _creditsUnscoped = false;
   let _creditsFilters = { text:'', reason:'all', phone:'all', plan:'all', payment:'all', dateRange:'all', sessions:'all' };
   let _creditsSort    = { col:'exhaustedAt', dir:'desc' };
   let _sessionsLoaded = false;
@@ -6872,7 +6876,16 @@
       });
       // Bucket filter: mongodb.users has no person_id so we fetch the bucket
       // email set from events and filter _allRows client-side.
-      const _bktEmails = await _fetchBucketPersonEmails(365).catch(()=>null);
+      // CRITICAL: credit-exhausted users are all-time, so the email-set scan is
+      // inherently wide (365d) and CAN time out. We must NEVER silently show the
+      // full Overall list under an Influencer/Perf label. So: distinguish Overall
+      // (null = no filter, expected) from a bucketed view whose email-set FAILED
+      // (we set _bktFailed). On failure we render an explicit NOTICE and mark the
+      // figure as unscoped rather than passing it off as a clean bucketed number.
+      _creditsUnscoped = false;
+      const _bktEmails = BUCKET_VIEW === 'overall'
+        ? null
+        : await _fetchBucketPersonEmails(365).catch(() => { _creditsUnscoped = true; return null; });
       if (_bktEmails !== null) {
         _allRows = _allRows.filter(r => _bktEmails.has(r.email.toLowerCase()));
       }
@@ -6883,6 +6896,13 @@
       document.getElementById('creditsSortWrap').style.display  = 'flex';
       document.getElementById('statsBar').style.display         = 'flex';
       document.getElementById('creditsFilterBar').style.display = 'flex';
+      // Explicit unscoped notice: if the bucket email-set failed/timed out under a
+      // non-Overall view, the rows are the FULL Overall list — the toggle could NOT
+      // be applied. creditsApply() (called above and on every background refresh)
+      // re-injects the NOTICE + badge asterisk via _creditsUnscoped, so the number
+      // is never read as a clean Influencer/Perf figure. Re-run once here so the
+      // notice is present immediately after this first render.
+      if (_creditsUnscoped) creditsApply();
 
       // — phone lookup (background); table is already visible above —
       const uniqueEmails = [...new Set(users.map(u=>u[0].toLowerCase()))];
@@ -6933,14 +6953,17 @@
         const chunk = emails.slice(i, i + chunkSize);
         const inClause = chunk.map(e => `'${esc(e)}'`).join(',');
         try {
-          // emails live on the person, not as a $email event property
+          // emails live on the person, not as a $email event property.
+          // No bucket filter here: the email IN-list is drawn from _allRows, which
+          // is ALREADY bucket-scoped (or explicitly flagged unscoped) upstream in
+          // fetchExhaustedCredits. Re-appending bucketPersonFilter(365) would inject
+          // a redundant SECOND 365-day person scan that timed out under non-Overall.
           const r = await runHogQL(`
             SELECT lower(person.properties.email) AS email,
                    count(DISTINCT $session_id) AS sessions
             FROM events
             WHERE lower(person.properties.email) IN (${inClause})
               AND $session_id IS NOT NULL AND $session_id != ''
-              ${bucketPersonFilter(365)}
             GROUP BY email LIMIT 500`);
           for (const [email, cnt] of (r.results || [])) {
             if (email) sessionMap[email] = Number(cnt);
@@ -7112,6 +7135,20 @@
     });
     rows = sortRows(rows, _creditsSort);
     renderCreditsTable(rows, _allRows.length);
+    // Unscoped-view notice (see fetchExhaustedCredits): the bucket email-set failed,
+    // so these rows are the full Overall list under an Influencer/Perf label. Prepend
+    // a prominent notice and asterisk the badge so the count never reads as clean.
+    if (_creditsUnscoped) {
+      const view = BUCKET_VIEW === 'perf' ? 'Perf' : 'Influencer';
+      const area = document.getElementById('creditsArea');
+      if (area) area.insertAdjacentHTML('afterbegin',
+        `<div class="error-box" style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+           <svg class="ic" style="margin-top:1px;flex-shrink:0;"><use href="#i-alert"/></svg>
+           <span style="flex:1;">Couldn't scope Credits to <strong>${view}</strong>. The attribution query is too heavy on this all-time screen and timed out, so this shows <strong>all users</strong> (unscoped). Switch to <strong>Overall</strong> for the accurate list.</span>
+         </div>`);
+      const cb = document.getElementById('creditsTabBadge');
+      if (cb && !String(cb.textContent).endsWith('*')) cb.textContent = _allRows.length + '*';
+    }
   }
 
   function sortRows(rows, sortState) {
