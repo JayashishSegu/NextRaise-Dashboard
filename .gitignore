@@ -4,3 +4,4 @@ concept-orca.html
 .playwright-mcp/
 .vercel
 node_modules
+.superpowers/
