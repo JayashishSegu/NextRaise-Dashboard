@@ -8433,7 +8433,12 @@
         stateBox(null,'Finding users who uninstalled the Chrome extension…','sp-rose');
     }
     try {
-      // Users who fired extension_uninstall after their last extension_installed
+      // Users who fired extension_uninstall after their last extension_installed.
+      // Bucket classification is INLINE: the ev CTE already aggregates per person
+      // (GROUP BY email), so we add _bs/_bm/_bc there and filter in the outer WHERE
+      // via bucketExprSQL — no second person_id-IN scan (which timed out at 365d).
+      const uninstBkt = BUCKET_VIEW === 'overall' ? '' :
+        ` AND ${bucketExprSQL('_bs','_bm','_bc')}='${BUCKET_VIEW==='perf'?'perf':'infl'}'`;
       const r1 = await fetchAllPages(`
         WITH ev AS (
           SELECT lower(person.properties.email) AS email,
@@ -8441,14 +8446,16 @@
             minIf(timestamp, event='extension_installed')  AS first_install,
             countIf(event='extension_uninstall') AS uninstall_count,
             argMaxIf(person.properties.plan, timestamp, event='extension_uninstall') AS plan,
-            argMaxIf(person.properties.name, timestamp, person.properties.name != '') AS posthog_name
+            argMaxIf(person.properties.name, timestamp, person.properties.name != '') AS posthog_name,
+            lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
+            lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+            argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc
           FROM events
           WHERE event IN ('extension_uninstall','extension_installed')
             AND person.properties.email != '' AND person.properties.email IS NOT NULL
             AND lower(person.properties.email) NOT LIKE '%nextraise.ai%'
             AND lower(person.properties.email) NOT LIKE '%creditdharma.in%'
             AND lower(person.properties.email) NOT LIKE '%test%'
-            ${bucketPersonFilter(365)}
           GROUP BY email
         )
         SELECT email, toString(last_uninstall) AS uninstall_date,
@@ -8456,7 +8463,7 @@
                uninstall_count, plan
         FROM ev
         WHERE last_uninstall >= ${tabGdrStart('uninstalled')} AND last_uninstall < ${tabGdrEnd('uninstalled')}
-        AND (last_uninstall > first_install OR first_install < '2024-01-01 00:00:00')
+        AND (last_uninstall > first_install OR first_install < '2024-01-01 00:00:00')${uninstBkt}
         ORDER BY last_uninstall DESC`);
 
       const rows = (r1||[]).filter(r=>r[0]);
@@ -8639,6 +8646,11 @@
       //    Abandoned = order >24h ago AND no subscription_activated after that
       //    order (last_act < last_order). Anyone who activated — even late — is
       //    excluded, since their activation lands after their latest order.
+      // Bucket classification is INLINE: the pe CTE already aggregates per person
+      // (GROUP BY email), so we add _bs/_bm/_bc there and filter in the outer WHERE
+      // via bucketExprSQL — no second person_id-IN scan (which timed out at 365d).
+      const abandBkt = BUCKET_VIEW === 'overall' ? '' :
+        ` AND ${bucketExprSQL('_bs','_bm','_bc')}='${BUCKET_VIEW==='perf'?'perf':'infl'}'`;
       const r1 = await fetchAllPages(`
         WITH pe AS (
           SELECT lower(person.properties.email) AS email,
@@ -8646,7 +8658,10 @@
             maxIf(timestamp, event IN (${actList})) AS last_act,
             countIf(event='payment_order_created') AS orders,
             argMaxIf(properties.plan, timestamp, event='payment_order_created') AS plan_tried,
-            argMaxIf(properties.currency, timestamp, event='payment_order_created') AS currency
+            argMaxIf(properties.currency, timestamp, event='payment_order_created') AS currency,
+            lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
+            lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+            argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc
           FROM events
           WHERE event IN ('payment_order_created', ${actList})
             AND person.properties.email != '' AND person.properties.email IS NOT NULL
@@ -8654,7 +8669,6 @@
             AND lower(person.properties.email) NOT LIKE '%creditdharma.in%'
             AND lower(person.properties.email) NOT LIKE '%test%'
             AND lower(person.properties.email) NOT LIKE '%hainextraise%'
-            ${bucketPersonFilter(365)}
           GROUP BY email
         )
         SELECT email, toString(last_order) AS last_order_str,
@@ -8662,7 +8676,7 @@
                orders, plan_tried, currency
         FROM pe
         WHERE orders > 0 AND last_order < now() - INTERVAL 24 HOUR AND last_act < last_order
-          AND last_order >= ${tabGdrStart('abandoned')} AND last_order < ${tabGdrEnd('abandoned')}
+          AND last_order >= ${tabGdrStart('abandoned')} AND last_order < ${tabGdrEnd('abandoned')}${abandBkt}
         ORDER BY last_order DESC`);
 
       const rows = r1.filter(r=>r[0]);
