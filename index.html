@@ -5664,6 +5664,21 @@
     // Middle-layer classifier column + outer filter for the counts/sources queries.
     const countsBktCol = BUCKET_VIEW==='overall' ? '' : `, ${bucketExprSQL('_bs','_bm','_bc')} AS _bkt`;
     const countsBucketOuter = BUCKET_VIEW==='overall' ? '' : `WHERE _bkt='${wantB}'`;
+    // INLINE bucket predicates for the remaining event-based overview queries
+    // (recent signups/payments, daily signups, influencer campaigns). These used
+    // to append bucketPersonFilter(scanDays), injecting a SECOND person_id-IN scan
+    // that timed out at range "all" (~103d). Instead we classify over the query's
+    // own window: ovEvBkt filters a per-person derived table already carrying
+    // _bs/_bm/_bc; ovEvBktPerEvent classifies per-event on the row's denormalised
+    // person props (fine for one-row-per-person events like signup/payment).
+    const ovEvBkt = BUCKET_VIEW==='overall' ? '' : ` AND ${bucketExprSQL('_bs','_bm','_bc')}='${wantB}'`;
+    // NOTE: coalesce(...,'') is REQUIRED — a missing person prop is SQL NULL, and
+    // bucketExprSQL's blank test (v='' OR v IN (...)) yields NULL (never 'infl')
+    // for NULL, silently dropping the ~96% of signups with no attribution set at
+    // ingest. The derived-table forms avoid this via argMaxIf(...,prop!='') which
+    // defaults to ''; the per-event form must coalesce explicitly to match.
+    const ovEvBktPerEvent = BUCKET_VIEW==='overall' ? '' :
+      ` AND ${bucketExprSQL("lower(coalesce(toString(person.properties.source),''))","lower(coalesce(toString(person.properties.medium),''))","coalesce(toString(person.properties.$initial_utm_campaign),'')")}='${wantB}'`;
     try {
       // The counts query is the heaviest — a 400-day person-level scan with
       // per-person argMax aggregation. Run it SOLO first so it gets ClickHouse's
@@ -5715,12 +5730,15 @@
             SELECT argMaxIf(toString(person.properties.email), timestamp, person.properties.email!='') AS email,
               argMaxIf(toString(person.properties.name), timestamp, person.properties.name!='') AS name,
               argMaxIf(toString(person.properties.plan), timestamp, person.properties.plan!='') AS plan,
-              toString(maxIf(timestamp, event='signup_complete')) AS created_at
+              toString(maxIf(timestamp, event='signup_complete')) AS created_at,
+              lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
+              lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+              argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc
             FROM events
             WHERE person_id IN (SELECT person_id FROM events WHERE event='signup_complete' AND timestamp > now() - INTERVAL 21 DAY)
-              AND timestamp > now() - INTERVAL 400 DAY${bucketPersonFilter(_ovGdr.scanDays)}
+              AND timestamp > now() - INTERVAL 400 DAY
             GROUP BY person_id
-          ) WHERE email NOT LIKE '%@nextraise.ai' AND email NOT LIKE '%@creditdharma.in' AND email!=''
+          ) WHERE email NOT LIKE '%@nextraise.ai' AND email NOT LIKE '%@creditdharma.in' AND email!=''${ovEvBkt}
           ORDER BY created_at DESC LIMIT 7`),
         runHogQL(`
           SELECT toString(person.properties.email) AS email,
@@ -5735,7 +5753,7 @@
             AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
             AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
             AND coalesce(person.properties.email,'') NOT ILIKE '%test%'
-            AND person_id NOT IN COHORT 278743${bucketPersonFilter(_ovGdr.scanDays)}
+            AND person_id NOT IN COHORT 278743${ovEvBktPerEvent}
           ORDER BY timestamp DESC LIMIT 7`),
         // Pro revenue for selected range — source of truth: postgres.payments.
         runHogQL(`
@@ -5782,7 +5800,7 @@
             AND toDate(toTimeZone(timestamp,'Asia/Kolkata')) < toDate('${rangeEnd}')
             AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
             AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
-            AND person_id NOT IN COHORT 278743${bucketPersonFilter(_ovGdr.scanDays)}
+            AND person_id NOT IN COHORT 278743${ovEvBktPerEvent}
           GROUP BY day ORDER BY day LIMIT 200`),
         // Daily payments + revenue for selected range (for chart tooltip).
         runHogQL(`
@@ -5802,19 +5820,24 @@
           SELECT campaign, count() AS c,
                  countIf(plan LIKE '%pro%' AND status='active') AS conv
           FROM (
-            SELECT person_id,
-              argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS campaign,
-              argMaxIf(toString(person.properties.plan), timestamp, person.properties.plan!='') AS plan,
-              argMaxIf(toString(person.properties.subscription_status), timestamp, person.properties.subscription_status!='') AS status,
-              minIf(toDate(toTimeZone(timestamp,'Asia/Kolkata')), event = 'signup_complete') AS su
-            FROM events
-            WHERE positionCaseInsensitive(toString(person.properties.$initial_utm_campaign),'instagram') > 0
-              AND timestamp > now() - INTERVAL ${evRangeInterval}
-              AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
-              AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
-              AND person_id NOT IN COHORT 278743${bucketPersonFilter(_ovGdr.scanDays)}
-            GROUP BY person_id
-            HAVING ${evRangeHaving}
+            SELECT person_id, campaign, plan, status FROM (
+              SELECT person_id,
+                argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS campaign,
+                argMaxIf(toString(person.properties.plan), timestamp, person.properties.plan!='') AS plan,
+                argMaxIf(toString(person.properties.subscription_status), timestamp, person.properties.subscription_status!='') AS status,
+                minIf(toDate(toTimeZone(timestamp,'Asia/Kolkata')), event = 'signup_complete') AS su,
+                lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
+                lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+                argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc
+              FROM events
+              WHERE positionCaseInsensitive(toString(person.properties.$initial_utm_campaign),'instagram') > 0
+                AND timestamp > now() - INTERVAL ${evRangeInterval}
+                AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
+                AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
+                AND person_id NOT IN COHORT 278743
+              GROUP BY person_id
+              HAVING ${evRangeHaving}
+            ) WHERE 1=1${ovEvBkt}
           ) GROUP BY campaign ORDER BY c DESC LIMIT 40`),
         // postgres.users is the source of truth for Active Pro/Basic (PostHog person props lag)
         runHogQL(`
