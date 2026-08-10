@@ -5314,7 +5314,10 @@
     const url = new URL(location.href); url.searchParams.set('view', v);
     history.replaceState(null, '', url);
     _syncBucketSeg();
-    if (typeof nrForce === 'function') nrForce();   // bust query cache for ~9s if that helper exists
+    // Do NOT nrForce() here. _qcache keys on the SQL string and BUCKET_VIEW changes
+    // the SQL, so each view caches separately — switching to a view you've already
+    // loaded serves instantly. nrForce() would bypass that for 9s and force every
+    // query to re-run live on every toggle (the "slow on toggle" regression).
     _refreshAllLoadedTabs();
   }
   function _refreshAllLoadedTabs() {
@@ -5354,9 +5357,10 @@
     const activePage = document.querySelector('.page.active');
     if (!activePage) return;
     const activeName = activePage.id.replace('page-', '');
-    // Overview has a stale-while-revalidate guard (OV_FRESH_TTL) that would otherwise
-    // re-render cached wrong-bucket numbers; force a live refetch when the view changes.
-    if (activeName === 'overview' && typeof loadOverview === 'function') { loadOverview(true); return; }
+    // Overview snapshot cache is per-view (ovCacheKey includes BUCKET_VIEW, Task 3), so
+    // loadOverview() reads THIS view's snapshot — no force needed. Forcing here defeated
+    // the instant cached toggle and re-ran all heavy queries live every time (slow).
+    if (activeName === 'overview' && typeof loadOverview === 'function') { loadOverview(); return; }
     if (typeof switchTab === 'function') switchTab(activeName);
   }
 
