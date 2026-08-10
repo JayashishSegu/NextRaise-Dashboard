@@ -6854,7 +6854,7 @@
         _allRows = _allRows.filter(r => _bktEmails.has(r.email.toLowerCase()));
       }
       _sessionsLoaded = false; _creditsLoaded = true;
-      document.getElementById('creditsTabBadge').textContent = _allRows.length; syncMobBadges();
+      { const _cb = document.getElementById('creditsTabBadge'); if (_cb) _cb.textContent = _allRows.length; } syncMobBadges();
       updateCreditsStats(_allRows); creditsApply();
       document.getElementById('creditsFilter').style.display    = 'block';
       document.getElementById('creditsSortWrap').style.display  = 'flex';
