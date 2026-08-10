@@ -4280,6 +4280,7 @@
     const page = document.getElementById('page-' + name);
     if (tab) tab.classList.add('active');
     if (page) page.classList.add('active');
+    _ensureBucketToggle(name);   // put the Influencer/Perf/Overall toggle on every data screen
     closeSidebar();
     // Update URL hash so right-click → Open in New Tab lands on the right tab
     try { history.replaceState(null, '', '#' + name); } catch(_) {}
@@ -5293,6 +5294,37 @@
     return ` AND ${emailCol} IN (
       SELECT argMaxIf(toString(person.properties.email), timestamp, person.properties.email!='')
       FROM events WHERE person_id IN (${bucketPersonSet(BUCKET_VIEW, scanDays)}) GROUP BY person_id) `;
+  }
+
+  // Inject the bucket toggle onto whatever data screen is opening, next to its
+  // date button, so the Influencer/Perf/Overall control is available everywhere.
+  // Overview + Report have hard-coded toggles; every other screen with a date
+  // button gets one here (idempotent — skips if the page already has one).
+  // Screens whose data is NOT bucketed (influencer roster is already influencer-only;
+  // Salahkart is an orthogonal partner segment) get NO toggle — it would mislead.
+  const BUCKET_TOGGLE_SKIP = new Set(['influencers', 'salahkart', 'skpro']);
+  function _ensureBucketToggle(name) {
+    if (BUCKET_TOGGLE_SKIP.has(name)) return;
+    const page = document.getElementById('page-' + name);
+    if (!page || page.querySelector('.bucket-seg')) return;
+    const dateBtn = page.querySelector('#gdrTabBtn-' + name) || page.querySelector('.gdr-btn');
+    const seg = document.createElement('div');
+    seg.className = 'bucket-seg';
+    seg.setAttribute('role', 'tablist');
+    seg.setAttribute('aria-label', 'Attribution view');
+    seg.style.margin = '8px 0 0';
+    const LBL = { influencer: 'Influencer', perf: 'Perf', overall: 'Overall' };
+    seg.innerHTML = ['influencer', 'perf', 'overall'].map(v =>
+      `<button class="bkt" data-view="${v}" onclick="setBucketView('${v}')">${LBL[v]}</button>`).join('');
+    // Anchor: the date button if the screen has one, else the header's title column
+    // (.ov-head > div — where Overview's own toggle lives). Skip if neither exists.
+    const headCol = page.querySelector('.ov-head > div');
+    const toolbar = page.querySelector('.toolbar .toolbar-top');
+    if (dateBtn) dateBtn.insertAdjacentElement('afterend', seg);
+    else if (headCol) headCol.appendChild(seg);
+    else if (toolbar) toolbar.appendChild(seg);
+    else return;
+    _syncBucketSeg();
   }
 
   // ── Bucket toggle state ─────────────────────────────────────────────────
