@@ -2137,10 +2137,10 @@
       html[data-theme="light"] .sidebar{
         position:absolute; left:0; top:0; bottom:0; width:80px; z-index:90;
         overflow:hidden;
-        background:rgba(255,255,255,.55) !important;
-        backdrop-filter:blur(22px) saturate(160%) !important; -webkit-backdrop-filter:blur(22px) saturate(160%) !important;
+        background:#ffffff !important;
+        backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
         border-right:1px solid var(--border) !important; box-shadow:none !important;
-        transition:width .34s cubic-bezier(.32,.72,0,1), background .34s ease, box-shadow .34s ease;
+        transition:width .18s ease-out, box-shadow .18s ease-out;
       }
       html[data-theme="light"] .sidebar:hover{
         width:256px;
@@ -2195,7 +2195,7 @@
       /* ── fixes: opaque drawer · profile stacking · no stray scrollbars ── */
       /* collapsed rail reads as a clean light panel; ZERO horizontal padding so
          the 80px rail's full width is usable (fixes tiles overflowing/clipping right) */
-      html[data-theme="light"] .sidebar{ background:rgba(255,255,255,.6) !important; padding:0 !important; }
+      html[data-theme="light"] .sidebar{ padding:0 !important; }
       /* expanded drawer fully opaque (no content bleed) + clear right shadow */
       html[data-theme="light"] .sidebar:hover{
         background:#ffffff !important;
@@ -2643,6 +2643,33 @@
       html[data-theme="light"] .sidebar:hover .sidebar-nav::-webkit-scrollbar{ width:4px !important; height:0 !important; display:block !important; }
       html[data-theme="light"] .sidebar:hover .sidebar-nav::-webkit-scrollbar-thumb{ background:var(--border-strong); border-radius:2px; }
     }
+
+    /* ══ SIDEBAR OPEN ANIMATION (2026-09-11) ═══════════════════════════
+       During the width expansion, labels used to appear instantly at full
+       size and WRAP inside the still-narrow drawer (mangled two-line text
+       mid-animation). Now every text element is single-line and clipped,
+       and labels FADE IN slightly after the drawer has opened — a quick,
+       clean slide + fade instead of the wrappy shuffle. */
+    @media (min-width:961px){
+      /* never wrap while the width animates — clip instead */
+      html[data-theme="light"] .sidebar :is(.tab,.nav-label,.cmdk-trigger,.settings-btn,.brand-text){
+        white-space:nowrap !important; overflow:hidden !important; }
+      /* snappier drawer */
+      html[data-theme="light"] .sidebar:hover{ transition:width .18s ease-out, box-shadow .18s ease-out; }
+      /* labels: hidden collapsed, fade in AFTER the drawer is mostly open */
+      html[data-theme="light"] .tab, html[data-theme="light"] .settings-btn{ opacity:1; }
+      html[data-theme="light"] .sidebar .nav-label,
+      html[data-theme="light"] .sidebar .cmdk-trigger,
+      html[data-theme="light"] .sidebar .brand-text{ transition:opacity .12s ease !important; opacity:0; }
+      html[data-theme="light"] .sidebar:hover .nav-label,
+      html[data-theme="light"] .sidebar:hover .cmdk-trigger,
+      html[data-theme="light"] .sidebar:hover .brand-text{ opacity:1; transition:opacity .16s ease .12s !important; }
+      /* tab rows keep their icons visible; only the text reveal is gated by
+         font-size — make that jump happen after the width settles */
+      html[data-theme="light"] .sidebar .tab{ transition:font-size 0s linear .14s, background .15s ease, color .15s ease !important; }
+      html[data-theme="light"] .sidebar:hover .tab{ transition:font-size 0s linear .1s, background .15s ease, color .15s ease !important; }
+      html[data-theme="light"] .sidebar .settings-btn{ transition:font-size 0s linear .1s, background .15s ease !important; }
+    }
   </style>
 </head>
 <body>
@@ -2708,13 +2735,6 @@
         <div class="logo">Next<span>Raise</span></div>
         <span class="logo-sub">ANALYTICS</span>
       </div>
-    </div>
-    <div class="nb-profile">
-      <div class="nb-prof-top">
-        <div class="nb-av">JS</div>
-        <div class="nb-date" id="nbDate">Today</div>
-      </div>
-      <div class="nb-hi">Welcome back, Jayashish!</div>
     </div>
     <div class="cmdk-trigger" onclick="window.__cmdk&&window.__cmdk()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
@@ -10530,7 +10550,7 @@
     let t; const mo=new MutationObserver(()=>{ clearTimeout(t); t=setTimeout(anim,30); });
     if(document.body) mo.observe(document.body,{childList:true,subtree:true});
     window.addEventListener('load',()=>{ setTimeout(anim,200);
-      const d=document.getElementById('nbDate'); if(d) d.textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}); });
+    });
   })();
 </script>
 
