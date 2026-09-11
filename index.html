@@ -2144,7 +2144,7 @@
       }
       html[data-theme="light"] .sidebar:hover{
         width:256px;
-        background:rgba(250,246,240,.94) !important;
+        background:#ffffff !important;
         box-shadow:0 28px 64px rgba(31,35,48,.16) !important;
       }
       html[data-theme="light"] .app-body{ margin-left:80px; }
@@ -2198,7 +2198,7 @@
       html[data-theme="light"] .sidebar{ background:rgba(255,255,255,.6) !important; padding:0 !important; }
       /* expanded drawer fully opaque (no content bleed) + clear right shadow */
       html[data-theme="light"] .sidebar:hover{
-        background:#f8f3ec !important;
+        background:#ffffff !important;
         box-shadow:1px 0 0 rgba(31,35,48,.06), 26px 0 70px -18px rgba(31,35,48,.30) !important;
       }
       /* fix: profile card must stack vertically when expanded (was mashing into a row) */
@@ -2608,6 +2608,41 @@
       html[data-theme="light"] .mob-bottom-nav{ background:#ffffff !important; backdrop-filter:none !important; border-top:1px solid var(--border) !important; box-shadow:none !important; }
       html[data-theme="light"] .mobile-topbar{ background:#ffffff !important; border-bottom:1px solid var(--border) !important; }
     }
+
+    /* ══ SIDEBAR DRAWER FIT + SCROLL (2026-09-11) ══════════════════════
+       The hover-expanded drawer overflowed at 900px viewports: the last two
+       nav items scrolled out of reach with NO visible scrollbar, hidden
+       behind the Settings footer. Fix: compact the profile card and nav
+       rhythm so everything fits on a typical laptop, and show a slim
+       scrollbar in the EXPANDED state only for shorter screens. */
+    @media (min-width:961px){
+      /* compact profile card: one tidy row, small greeting */
+      html[data-theme="light"] .sidebar:hover .nb-profile{ margin:2px 12px 4px !important; padding:10px 12px !important; border-radius:var(--radius-lg) !important; background:#fafafa !important; }
+      html[data-theme="light"] .sidebar:hover .nb-av{ width:34px !important; height:34px !important; font-size:12px !important; border-radius:8px !important; box-shadow:none !important; }
+      html[data-theme="light"] .sidebar:hover .nb-hi{ font-size:13px !important; font-weight:600 !important; margin-top:6px !important; }
+      html[data-theme="light"] .sidebar:hover .nb-hi br{ display:none; }
+      html[data-theme="light"] .nb-date{ font-size:9px; }
+
+      /* tighter nav rhythm when expanded */
+      html[data-theme="light"] .sidebar:hover .cmdk-trigger{ margin:2px 12px 6px !important; padding:8px 12px !important; }
+      html[data-theme="light"] .sidebar:hover .tab{ margin:1px 10px !important; padding:8px 14px !important; }
+      html[data-theme="light"] .sidebar:hover .nav-label{ padding:8px 24px 2px !important; }
+      html[data-theme="light"] .sidebar:hover .nav-sep{ margin:6px 16px !important; }
+      html[data-theme="light"] .sidebar:hover .sidebar-footer{ padding:10px 12px !important; }
+
+      /* the nav is the flex child that scrolls; footer stays below it */
+      html[data-theme="light"] .sidebar{ display:flex; flex-direction:column; }
+      html[data-theme="light"] .sidebar-nav{ flex:1 1 0% !important; min-height:0 !important; overflow-y:auto !important; }
+      html[data-theme="light"] .sidebar-brand,
+      html[data-theme="light"] .nb-profile,
+      html[data-theme="light"] .cmdk-trigger,
+      html[data-theme="light"] .sidebar-footer{ flex:0 0 auto; }
+
+      /* scrollbar: invisible on the collapsed rail, slim + visible expanded */
+      html[data-theme="light"] .sidebar:hover .sidebar-nav{ scrollbar-width:thin !important; scrollbar-color:var(--border-strong) transparent !important; }
+      html[data-theme="light"] .sidebar:hover .sidebar-nav::-webkit-scrollbar{ width:4px !important; height:0 !important; display:block !important; }
+      html[data-theme="light"] .sidebar:hover .sidebar-nav::-webkit-scrollbar-thumb{ background:var(--border-strong); border-radius:2px; }
+    }
   </style>
 </head>
 <body>
@@ -2679,7 +2714,7 @@
         <div class="nb-av">JS</div>
         <div class="nb-date" id="nbDate">Today</div>
       </div>
-      <div class="nb-hi">Welcome back,<br>Jayashish!</div>
+      <div class="nb-hi">Welcome back, Jayashish!</div>
     </div>
     <div class="cmdk-trigger" onclick="window.__cmdk&&window.__cmdk()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
