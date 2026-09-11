@@ -6,3 +6,4 @@ concept-orca.html
 node_modules
 .superpowers/
 .claude-flow/
+__fixture_ov.json

@@ -1,28 +1,19 @@
-// Cron warmer — invoked on a schedule by Vercel (see vercel.json `crons`).
-// Keeps the popular ranges warm in the edge cache by fetching the SAME URLs the
+// Cron warmer — invoked on a schedule by Vercel (see vercel.json `crons`) and by
+// the GitHub Action in Jayashish01/nextraise-cron (~every 10 min).
+// Keeps the popular combos warm in the edge cache by fetching the SAME URLs the
 // dashboard reads. Runs when no one is looking, so the heavy queries never block
-// a human. With s-maxage(300) < cron interval, each run finds the entry stale and
-// triggers a background revalidate, refreshing the edge copy.
+// a human. With s-maxage(900) the edge copy is refreshed at most 4x/hour per
+// combo regardless of how often the warmer pings.
 //
-// Ranges are warmed SEQUENTIALLY on purpose: PostHog's /query concurrency limit
-// is 3 team-wide, so parallel warms would 429 and fight real users.
-// Warm the hot (range × attribution view) combos so no common open is a cold,
-// slow first hit. Ordered by likelihood; cron is best-effort within its budget —
-// whatever it doesn't reach warms on the first real visit and is then served
-// instantly (stale-while-revalidate) for 24h. Every view is warmed because the
-// dashboard remembers the last-used bucket, so a returning Perf/Influencer user
-// must find their view warm too — not just Overall.
+// BUDGET NOTE (2026-09-11): PostHog enforces an hourly read budget for API
+// queries. Warm ONLY the two most-opened combos — every extra combo is real
+// bytes read each hour. Other range/view combos warm on their first real visit
+// and are then served from the edge (stale-while-revalidate) for 24h.
+// Vercel edge caches are also per-region, so warming from a US runner does not
+// warm the Mumbai edge — more combos here is cost without guaranteed benefit.
 const WARM_COMBOS = [
-  { range: '7d',    view: 'overall'    },
-  { range: 'today', view: 'overall'    },
-  { range: '7d',    view: 'perf'       },
-  { range: '7d',    view: 'influencer' },
-  { range: 'today', view: 'perf'       },
-  { range: 'today', view: 'influencer' },
-  { range: '14d',       view: 'overall' },
-  { range: 'thisMonth', view: 'overall' },
-  { range: 'lastMonth', view: 'overall' },
-  { range: 'all',       view: 'overall' },
+  { range: '7d',    view: 'overall' },
+  { range: 'today', view: 'overall' },
 ];
 
 // Must be the PUBLIC alias — the per-deploy *.vercel.app host has Deployment
@@ -46,6 +37,7 @@ module.exports = async function handler(req, res) {
     try {
       const r = await fetch(`${base}/api/overview?range=${range}&view=${view}`, { headers: { 'x-warm': '1' } });
       results.push({ range, view, status: r.status, ms: Date.now() - t0 });
+      if (r.status === 429) break;   // budget exhausted — more warms only deepen the deficit
     } catch (e) {
       results.push({ range, view, error: String((e && e.message) || e), ms: Date.now() - t0 });
     }
