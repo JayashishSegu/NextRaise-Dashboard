@@ -166,7 +166,7 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
       background: var(--bg);
-      min-height: 100vh;
+      min-height: 100dvh;
       color: var(--text);
       font-size: 14px;
       -webkit-font-smoothing: antialiased;
@@ -177,13 +177,13 @@
 
     /* ── Top bar ─────────────────────────────────────────────────── */
     /* ── Sidebar layout ──────────────────────────────────────────── */
-    .app-layout { display: flex; height: 100vh; overflow: hidden; }
+    .app-layout { display: flex; height: 100dvh; overflow: hidden; }
 
     .sidebar {
       width: 226px; flex-shrink: 0;
       background: #f3f5fb;
       border-right: 1px solid var(--border);
-      display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+      display: flex; flex-direction: column; height: 100dvh; overflow: hidden;
     }
     html[data-theme="dark"] .sidebar { background: #10141e; border-right-color: var(--border); }
     .sidebar-brand {
@@ -258,7 +258,7 @@
     html[data-theme="dark"] .theme-ico-dark  { display: inline; }
 
     /* ── Page body ───────────────────────────────────────────────── */
-    .app-body { flex: 1; min-width: 0; overflow-y: auto; height: 100vh; }
+    .app-body { flex: 1; min-width: 0; overflow-y: auto; height: 100dvh; }
     .page { display: none; padding: 28px 36px 52px; max-width: 1400px; margin: 0 auto; }
     .page.active { display: block; }
 
@@ -642,7 +642,7 @@
       background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;
     }
-    .table-scroll { overflow: auto; max-height: calc(100vh - 320px); }
+    .table-scroll { overflow: auto; max-height: calc(100dvh - 320px); }
     .table-meta {
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 4px 10px; font-size: 13px; color: var(--text-2);
@@ -831,7 +831,7 @@
     /* ── Home overview title ─────────────────────────────────────── */
     .home-title {
       font-size: 24px; font-weight: 800; color: var(--text);
-      letter-spacing: -0.6px; margin: 0 0 4px;
+      letter-spacing: -0.6px; margin: 0 0 4px; text-wrap: balance;
     }
     .home-panels {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
@@ -1133,8 +1133,8 @@
 
     @media (max-width: 600px) {
       /* Full-width layout — sidebar floats over content */
-      .app-layout { display: block; height: 100vh; overflow: hidden; }
-      .app-body { height: calc(100vh - 54px - 62px); overflow-y: auto; }
+      .app-layout { display: block; height: 100dvh; overflow: hidden; }
+      .app-body { height: calc(100dvh - 54px - 62px); overflow-y: auto; }
 
       /* Sidebar: slide-in drawer */
       .sidebar {
@@ -1218,7 +1218,7 @@
       .chip-group { width: 100%; }
       .result-name, .result-sub, .rf-value { overflow-wrap: anywhere; }
       .infl-card-head { flex-wrap: wrap; }
-      #daily-iframe { height: calc(100vh - 54px - 62px); }
+      #daily-iframe { height: calc(100dvh - 54px - 62px); }
 
       /* ── Mobile card layout: data tables → cards ─────────────── */
       .table-scroll { overflow-x: visible; }
@@ -1523,7 +1523,7 @@
 
     /* ---- Orca frame: rounded app container floating on canvas ---- */
     body{ background:var(--canvas); letter-spacing:-.005em; padding:14px; }
-    .app-layout{ height:calc(100vh - 28px); border-radius:28px; overflow:hidden; background:var(--surface); box-shadow:var(--shadow-lg); }
+    .app-layout{ height:calc(100dvh - 28px); border-radius:28px; overflow:hidden; background:var(--surface); box-shadow:var(--shadow-lg); }
     .sidebar{ height:100%; background:var(--surface); border-right:1px solid var(--border); }
     html[data-theme="dark"] .sidebar{ background:var(--surface); border-right-color:var(--border); }
     .app-body{ height:100%; background:var(--bg); }
@@ -1714,7 +1714,7 @@
     body::after{ content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.6;
       background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);
       background-size:46px 46px; mask-image:radial-gradient(130% 120% at 50% 0%,#000,transparent 78%); }
-    .app-layout{ position:relative; z-index:1; background:transparent!important; box-shadow:none!important; border-radius:0!important; height:100vh; }
+    .app-layout{ position:relative; z-index:1; background:transparent!important; box-shadow:none!important; border-radius:0!important; height:100dvh; }
     .app-body{ background:transparent!important; }
 
     /* Sidebar */
@@ -2584,6 +2584,147 @@
       @page { size: A4; margin: 12mm; }
     }
     .nr-exporting .no-print { display: none !important; }
+
+    /* ══════════════════════════════════════════════════════════════════
+       EDITORIAL LIGHT — terminal-crisp redesign (light theme only).
+       Flat white canvas, hairline rules instead of shadows, sharp corners,
+       big IBM Plex Mono numerals, uppercase tracked labels, one blue accent.
+       Wins over every earlier light pass by matched scope + source order.
+       Dark mode untouched. No layout / JS / markup changes.
+       ══════════════════════════════════════════════════════════════════ */
+    html:not([data-theme="dark"]){
+      --canvas:#ffffff; --bg:#ffffff;
+      --surface:#ffffff; --surface-2:#fafafa; --pop:#ffffff;
+      --glass-blur:none; --glass-edge:#e7e7e4;
+      --border:#e7e7e4; --border-strong:#d3d3ce;
+      --hover:#f5f5f2; --sep:#ededea; --row-border:#ededea;
+      --table-head:transparent; --table-head-2:#f5f5f2;
+      --text:#0a0a0a; --ink:#0a0a0a; --text-2:#55555f; --text-3:#8a8a92;
+      --blue:#0065F4; --blue-dark:#0047b3; --blue-soft:#eef3ff; --blue-text:#0047c2;
+      --green:#0f7a3d; --green-soft:#e9f6ee; --green-text:#0f7a3d;
+      --red:#c0332b; --red-soft:#fbecea; --red-text:#c0332b;
+      --amber:#8a5a06; --amber-soft:#fbf3e0; --amber-text:#8a5a06;
+      --violet:#0065F4; --violet-soft:#eef3ff; --violet-text:#0047c2;
+      --accent-grad:#0065F4;
+      --radius:4px; --radius-lg:6px;
+      --shadow-sm:none; --shadow-md:none; --shadow-blue:none;
+      --shadow-lg:0 10px 40px rgba(10,10,10,.14);
+      --glows:none; --grid-line:transparent;
+    }
+
+    /* Canvas: pure white — no glow, grain or grid */
+    html:not([data-theme="dark"]) body{ background:#ffffff !important; background-image:none !important; }
+    html:not([data-theme="dark"]) body::before,
+    html:not([data-theme="dark"]) body::after{ display:none !important; }
+
+    /* Type: strong grotesk display + mono numerals */
+    html:not([data-theme="dark"]) :is(body,.app-layout,.app-body,input,select,textarea,button,.tab,.btn,
+      .home-title,.ov-sub,.nb-kpi-l,.nb-kpi-sub,.nb-ai-v,.nb-rank-l,.nb-t,.ocard-t,td,th,.badge){
+      font-family:'General Sans','Inter',-apple-system,system-ui,sans-serif !important; }
+    html:not([data-theme="dark"]) .home-title{ font-size:30px !important; font-weight:700 !important; letter-spacing:-.03em !important; color:var(--text) !important; }
+    html:not([data-theme="dark"]) .ov-sub{ font-size:13.5px !important; color:var(--text-2) !important; }
+    html:not([data-theme="dark"]) :is(.nb-kpi-v,.rev-kpi-num,.stat-num,.okpi-val,.nb-big,.rev-big,.kpi-val,.big){
+      font-family:'IBM Plex Mono',ui-monospace,monospace !important; font-weight:600 !important; letter-spacing:-.02em !important; color:var(--text) !important; font-variant-numeric:tabular-nums; }
+
+    /* Section labels: one uppercase token, wide tracking, muted */
+    html:not([data-theme="dark"]) :is(.nav-label,.nb-ai-k,.cmdk-sec,.ov-card-note,.ocard-note,thead th,.result-stat-label,.rf-label){
+      font-size:10px !important; font-weight:700 !important; letter-spacing:.12em !important; text-transform:uppercase !important; color:var(--text-3) !important; }
+
+    /* Surfaces: flat white, hairline border, NO shadow, sharp corners */
+    html:not([data-theme="dark"]) :is(.ov-card,.nb-card,.rev-kpi,.okpi,.ocard,.panel,.infl-card,.stat-pill,
+      .table-wrap,.nb-ai,.result-card,.search-box,.state-box,.nn-card,.lookup-idle,.nb-skel){
+      background:#ffffff !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+      border:1px solid var(--border) !important; box-shadow:none !important; border-radius:var(--radius-lg) !important; }
+    html:not([data-theme="dark"]) :is(.ov-card,.nb-card,.nb-ai,.infl-card){ padding:22px !important; }
+    html:not([data-theme="dark"]) :is(.okpi,.nb-kpi,.rev-kpi){ padding:20px 22px !important; }
+    html:not([data-theme="dark"]) .rev-tile{ background:#fafafa !important; border:1px solid var(--border) !important; box-shadow:none !important; border-radius:var(--radius) !important; }
+
+    /* KPI proportions: big mono value, small-caps label */
+    html:not([data-theme="dark"]) .nb-kpi-v{ font-size:34px !important; margin-top:6px !important; }
+    html:not([data-theme="dark"]) :is(.nb-kpi-l,.rev-kpi-label,.okpi-l){ font-size:10.5px !important; font-weight:700 !important; letter-spacing:.1em !important; text-transform:uppercase !important; color:var(--text-3) !important; }
+    html:not([data-theme="dark"]) .nb-kpi-sub{ color:var(--text-3) !important; }
+
+    /* Flat, static cards — no hover lift (editorial is calm) */
+    html:not([data-theme="dark"]) :is(.okpi,.ocard,.ov-card,.rev-kpi,.nb-card,.infl-card,.result-card){
+      transition:border-color .18s ease, background .18s ease !important; }
+    html:not([data-theme="dark"]) :is(.okpi,.ocard,.ov-card,.rev-kpi,.nb-card,.infl-card,.result-card):hover{
+      transform:none !important; box-shadow:none !important; border-color:var(--border-strong) !important; }
+
+    /* Sidebar: flat white, hairline; active = subtle fill + accent edge */
+    html:not([data-theme="dark"]) .sidebar{ background:#ffffff !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; border-right:1px solid var(--border) !important; box-shadow:none !important; }
+    /* expanded rail drawer (hover) stays white, not warm cream */
+    @media (min-width:961px){
+      html:not([data-theme="dark"]) .sidebar:hover{ background:#ffffff !important; box-shadow:1px 0 0 var(--border), 24px 0 60px -20px rgba(10,10,10,.22) !important; }
+    }
+    /* font-size is owned by the collapsible rail (0 collapsed → 14px on hover); don't set it here */
+    html:not([data-theme="dark"]) .tab{ color:var(--text-2) !important; font-weight:500 !important; border-radius:var(--radius) !important; }
+    html:not([data-theme="dark"]) .tab:hover{ background:var(--hover) !important; color:var(--text) !important; }
+    html:not([data-theme="dark"]) :is(.tab.active,.tab[class*="tab-"].active){
+      background:var(--hover) !important; color:var(--text) !important; font-weight:700 !important;
+      border:1px solid var(--border) !important; border-left:2px solid var(--blue) !important; box-shadow:none !important; }
+    html:not([data-theme="dark"]) .tab.active .ic-sm{ color:var(--blue) !important; }
+    html:not([data-theme="dark"]) .tab-badge{ background:var(--surface-2) !important; color:var(--text-2) !important; border:1px solid var(--border) !important; border-radius:4px !important; }
+
+    /* Buttons: sharp + flat. Primary = solid ink; secondary = hairline white */
+    html:not([data-theme="dark"]) :is(.btn,.btn-primary,.btn-secondary,.btn-ghost,.rowbtn,.gdr-btn,.days-chip,.search-shortcut,.cmdk-trigger){ border-radius:var(--radius) !important; font-weight:600 !important; }
+    html:not([data-theme="dark"]) .btn-primary{ background:var(--ink) !important; color:#fff !important; border:1px solid var(--ink) !important; box-shadow:none !important; }
+    html:not([data-theme="dark"]) .btn-primary:hover{ background:#000 !important; transform:none !important; }
+    html:not([data-theme="dark"]) :is(.btn,.btn-secondary,.btn-ghost,.gdr-btn,.days-chip,.search-shortcut){
+      background:#ffffff !important; color:var(--text-2) !important; border:1px solid var(--border) !important; box-shadow:none !important; }
+    html:not([data-theme="dark"]) :is(.btn,.btn-secondary,.btn-ghost,.gdr-btn):hover{ background:var(--hover) !important; color:var(--text) !important; border-color:var(--border-strong) !important; transform:none !important; }
+    html:not([data-theme="dark"]) .nb-ai-cta{ background:var(--ink) !important; color:#fff !important; border:1px solid var(--ink) !important; box-shadow:none !important; }
+    html:not([data-theme="dark"]) .nb-ai-cta:hover{ background:#000 !important; transform:none !important; filter:none !important; }
+
+    /* Segmented control (Influencer / Perf / Overall) → squared hairline */
+    html:not([data-theme="dark"]) .bucket-seg{ background:#fff !important; border:1px solid var(--border) !important; border-radius:var(--radius) !important; padding:3px !important; }
+    html:not([data-theme="dark"]) .bucket-seg .bkt.is-on{ background:var(--hover) !important; color:var(--text) !important; border-radius:3px !important; box-shadow:none !important; }
+
+    /* Inputs: white, hairline, blue focus */
+    html:not([data-theme="dark"]) :is(.toolbar-input,.search-input,.field-input,.date-input,.sort-select,.search-box input,input[type="text"],input[type="search"]){
+      background:#ffffff !important; border:1px solid var(--border-strong) !important; border-radius:var(--radius) !important; box-shadow:none !important; backdrop-filter:none !important; color:var(--text) !important; }
+    html:not([data-theme="dark"]) :is(.toolbar-input,.search-input,.field-input,.date-input):focus{ border-color:var(--blue) !important; box-shadow:0 0 0 3px var(--blue-soft) !important; }
+
+    /* Floating layers: white, hairline, sharp, keep a soft float shadow */
+    html:not([data-theme="dark"]) :is(.gdr-drop,#gdrSharedDrop,.cmdk,.modal,.modal-card,.acq-src-panel,.suggestions){
+      background:#ffffff !important; border:1px solid var(--border-strong) !important; border-radius:var(--radius-lg) !important; box-shadow:var(--shadow-lg) !important; backdrop-filter:none !important; }
+    html:not([data-theme="dark"]) .filter-bar{ background:#ffffff !important; border:1px solid var(--border) !important; border-radius:var(--radius-lg) !important; box-shadow:none !important; }
+
+    /* Badges / pills: squared hairline; colour reserved for state */
+    html:not([data-theme="dark"]) :is(.badge,.plan-badge,.li-tag,.sugg-tag,.count-pill,.tab-badge,.infl-code,.chip){
+      border-radius:4px !important; font-weight:600 !important; backdrop-filter:none !important; }
+    html:not([data-theme="dark"]) .chip.on{ background:var(--ink) !important; color:#fff !important; border-color:var(--ink) !important; }
+
+    /* Tables: hairline rows, uppercase thead, roomy */
+    html:not([data-theme="dark"]) table{ border-collapse:separate !important; border-spacing:0 !important; }
+    html:not([data-theme="dark"]) thead th{ background:transparent !important; border-bottom:1px solid var(--border-strong) !important; padding-bottom:10px !important; }
+    html:not([data-theme="dark"]) tbody td{ border-bottom:1px solid var(--row-border) !important; padding-top:13px !important; padding-bottom:13px !important; color:var(--text) !important; }
+    html:not([data-theme="dark"]) tbody tr:hover{ background:var(--hover) !important; }
+
+    /* Bars: single blue accent on flat track (no gradients) */
+    html:not([data-theme="dark"]) :is(.fsbar-fill,.infl-conv-fill,.nb-rank-bar i,.bar-fill,.obar-fill,.acq-bar i,.rev-mc-bar){ background:var(--blue) !important; box-shadow:none !important; border-radius:2px !important; }
+    html:not([data-theme="dark"]) :is(.bar-track,.fsbar,.nb-rank-bar,.infl-conv-track,.obar-track,.acq-bar){ background:#efefec !important; border-radius:2px !important; }
+
+    /* Key-opportunities (AI) panel: flat, no glow / gradient */
+    html:not([data-theme="dark"]) .nb-ai{ background:#ffffff !important; border:1px solid var(--border) !important; box-shadow:none !important; }
+    html:not([data-theme="dark"]) .nb-ai::before{ display:none !important; }
+    html:not([data-theme="dark"]) .nb-ai-k.perf{ color:var(--green-text) !important; }
+    html:not([data-theme="dark"]) .nb-ai-k.risk{ color:var(--amber-text) !important; }
+    html:not([data-theme="dark"]) :is(.nb-ai .nb-ai-badge,.nb-ai-k.act,.nb-ai-big b){ color:var(--blue-text) !important; }
+
+    /* Avatars / logos: flat single accent (no gradient) */
+    html:not([data-theme="dark"]) :is(.nb-av,.result-avatar,.nb-txlogo,.okpi-chip,.row-avatar,.sug-avatar,.nb-txlogo){ background:var(--blue-soft) !important; color:var(--blue-text) !important; box-shadow:none !important; }
+    html:not([data-theme="dark"]) .brand-logo{ box-shadow:none !important; }
+
+    /* Delta chips stay semantic — the only colour that signals state */
+    html:not([data-theme="dark"]) :is(.nb-d.up,.okpi-delta.up){ background:var(--green-soft) !important; color:var(--green-text) !important; border-radius:4px !important; }
+    html:not([data-theme="dark"]) :is(.nb-d.down,.okpi-delta.down){ background:var(--red-soft) !important; color:var(--red-text) !important; border-radius:4px !important; }
+
+    /* Launch screen → white + accent */
+    html:not([data-theme="dark"]) #nrLaunch{ background:#ffffff !important; }
+    html:not([data-theme="dark"]) #nrLaunch .nrl-bar i{ background:var(--blue) !important; }
+
+    /* Crisp blue focus ring */
+    html:not([data-theme="dark"]) :is(a,button,.tab,input,.nb-kpi,.cmdk-i,.nb-clk):focus-visible{ outline:2px solid var(--blue) !important; outline-offset:2px; }
   </style>
   <script>
     // Apply the saved (or system) theme before first paint to avoid a flash.
@@ -5023,12 +5164,29 @@
   // Periods shown in the Overview "Free → Pro by period" breakdown (no Custom)
   const CONV_PRESETS = GDR_PRESETS.filter(p => p.key !== 'custom');
   // Independent date range per tab — changing one tab never touches others
-  const _tabRanges = {
-    overview: '7d', revenue: 'all', activation: 'all',
-    pro: 'all', power: '7d', influencers: 'all', abandoned: 'thisMonth', uninstalled: 'thisMonth',
-    acquire: '7d', insights: '7d',
-  };
-  const _tabCustom = {};   // tab -> { from:'YYYY-MM-DD', to:'YYYY-MM-DD' }
+  // ── Shared date range across the ANALYTICS tabs ───────────────────────
+  // Previously each tab kept its own range, so Overview on 'All time' and
+  // Insights on '7d' silently described different windows and their numbers
+  // "didn't match". Now every analytics screen shares ONE window, so switching
+  // between them always compares the same period. Operational LIST tabs (pro,
+  // credits, power, influencers, abandoned, uninstalled) keep an independent
+  // range — they're lookup lists (default all-time), not comparative analytics,
+  // and their queries are range-bound so forcing 7d would truncate the list.
+  const _SHARED_RANGE_TABS = new Set(['overview','insights','revenue','activation','acquire',
+    'retention','lifecycle','weekly','monthly','daily','features','quality','emails','referrals','report']);
+  const _isShared = k => typeof k === 'string' && _SHARED_RANGE_TABS.has(k);
+  let _globalRange = '7d';
+  let _globalCustom = undefined;   // { from:'YYYY-MM-DD', to:'YYYY-MM-DD' }
+  const _listRanges = { pro:'all', power:'7d', influencers:'all', abandoned:'thisMonth', uninstalled:'thisMonth', credits:'all' };
+  const _listCustom = {};
+  const _tabRanges = new Proxy({}, {
+    get(_t, k) { return _isShared(k) ? _globalRange : (_listRanges[k] || '7d'); },
+    set(_t, k, v) { if (_isShared(k)) _globalRange = v; else if (typeof k === 'string') _listRanges[k] = v; return true; },
+  });
+  const _tabCustom = new Proxy({}, {
+    get(_t, k) { return _isShared(k) ? _globalCustom : _listCustom[k]; },
+    set(_t, k, v) { if (_isShared(k)) _globalCustom = v; else if (typeof k === 'string') _listCustom[k] = v; return true; },
+  });
   let _activeGdrTab = null;
 
   // ── IST-aware range boundaries (start inclusive, end exclusive) ──
@@ -5139,8 +5297,9 @@
     if (!p || _tabRanges[tab] === key) { closeTabGdr(); return; }
     _tabRanges[tab] = key;
     closeTabGdr();
-    updateTabGdrBtn(tab);
-    _gdrRefetch(tab);
+    if (_isShared(tab)) _invalidateAllTabs();   // shared window changed → other analytics tabs re-query on view
+    updateAllGdrBtns();
+    _gdrRefetch(tab);       // reload the visible tab now
   }
 
   // Custom range: reveal the date inputs inside the dropdown (don't close it)
@@ -5161,8 +5320,9 @@
     _tabCustom[tab] = { from, to };
     _tabRanges[tab] = 'custom';
     closeTabGdr();
-    updateTabGdrBtn(tab);
-    _gdrRefetch(tab);
+    if (_isShared(tab)) _invalidateAllTabs();   // shared window changed → other analytics tabs re-query on view
+    updateAllGdrBtns();
+    _gdrRefetch(tab);       // reload the visible tab now
   }
 
   function updateTabGdrBtn(tab) {
@@ -5170,6 +5330,35 @@
     if (!btn) return;
     const lbl = btn.querySelector('.gdr-tab-label');
     if (lbl) lbl.textContent = tabGdrPreset(tab).label;
+  }
+  // Keep every tab's date pill in sync with its effective range (shared tabs
+  // reflect the global window; list tabs reflect their own).
+  function updateAllGdrBtns() {
+    document.querySelectorAll('[id^="gdrTabBtn-"]').forEach(btn => {
+      const tab = btn.id.replace('gdrTabBtn-', '');
+      const lbl = btn.querySelector('.gdr-tab-label');
+      if (lbl) lbl.textContent = tabGdrPreset(tab).label;
+    });
+  }
+  // A global range change invalidates every analytics tab's cached window so it
+  // re-queries fresh on next view (autoFetch gates on these flags). Heavy table
+  // tabs (pro/power/influencers/credits) fetch full lists + filter client-side,
+  // so they're intentionally left alone.
+  function _invalidateAllTabs() {
+    _ovData = null;
+    _revData = null; _actData = null;
+    _revLoaded = _actLoaded = _acqLoaded = _reportLoaded = _insLoaded = false;
+    // These live further down the file but in the same scope; assign defensively
+    // in case a build ever drops one.
+    try { _retLoaded = false; } catch(_){}
+    try { _lifLoaded = false; } catch(_){}
+    try { _emlLoaded = false; } catch(_){}
+    try { _refLoaded = false; } catch(_){}
+    try { _featLoaded = false; } catch(_){}
+    try { _qualLoaded = false; } catch(_){}
+    try { _wkLoaded = false; } catch(_){}
+    try { _moLoaded = false; } catch(_){}
+    try { _dlyLoaded = false; } catch(_){}
   }
 
   document.addEventListener('click', e => {
@@ -5242,6 +5431,12 @@
   // Perf = Google Ads (non-kw) + Meta Ads. Overall = everyone (no filter).
   const BUCKET_KW_CAMPAIGN = '23951249428';
   let BUCKET_VIEW = 'overall';   // 'influencer' | 'perf' | 'overall'
+  // Bucket source/medium prefer the IMMUTABLE first-touch $initial_utm_* and only
+  // fall back to the mutable person.properties.source/medium (which a later 'direct'
+  // visit can overwrite, misrouting real Meta/Google paid users into Influencer).
+  // SYNC: identical strings in lib/overview.js (BKT_SRC / BKT_MED).
+  const BKT_SRC = `lower(if(argMaxIf(toString(person.properties.$initial_utm_source), timestamp, person.properties.$initial_utm_source!='')!='', argMaxIf(toString(person.properties.$initial_utm_source), timestamp, person.properties.$initial_utm_source!=''), argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')))`;
+  const BKT_MED = `lower(if(argMaxIf(toString(person.properties.$initial_utm_medium), timestamp, person.properties.$initial_utm_medium!='')!='', argMaxIf(toString(person.properties.$initial_utm_medium), timestamp, person.properties.$initial_utm_medium!=''), argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')))`;
 
   // SQL expression classifying (s, m, c) into 'infl' | 'perf' | 'other'.
   // s and m must already be lowercased; c is the raw $initial_utm_campaign.
@@ -5267,8 +5462,8 @@
   // Person-level bucket set for the current view, scanning `scanDays` of events.
   // Returns the inner SELECT (person_id) with the internal-user exclusions.
   function bucketPersonSet(view, scanDays) {
-    const s = `lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!=''))`;
-    const m = `lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!=''))`;
+    const s = BKT_SRC;
+    const m = BKT_MED;
     const c = `argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='')`;
     const want = view === 'perf' ? 'perf' : 'infl';
     return `SELECT person_id FROM (
@@ -5537,6 +5732,7 @@
     let base = '/api/overview?range=' + encodeURIComponent(range);
     if (range === 'custom' && _tabCustom['overview'])
       base += '&from=' + _tabCustom['overview'].from + '&to=' + _tabCustom['overview'].to;
+    base += '&view=' + BUCKET_VIEW;   // server caches each attribution view separately
     const hit = async (bust) => {
       // bust=true → cache-buster + no-store: bypass the edge cache and recompute
       // live (used by Refresh), otherwise Refresh just re-shows the up-to-5-min
@@ -5589,10 +5785,10 @@
     // queries off the browser entirely (no client PostHog key, no 429/timeout
     // risk here). If it isn't configured yet or errors, fall through to the
     // direct-query path below — no regression.
-    // ONLY for Overall: /api/overview (lib/overview.js) has NO bucket awareness
-    // and would return Overall numbers. Influencer/Perf must fall through to the
-    // bucket-filtered direct queries below.
-    if (BUCKET_VIEW === 'overall') {
+    // ALL buckets: lib/overview.js is now bucket-aware and returns Influencer/Perf
+    // numbers too, each cached separately at the edge (URL carries &view=). So every
+    // view loads from the warm copy in <1s instead of firing ~40 client-side queries.
+    {
       try {
         const api = await fetchOverviewFromAPI(reqRange, force);
         if (api && stillCurrent()) {
@@ -5664,21 +5860,9 @@
     // Middle-layer classifier column + outer filter for the counts/sources queries.
     const countsBktCol = BUCKET_VIEW==='overall' ? '' : `, ${bucketExprSQL('_bs','_bm','_bc')} AS _bkt`;
     const countsBucketOuter = BUCKET_VIEW==='overall' ? '' : `WHERE _bkt='${wantB}'`;
-    // INLINE bucket predicates for the remaining event-based overview queries
-    // (recent signups/payments, daily signups, influencer campaigns). These used
-    // to append bucketPersonFilter(scanDays), injecting a SECOND person_id-IN scan
-    // that timed out at range "all" (~103d). Instead we classify over the query's
-    // own window: ovEvBkt filters a per-person derived table already carrying
-    // _bs/_bm/_bc; ovEvBktPerEvent classifies per-event on the row's denormalised
-    // person props (fine for one-row-per-person events like signup/payment).
+    // Bucket predicate for the per-person derived tables that already carry
+    // _bs/_bm/_bc (now first-touch-preferring via BKT_SRC/BKT_MED). Empty for Overall.
     const ovEvBkt = BUCKET_VIEW==='overall' ? '' : ` AND ${bucketExprSQL('_bs','_bm','_bc')}='${wantB}'`;
-    // NOTE: coalesce(...,'') is REQUIRED — a missing person prop is SQL NULL, and
-    // bucketExprSQL's blank test (v='' OR v IN (...)) yields NULL (never 'infl')
-    // for NULL, silently dropping the ~96% of signups with no attribution set at
-    // ingest. The derived-table forms avoid this via argMaxIf(...,prop!='') which
-    // defaults to ''; the per-event form must coalesce explicitly to match.
-    const ovEvBktPerEvent = BUCKET_VIEW==='overall' ? '' :
-      ` AND ${bucketExprSQL("lower(coalesce(toString(person.properties.source),''))","lower(coalesce(toString(person.properties.medium),''))","coalesce(toString(person.properties.$initial_utm_campaign),'')")}='${wantB}'`;
     try {
       // The counts query is the heaviest — a 400-day person-level scan with
       // per-person argMax aggregation. Run it SOLO first so it gets ClickHouse's
@@ -5710,8 +5894,8 @@
                 minIf(toDate(toTimeZone(timestamp,'Asia/Kolkata')), event = 'signup_complete') AS su,
                 argMaxIf(toString(person.properties.plan), timestamp, person.properties.plan!='') AS plan,
                 argMaxIf(toString(person.properties.subscription_status), timestamp, person.properties.subscription_status!='') AS status,
-                lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
-                lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+                ${BKT_SRC} AS _bs,
+                ${BKT_MED} AS _bm,
                 argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc
               FROM events
               WHERE timestamp > now() - INTERVAL 400 DAY
@@ -5731,8 +5915,8 @@
               argMaxIf(toString(person.properties.name), timestamp, person.properties.name!='') AS name,
               argMaxIf(toString(person.properties.plan), timestamp, person.properties.plan!='') AS plan,
               toString(maxIf(timestamp, event='signup_complete')) AS created_at,
-              lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
-              lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+              ${BKT_SRC} AS _bs,
+              ${BKT_MED} AS _bm,
               argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc
             FROM events
             WHERE person_id IN (SELECT person_id FROM events WHERE event='signup_complete' AND timestamp > now() - INTERVAL 21 DAY)
@@ -5753,7 +5937,7 @@
             AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
             AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
             AND coalesce(person.properties.email,'') NOT ILIKE '%test%'
-            AND person_id NOT IN COHORT 278743${ovEvBktPerEvent}
+            AND person_id NOT IN COHORT 278743${bucketPersonFilter(400)}
           ORDER BY timestamp DESC LIMIT 7`),
         // Pro revenue for selected range — source of truth: postgres.payments.
         runHogQL(`
@@ -5779,8 +5963,8 @@
                 argMaxIf(toString(person.properties.plan), timestamp, person.properties.plan!='') AS plan,
                 argMaxIf(toString(person.properties.subscription_status), timestamp, person.properties.subscription_status!='') AS status,
                 minIf(toDate(toTimeZone(timestamp,'Asia/Kolkata')), event = 'signup_complete') AS su,
-                lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
-                lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+                ${BKT_SRC} AS _bs,
+                ${BKT_MED} AS _bm,
                 argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc
               FROM events
               WHERE timestamp > now() - INTERVAL 400 DAY
@@ -5800,7 +5984,7 @@
             AND toDate(toTimeZone(timestamp,'Asia/Kolkata')) < toDate('${rangeEnd}')
             AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
             AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
-            AND person_id NOT IN COHORT 278743${ovEvBktPerEvent}
+            AND person_id NOT IN COHORT 278743${bucketPersonFilter(400)}
           GROUP BY day ORDER BY day LIMIT 200`),
         // Daily payments + revenue for selected range (for chart tooltip).
         runHogQL(`
@@ -5826,8 +6010,8 @@
                 argMaxIf(toString(person.properties.plan), timestamp, person.properties.plan!='') AS plan,
                 argMaxIf(toString(person.properties.subscription_status), timestamp, person.properties.subscription_status!='') AS status,
                 minIf(toDate(toTimeZone(timestamp,'Asia/Kolkata')), event = 'signup_complete') AS su,
-                lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
-                lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+                ${BKT_SRC} AS _bs,
+                ${BKT_MED} AS _bm,
                 argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc
               FROM events
               WHERE positionCaseInsensitive(toString(person.properties.$initial_utm_campaign),'instagram') > 0
@@ -6094,11 +6278,11 @@
 
     const aiCard=`<div class="nb-card nb-ai"><div class="nb-ai-badge">✦ Key opportunities</div>
       <div class="nb-ai-sec"><span class="nb-ai-k perf">Top performer</span><span class="nb-ai-v"><b>${h(topCh.label)}</b> drove <b>${(topCh.value||0).toLocaleString('en-IN')}</b> signups, ${topShare.toFixed(0)}% of acquisition.</span></div>
-      <div class="nb-ai-sec"><span class="nb-ai-k risk">Risk</span><span class="nb-ai-v">Free→Pro conversion is <b>${convGauge.toFixed(2)}%</b>, ${gapPts.toFixed(2)} pts below the 5% target.</span></div>
+      <div class="nb-ai-sec"><span class="nb-ai-k risk">Risk</span><span class="nb-ai-v">Pro-plan rate is <b>${convGauge.toFixed(2)}%</b>, ${gapPts.toFixed(2)} pts below the 5% target.</span></div>
       <div class="nb-ai-sec"><span class="nb-ai-k act">Do next</span><span class="nb-ai-v">Scale <b>${h(topCh.label)}</b> and test the Pro upgrade flow. About <b>${upgradesNeeded.toLocaleString('en-IN')}</b> more upgrades reach the goal.</span></div>
       <button class="nb-ai-cta" onclick="switchTab('acquire')">View source breakdown →</button></div>`;
 
-    const gaugeCard=`<div class="nb-card"><div class="nb-cardh"><div class="nb-t">Free → Pro conversion</div></div>
+    const gaugeCard=`<div class="nb-card"><div class="nb-cardh"><div><div class="nb-t">Pro-plan rate</div><div class="nb-note">signups now on a Pro plan (not payment-based)</div></div></div>
       <div id="nbGauge"></div>
       <div class="nb-gctx"><span class="nb-warn">${gapPts.toFixed(2)} pts below goal</span><span class="nb-note">${upgradesNeeded.toLocaleString('en-IN')} upgrades → 5%</span></div></div>`;
 
@@ -6132,7 +6316,7 @@
       </div>`;
     }).join('') || `<div class="panel-empty">No cohort data</div>`;
     const convPeriodCard=`<div class="nb-card nb-full"><div class="nb-cardh"><div>
-        <div class="nb-t">Free → Pro conversion by period</div>
+        <div class="nb-t">Pro-plan rate by period</div>
         <div class="nb-note">signup cohort · share of each window's signups now on a Pro plan</div></div></div>
       <div class="nb-ranks cvp">${convRows}</div>
       <div class="nb-note cvp-foot">Recent short windows read low because upgrades lag signup by days. Compare against last month and all-time for a settled rate.</div></div>`;
@@ -8507,8 +8691,8 @@
             countIf(event='extension_uninstall') AS uninstall_count,
             argMaxIf(person.properties.plan, timestamp, event='extension_uninstall') AS plan,
             argMaxIf(person.properties.name, timestamp, person.properties.name != '') AS posthog_name,
-            lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
-            lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+            ${BKT_SRC} AS _bs,
+            ${BKT_MED} AS _bm,
             argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc
           FROM events
           WHERE event IN ('extension_uninstall','extension_installed')
@@ -8719,8 +8903,8 @@
             countIf(event='payment_order_created') AS orders,
             argMaxIf(properties.plan, timestamp, event='payment_order_created') AS plan_tried,
             argMaxIf(properties.currency, timestamp, event='payment_order_created') AS currency,
-            lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
-            lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+            ${BKT_SRC} AS _bs,
+            ${BKT_MED} AS _bm,
             argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc
           FROM events
           WHERE event IN ('payment_order_created', ${actList})
@@ -9634,8 +9818,8 @@
             substring(argMaxIf(toString(person.properties.subscription_ends_at), timestamp, person.properties.subscription_ends_at IS NOT NULL),1,10) AS end_date,
             argMaxIf(toString(person.properties.subscription_status), timestamp, person.properties.subscription_status IS NOT NULL) AS st,
             argMaxIf(toString(person.properties.mobile_number), timestamp, person.properties.mobile_number IS NOT NULL AND toString(person.properties.mobile_number) NOT IN ('','null')) AS ph,
-            lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
-            lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+            ${BKT_SRC} AS _bs,
+            ${BKT_MED} AS _bm,
             argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc
           FROM events
           WHERE timestamp >= '2026-04-01'
@@ -10772,8 +10956,8 @@
             argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS campaign,
             argMaxIf(toString(person.properties.plan), timestamp, person.properties.plan!='') AS plan,
             argMaxIf(toString(person.properties.subscription_status), timestamp, person.properties.subscription_status!='') AS status,
-            lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
-            lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+            ${BKT_SRC} AS _bs,
+            ${BKT_MED} AS _bm,
             argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc,
             minIf(toDate(toTimeZone(timestamp,'Asia/Kolkata')), event = 'signup_complete') AS su
           FROM events
@@ -10947,8 +11131,8 @@
           sum(paid_flag)    AS paid
         FROM (
           SELECT person_id,
-            lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
-            lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+            ${BKT_SRC} AS _bs,
+            ${BKT_MED} AS _bm,
             argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc,
             windowFunnel(1209600)(toDateTime(timestamp),
               event='signup_complete',
@@ -10987,7 +11171,7 @@
       oKpi('i-users','var(--blue)','Signed Up',tabGdrPreset('insights').label,_nf(signed)),
       oKpi('i-check-circle','var(--amber)','Activated',`${(onbDone/base*100).toFixed(1)}% of signups`,_nf(onbDone)),
       oKpi('i-star','var(--green)','Paid (Pro)',`${(paid/base*100).toFixed(2)}% of signups`,_nf(paid)),
-      oKpi('i-pie','var(--violet)','Overall Conv.','signup → Pro',`${(paid/base*100).toFixed(2)}%`),
+      oKpi('i-pie','var(--violet)','Paid conversion','signup → paid (payment event)',`${(paid/base*100).toFixed(2)}%`),
     ].join('');
     const rows=steps.map((s,i)=>{
       const pctOfBase=(s.v/base*100);
@@ -11029,8 +11213,8 @@
             SELECT person_id,
               toStartOfWeek(minIf(toTimeZone(timestamp,'Asia/Kolkata'), event='signup_complete'), 1) AS signup_week,
               arrayJoin(arrayDistinct(groupArray(toStartOfWeek(toTimeZone(timestamp,'Asia/Kolkata'), 1)))) AS act_week,
-              lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
-              lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+              ${BKT_SRC} AS _bs,
+              ${BKT_MED} AS _bm,
               argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc
             FROM events
             WHERE timestamp > now() - INTERVAL 77 DAY
@@ -11096,8 +11280,8 @@
             SELECT person_id,
               toStartOfWeek(minIf(toTimeZone(timestamp,'Asia/Kolkata'), event='signup_complete'), 1) AS sw,
               arrayDistinct(groupArray(toStartOfWeek(toTimeZone(timestamp,'Asia/Kolkata'), 1))) AS active_weeks,
-              lower(argMaxIf(toString(person.properties.source), timestamp, person.properties.source!='')) AS _bs,
-              lower(argMaxIf(toString(person.properties.medium), timestamp, person.properties.medium!='')) AS _bm,
+              ${BKT_SRC} AS _bs,
+              ${BKT_MED} AS _bm,
               argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS _bc
             FROM events
             WHERE timestamp > now() - INTERVAL 70 DAY

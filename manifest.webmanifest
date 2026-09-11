@@ -1,0 +1,15 @@
+{
+  "name": "NextRaise Analytics",
+  "short_name": "NextRaise",
+  "description": "NextRaise internal growth & revenue analytics",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f2ebe0",
+  "theme_color": "#f2ebe0",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

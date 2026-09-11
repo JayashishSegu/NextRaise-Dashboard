@@ -6,7 +6,24 @@
 //
 // Ranges are warmed SEQUENTIALLY on purpose: PostHog's /query concurrency limit
 // is 3 team-wide, so parallel warms would 429 and fight real users.
-const WARM_RANGES = ['today', '7d'];
+// Warm the hot (range × attribution view) combos so no common open is a cold,
+// slow first hit. Ordered by likelihood; cron is best-effort within its budget —
+// whatever it doesn't reach warms on the first real visit and is then served
+// instantly (stale-while-revalidate) for 24h. Every view is warmed because the
+// dashboard remembers the last-used bucket, so a returning Perf/Influencer user
+// must find their view warm too — not just Overall.
+const WARM_COMBOS = [
+  { range: '7d',    view: 'overall'    },
+  { range: 'today', view: 'overall'    },
+  { range: '7d',    view: 'perf'       },
+  { range: '7d',    view: 'influencer' },
+  { range: 'today', view: 'perf'       },
+  { range: 'today', view: 'influencer' },
+  { range: '14d',       view: 'overall' },
+  { range: 'thisMonth', view: 'overall' },
+  { range: 'lastMonth', view: 'overall' },
+  { range: 'all',       view: 'overall' },
+];
 
 // Must be the PUBLIC alias — the per-deploy *.vercel.app host has Deployment
 // Protection (302), so fetching VERCEL_URL would never reach the function.
@@ -24,13 +41,13 @@ module.exports = async function handler(req, res) {
 
   const base = process.env.PUBLIC_BASE || DEFAULT_BASE;
   const results = [];
-  for (const range of WARM_RANGES) {
+  for (const { range, view } of WARM_COMBOS) {
     const t0 = Date.now();
     try {
-      const r = await fetch(`${base}/api/overview?range=${range}`, { headers: { 'x-warm': '1' } });
-      results.push({ range, status: r.status, ms: Date.now() - t0 });
+      const r = await fetch(`${base}/api/overview?range=${range}&view=${view}`, { headers: { 'x-warm': '1' } });
+      results.push({ range, view, status: r.status, ms: Date.now() - t0 });
     } catch (e) {
-      results.push({ range, error: String((e && e.message) || e), ms: Date.now() - t0 });
+      results.push({ range, view, error: String((e && e.message) || e), ms: Date.now() - t0 });
     }
   }
   res.setHeader('Cache-Control', 'no-store');

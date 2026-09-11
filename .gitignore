@@ -5,3 +5,4 @@ concept-orca.html
 .vercel
 node_modules
 .superpowers/
+.claude-flow/
