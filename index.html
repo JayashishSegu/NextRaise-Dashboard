@@ -5295,7 +5295,7 @@
   }
 
   // Acquisition-channel buckets for the messy raw source/medium pairs in
-  // mongodb.users → attribution.firstTouch. Order of checks matters.
+  // user attribution (first touch). Order of checks matters.
   const CH_COLOR = { 'Google Ads':'c-blue','Meta Ads':'c-rose','Extension':'c-teal','Direct':'c-gray','Influencer':'c-violet','Organic Social':'c-amber','Email':'c-green','Referral':'c-orange','Other':'c-gray' };
   function channelOf(source, medium) {
     const s = (source||'').toLowerCase().trim(), m = (medium||'').toLowerCase().trim();
@@ -6050,7 +6050,7 @@
     if (btn) btn.disabled = true;
     setBusy(true);
     if (!_ovData) document.getElementById('overviewArea').innerHTML =
-      `<div class="state-box"><div class="spinner sp-blue"></div><p>Syncing latest data from MongoDB…</p></div>`;
+      `<div class="state-box"><div class="spinner sp-blue"></div><p>Syncing latest warehouse data…</p></div>`;
     try { await syncMongoAndWait(); } catch(_) {}
     _syncInfo = null;   // keep _ovData so a failed refresh still shows the last snapshot
     // Rate-limit the FORCED server recompute (it re-runs every heavy query) to
@@ -6317,14 +6317,19 @@
   }
 
   // ── Search ────────────────────────────────────────────────────────
+  // MIGRATED 2026-09-11: the mongodb warehouse source was removed from PostHog
+  // (frozen since Jul 9, deleted Sep 11) — resumes/users now come from the
+  // postgres source. Login email = postgres.users.email via resumes.user_id;
+  // phone still lives inside the resume JSON (resume_data.personalInfo.phone).
   function resumeSQL(where) {
     return `SELECT DISTINCT
-        JSONExtractString(data,'personalInfo','firstName') AS first_name,
-        JSONExtractString(data,'personalInfo','lastName')  AS last_name,
-        JSONExtractString(data,'personalInfo','phone')     AS phone,
-        JSONExtractString(data,'personalInfo','email')     AS resume_email,
-        JSONExtractString(data,'userId')                   AS login_email
-      FROM mongodb.resumes
+        coalesce(r.first_name,'') AS first_name,
+        coalesce(r.last_name,'')  AS last_name,
+        JSONExtractString(r.resume_data,'personalInfo','phone') AS phone,
+        coalesce(r.personal_email,'') AS resume_email,
+        u.email                   AS login_email
+      FROM postgres.resumes r
+      JOIN postgres.users u ON u.id = r.user_id
       WHERE (${where})
       LIMIT 50`;
   }
@@ -6333,7 +6338,7 @@
   // uploaded under that one account, not other accounts that happen to reference
   // the same email inside a résumé.
   function emailWhere(email) {
-    return `lower(JSONExtractString(data,'userId'))=lower('${esc(email)}')`;
+    return `lower(u.email)=lower('${esc(email)}')`;
   }
   function clearSearch() {
     document.getElementById('searchInput').value = '';
@@ -6384,7 +6389,7 @@
         sql = resumeSQL(emailWhere(raw));
       } else {
         type = 'Name';
-        sql = resumeSQL(`lower(concat(JSONExtractString(data,'personalInfo','firstName'),' ',JSONExtractString(data,'personalInfo','lastName'))) LIKE lower('%${esc(raw)}%')`);
+        sql = resumeSQL(`lower(concat(coalesce(r.first_name,''),' ',coalesce(r.last_name,''))) LIKE lower('%${esc(raw)}%')`);
       }
       const r = await runHogQL(sql);
       let rows = r.results || [];
@@ -6883,12 +6888,13 @@
     const e = esc(raw);
     try {
       const r = await runHogQL(`
-        SELECT DISTINCT JSONExtractString(data,'userId') AS email,
-          concat(JSONExtractString(data,'personalInfo','firstName'),' ',JSONExtractString(data,'personalInfo','lastName')) AS name
-        FROM mongodb.resumes
-        WHERE (lower(JSONExtractString(data,'userId')) LIKE lower('%${e}%')
-          OR lower(concat(JSONExtractString(data,'personalInfo','firstName'),' ',JSONExtractString(data,'personalInfo','lastName'))) LIKE lower('%${e}%'))
-          AND JSONExtractString(data,'userId') != '' LIMIT 8`);
+        SELECT DISTINCT u.email AS email,
+          trim(concat(coalesce(r.first_name,''),' ',coalesce(r.last_name,''))) AS name
+        FROM postgres.resumes r
+        JOIN postgres.users u ON u.id = r.user_id
+        WHERE (lower(u.email) LIKE lower('%${e}%')
+          OR lower(concat(coalesce(r.first_name,''),' ',coalesce(r.last_name,''))) LIKE lower('%${e}%'))
+          AND u.email != '' LIMIT 8`);
       return (r.results||[]).filter(row=>row[0]).map(row=>({ email:row[0], name:(row[1]||'').trim()||row[0] }));
     } catch(_) { return []; }
   }
@@ -6979,29 +6985,36 @@
 
     try {
       const r1 = await fetchAllPages(`
-        SELECT JSONExtractString(data,'email') AS email, JSONExtractString(data,'name') AS name,
-          JSONExtractString(data,'subscription','plan')      AS plan,
-          JSONExtractString(data,'subscription','endDate')   AS end_date,
-          JSONExtractString(data,'subscription','status')    AS sub_status,
-          JSONExtractString(data,'usage','aiFixes')          AS ai_fixes,
-          JSONExtractString(data,'subscription','startDate') AS start_date,
-          if(JSONExtractFloat(data,'paymentStatus','amount') > 0,
-            toString(toInt(JSONExtractFloat(data,'paymentStatus','amount'))),
-            ''
-          ) AS amount,
-          JSONExtractString(data,'paymentStatus','paymentId')  AS payment_id,
-          JSONExtractString(data,'paymentStatus','createdAt')  AS payment_created_at,
-          JSONExtractString(data,'paymentStatus','status')     AS payment_status_val,
-          JSONExtractString(data,'subscription','provider')    AS provider,
-          JSONExtractString(data,'subscription','dodoCustomerId') AS dodo_customer_id,
-          JSONExtractString(data,'updatedAt') AS updated_at,
-          JSONExtractString(data,'createdAt') AS created_at
-        FROM mongodb.users
-        WHERE (JSONExtractString(data,'usage','aiFixes')='0' OR JSONExtractString(data,'subscription','status')='expired')
-          AND JSONExtractString(data,'email')!='' AND JSONExtractString(data,'email')!='null'
-          AND JSONExtractString(data,'subscription','plan') NOT LIKE '%pro%'
-          AND JSONExtractString(data,'createdAt') >= '${PRODUCT_LAUNCH}'
-        ORDER BY JSONExtractString(data,'subscription','endDate') DESC`);
+        SELECT u.email AS email, coalesce(u.name,'') AS name,
+          coalesce(u.plan_cache,'') AS plan,
+          coalesce(toString(u.sub_end_date),'') AS end_date,
+          coalesce(u.sub_status,'') AS sub_status,
+          toString(coalesce(uu.ai_fixes, 0)) AS ai_fixes,
+          '' AS start_date,
+          if(coalesce(p.amount,0) > 0, toString(toInt(p.amount)), '') AS amount,
+          coalesce(p.payment_id,'') AS payment_id,
+          coalesce(p.pay_created,'') AS payment_created_at,
+          coalesce(p.pay_status,'') AS payment_status_val,
+          coalesce(p.provider,'') AS provider,
+          '' AS dodo_customer_id,
+          toString(u.updated_at) AS updated_at,
+          toString(u.created_at) AS created_at
+        FROM postgres.users u
+        LEFT JOIN postgres.user_usage uu ON uu.user_id = u.id
+        LEFT JOIN (
+          SELECT user_id,
+            argMax(amount, created_at)   AS amount,
+            argMax(provider_payment_id, created_at) AS payment_id,
+            toString(max(created_at))    AS pay_created,
+            argMax(status, created_at)   AS pay_status,
+            argMax(provider, created_at) AS provider
+          FROM postgres.payments WHERE status='completed' GROUP BY user_id
+        ) p ON p.user_id = u.id
+        WHERE (coalesce(uu.ai_fixes,0) >= 3 OR u.sub_status='expired')
+          AND u.email!=''
+          AND coalesce(u.plan_cache,'') NOT LIKE '%pro%'
+          AND u.created_at >= toDateTime('${PRODUCT_LAUNCH} 00:00:00')
+        ORDER BY end_date DESC`);
 
       const users = r1.filter(r=>r[0]);
       if (!users.length) {
@@ -7058,13 +7071,14 @@
       const uniqueEmails = [...new Set(users.map(u=>u[0].toLowerCase()))];
       const inClause = uniqueEmails.map(e=>`'${esc(e)}'`).join(',');
       const r2 = await runHogQL(`
-        SELECT DISTINCT lower(JSONExtractString(data,'userId')) AS login_email,
-          JSONExtractString(data,'personalInfo','firstName') AS first_name,
-          JSONExtractString(data,'personalInfo','lastName')  AS last_name,
-          JSONExtractString(data,'personalInfo','phone')     AS phone
-        FROM mongodb.resumes
-        WHERE lower(JSONExtractString(data,'userId')) IN (${inClause})
-          AND JSONExtractString(data,'personalInfo','phone')!='' LIMIT 1000`);
+        SELECT DISTINCT lower(u.email) AS login_email,
+              coalesce(r.first_name,'') AS first_name,
+              coalesce(r.last_name,'')  AS last_name,
+              JSONExtractString(r.resume_data,'personalInfo','phone') AS phone
+            FROM postgres.resumes r
+            JOIN postgres.users u ON u.id = r.user_id
+            WHERE lower(u.email) IN (${inClause})
+              AND JSONExtractString(r.resume_data,'personalInfo','phone')!='' LIMIT 1000`);
 
       const phoneMap = {};
       for (const [le,fn,ln,phone] of (r2.results||[])) {
@@ -7906,7 +7920,7 @@
       // Bucket attribution: scan window for person classification matches the tab range.
       const sd = tabGdrPreset('power').scanDays;
       // 1. aggregate high-value actions per user from PostHog events, then join
-      //    the account name + plan from the MongoDB warehouse copy.
+      //    the account name + plan from the postgres warehouse copy.
       const r1 = await fetchAllPages(`
         WITH va AS (
           SELECT lower(person.properties.email) AS email,
@@ -7923,10 +7937,10 @@
           HAVING actions >= ${POWER_MIN_ACTIONS}
         )
         SELECT va.email, va.actions, va.ai_actions, va.sessions, toString(va.last_seen) AS last_seen,
-               JSONExtractString(u.data,'name') AS name,
-               JSONExtractString(u.data,'subscription','plan') AS plan
-        FROM va LEFT JOIN mongodb.users u
-          ON lower(JSONExtractString(u.data,'email')) = va.email
+               coalesce(u.name,'') AS name,
+               coalesce(u.plan_cache,'') AS plan
+        FROM va LEFT JOIN postgres.users u
+          ON lower(u.email) = va.email
         ORDER BY va.actions DESC`);
 
       const rows = r1.filter(r=>r[0]);
@@ -7962,13 +7976,14 @@
         const inClause = chunk.map(e=>`'${esc(e)}'`).join(',');
         try {
           const r2 = await runHogQL(`
-            SELECT DISTINCT lower(JSONExtractString(data,'userId')) AS login_email,
-              JSONExtractString(data,'personalInfo','firstName') AS first_name,
-              JSONExtractString(data,'personalInfo','lastName')  AS last_name,
-              JSONExtractString(data,'personalInfo','phone')     AS phone
-            FROM mongodb.resumes
-            WHERE lower(JSONExtractString(data,'userId')) IN (${inClause})
-              AND JSONExtractString(data,'personalInfo','phone')!='' LIMIT 1000`);
+            SELECT DISTINCT lower(u.email) AS login_email,
+              coalesce(r.first_name,'') AS first_name,
+              coalesce(r.last_name,'')  AS last_name,
+              JSONExtractString(r.resume_data,'personalInfo','phone') AS phone
+            FROM postgres.resumes r
+            JOIN postgres.users u ON u.id = r.user_id
+            WHERE lower(u.email) IN (${inClause})
+              AND JSONExtractString(r.resume_data,'personalInfo','phone')!='' LIMIT 1000`);
           return r2.results||[];
         } catch(_) { return []; }
       }));
@@ -8157,7 +8172,7 @@
   // ══════════════════════════════════════════════════════════════════
   // ── INFLUENCERS TAB ───────────────────────────────────────────────
   // Referrers ranked by how many users signed up with their referral code
-  // (mongodb.users.referredBy → the referrer's _id). Each influencer expands
+  // (postgres.users.referred_by_id → the referrer's id). Each influencer expands
   // to show the users they referred, with how many converted to Pro.
   // ══════════════════════════════════════════════════════════════════
   let _inflRows = [];                 // [{refId,name,email,code,referrals,pro,convRate,lastRef,referred:[...]}]
@@ -9112,30 +9127,36 @@
       document.getElementById('skFilter').value = '';
       resetSkFilters();
       document.getElementById('skArea').innerHTML =
-        stateBox(null, 'Querying MongoDB for Salahkart (legacy) users…', 'sp-teal');
+        stateBox(null, 'Loading Salahkart (legacy) users…', 'sp-teal');
     }
 
     try {
       const r1 = await fetchAllPages(`
-        SELECT JSONExtractString(data,'email') AS email, JSONExtractString(data,'name') AS name,
-          JSONExtractString(data,'subscription','plan')      AS plan,
-          JSONExtractString(data,'subscription','endDate')   AS end_date,
-          JSONExtractString(data,'subscription','status')    AS sub_status,
-          JSONExtractString(data,'subscription','startDate') AS start_date,
-          if(JSONExtractFloat(data,'paymentStatus','amount') > 0,
-            toString(toInt(JSONExtractFloat(data,'paymentStatus','amount'))),
-            ''
-          ) AS amount,
-          JSONExtractString(data,'paymentStatus','paymentId')  AS payment_id,
-          JSONExtractString(data,'paymentStatus','createdAt')  AS payment_created_at,
-          JSONExtractString(data,'paymentStatus','status')     AS payment_status_val,
-          JSONExtractString(data,'subscription','provider')    AS provider,
-          JSONExtractString(data,'subscription','dodoCustomerId') AS dodo_customer_id,
-          JSONExtractString(data,'createdAt') AS created_at
-        FROM mongodb.users
-        WHERE JSONExtractString(data,'createdAt') < '${PRODUCT_LAUNCH}'
-          AND JSONExtractString(data,'email')!='' AND JSONExtractString(data,'email')!='null'
-        ORDER BY JSONExtractString(data,'createdAt') DESC`);
+        SELECT u.email AS email, coalesce(u.name,'') AS name,
+          coalesce(u.plan_cache,'') AS plan,
+          coalesce(toString(u.sub_end_date),'') AS end_date,
+          coalesce(u.sub_status,'') AS sub_status,
+          '' AS start_date,
+          if(coalesce(p.amount,0) > 0, toString(toInt(p.amount)), '') AS amount,
+          coalesce(p.payment_id,'') AS payment_id,
+          coalesce(p.pay_created,'') AS payment_created_at,
+          coalesce(p.pay_status,'') AS payment_status_val,
+          coalesce(p.provider,'') AS provider,
+          '' AS dodo_customer_id,
+          toString(u.created_at) AS created_at
+        FROM postgres.users u
+        LEFT JOIN (
+          SELECT user_id,
+            argMax(amount, created_at)   AS amount,
+            argMax(provider_payment_id, created_at) AS payment_id,
+            toString(max(created_at))    AS pay_created,
+            argMax(status, created_at)   AS pay_status,
+            argMax(provider, created_at) AS provider
+          FROM postgres.payments WHERE status='completed' GROUP BY user_id
+        ) p ON p.user_id = u.id
+        WHERE u.created_at < toDateTime('${PRODUCT_LAUNCH} 00:00:00')
+          AND u.email!=''
+        ORDER BY u.created_at DESC`);
 
       const users = r1.filter(r=>r[0]);
       if (!users.length) {
@@ -9168,13 +9189,14 @@
       const uniqueEmails = [...new Set(users.map(u=>u[0].toLowerCase()))];
       const inClause = uniqueEmails.map(e=>`'${esc(e)}'`).join(',');
       const r2 = await runHogQL(`
-        SELECT DISTINCT lower(JSONExtractString(data,'userId')) AS login_email,
-          JSONExtractString(data,'personalInfo','firstName') AS first_name,
-          JSONExtractString(data,'personalInfo','lastName')  AS last_name,
-          JSONExtractString(data,'personalInfo','phone')     AS phone
-        FROM mongodb.resumes
-        WHERE lower(JSONExtractString(data,'userId')) IN (${inClause})
-          AND JSONExtractString(data,'personalInfo','phone')!='' LIMIT 2000`);
+        SELECT DISTINCT lower(u.email) AS login_email,
+              coalesce(r.first_name,'') AS first_name,
+              coalesce(r.last_name,'')  AS last_name,
+              JSONExtractString(r.resume_data,'personalInfo','phone') AS phone
+            FROM postgres.resumes r
+            JOIN postgres.users u ON u.id = r.user_id
+            WHERE lower(u.email) IN (${inClause})
+              AND JSONExtractString(r.resume_data,'personalInfo','phone')!='' LIMIT 2000`);
 
       const phoneMap = {};
       for (const [le,fn,ln,phone] of (r2.results||[])) {
@@ -9823,13 +9845,14 @@
         try {
           const inList = emails.map(e=>"'"+esc(e.toLowerCase())+"'").join(',');
           const rp = await runHogQL(`
-            SELECT lower(JSONExtractString(data,'email')) AS email,
-                   JSONExtractString(data,'personalInfo','phone') AS phone,
-                   JSONExtractString(data,'personalInfo','firstName') AS fn,
-                   JSONExtractString(data,'personalInfo','lastName')  AS ln
-            FROM mongodb.users
-            WHERE lower(JSONExtractString(data,'email')) IN (${inList})
-              AND JSONExtractString(data,'personalInfo','phone')!=''`);
+            SELECT DISTINCT lower(u.email) AS email,
+                   JSONExtractString(r.resume_data,'personalInfo','phone') AS phone,
+                   coalesce(r.first_name,'') AS fn,
+                   coalesce(r.last_name,'')  AS ln
+            FROM postgres.resumes r
+            JOIN postgres.users u ON u.id = r.user_id
+            WHERE lower(u.email) IN (${inList})
+              AND JSONExtractString(r.resume_data,'personalInfo','phone')!='' LIMIT 2000`);
           const pm = {};
           for (const r of rp.results||[]) pm[r[0]] = { phone:r[1], fn:r[2], ln:r[3] };
           _expiringRows = _expiringRows.map(row=>{
@@ -9962,17 +9985,16 @@
               ${bucketPersonFilter(sd)}
           )
           SELECT count(DISTINCT ai.email) AS activated
-          FROM ai INNER JOIN mongodb.users u ON lower(JSONExtractString(u.data,'email')) = ai.email
-          WHERE JSONExtractString(u.data,'createdAt') >= '${PRODUCT_LAUNCH}'`).catch(()=>({results:[]})),
+          FROM ai INNER JOIN postgres.users u ON lower(u.email) = ai.email
+          WHERE u.created_at >= toDateTime('${PRODUCT_LAUNCH} 00:00:00')`).catch(()=>({results:[]})),
         // Post-launch users who uploaded a résumé (used the product). NOT bucket-
-        // filtered: mongodb.resumes has no person_id and this feeds the fixed
+        // filtered: postgres.resumes has no person_id and this feeds the fixed
         // funnel denominator which must stay consistent with the Signed-Up count.
         runHogQL(`
-          SELECT count(DISTINCT lower(JSONExtractString(r.data,'userId'))) AS resume_users
-          FROM mongodb.resumes r
-          INNER JOIN mongodb.users u ON lower(JSONExtractString(u.data,'email')) = lower(JSONExtractString(r.data,'userId'))
-          WHERE JSONExtractString(r.data,'userId')!='' AND JSONExtractString(r.data,'userId')!='null'
-            AND JSONExtractString(u.data,'createdAt') >= '${PRODUCT_LAUNCH}'`).catch(()=>({results:[]})),
+          SELECT count(DISTINCT r.user_id) AS resume_users
+          FROM postgres.resumes r
+          INNER JOIN postgres.users u ON u.id = r.user_id
+          WHERE u.created_at >= toDateTime('${PRODUCT_LAUNCH} 00:00:00')`).catch(()=>({results:[]})),
         // Signup → first Pro payment pairs, for time-to-convert (median computed client-side).
         // Bucket-filtered via bucketEmailFilter on the payments CTE's user_email.
         runHogQL(`
@@ -10082,26 +10104,33 @@
 
     try {
       const r1 = await fetchAllPages(`
-        SELECT JSONExtractString(data,'email') AS email, JSONExtractString(data,'name') AS name,
-          JSONExtractString(data,'subscription','plan')      AS plan,
-          JSONExtractString(data,'subscription','endDate')   AS end_date,
-          JSONExtractString(data,'subscription','status')    AS sub_status,
-          JSONExtractString(data,'usage','aiFixes')          AS ai_fixes,
-          JSONExtractString(data,'subscription','startDate') AS start_date,
-          if(JSONExtractFloat(data,'paymentStatus','amount') > 0,
-            toString(toInt(JSONExtractFloat(data,'paymentStatus','amount'))),
-            ''
-          ) AS amount,
-          JSONExtractString(data,'paymentStatus','paymentId')  AS payment_id,
-          JSONExtractString(data,'paymentStatus','createdAt')  AS payment_created_at,
-          JSONExtractString(data,'paymentStatus','status')     AS payment_status_val,
-          JSONExtractString(data,'subscription','provider')    AS provider,
-          JSONExtractString(data,'subscription','dodoCustomerId') AS dodo_customer_id
-        FROM mongodb.users
-        WHERE JSONExtractString(data,'subscription','plan') LIKE '%pro%'
-          AND JSONExtractString(data,'email')!='' AND JSONExtractString(data,'email')!='null'
-          AND JSONExtractString(data,'subscription','startDate') < '${PRODUCT_LAUNCH}'
-        ORDER BY JSONExtractString(data,'subscription','startDate') DESC`);
+        SELECT u.email AS email, coalesce(u.name,'') AS name,
+          coalesce(u.plan_cache,'') AS plan,
+          coalesce(toString(u.sub_end_date),'') AS end_date,
+          coalesce(u.sub_status,'') AS sub_status,
+          toString(coalesce(uu.ai_fixes, 0)) AS ai_fixes,
+          '' AS start_date,
+          if(coalesce(p.amount,0) > 0, toString(toInt(p.amount)), '') AS amount,
+          coalesce(p.payment_id,'') AS payment_id,
+          coalesce(p.pay_created,'') AS payment_created_at,
+          coalesce(p.pay_status,'') AS payment_status_val,
+          coalesce(p.provider,'') AS provider,
+          '' AS dodo_customer_id
+        FROM postgres.users u
+        LEFT JOIN postgres.user_usage uu ON uu.user_id = u.id
+        LEFT JOIN (
+          SELECT user_id,
+            argMax(amount, created_at)   AS amount,
+            argMax(provider_payment_id, created_at) AS payment_id,
+            toString(max(created_at))    AS pay_created,
+            argMax(status, created_at)   AS pay_status,
+            argMax(provider, created_at) AS provider
+          FROM postgres.payments WHERE status='completed' GROUP BY user_id
+        ) p ON p.user_id = u.id
+        WHERE coalesce(u.plan_cache,'') LIKE '%pro%'
+          AND u.email!=''
+          AND u.created_at < toDateTime('${PRODUCT_LAUNCH} 00:00:00')
+        ORDER BY u.created_at DESC`);
 
       const users = r1.filter(r=>r[0]);
       if (!users.length) {
@@ -10135,13 +10164,14 @@
       const uniqueEmails = [...new Set(users.map(u=>u[0].toLowerCase()))];
       const inClause = uniqueEmails.map(e=>`'${esc(e)}'`).join(',');
       const r2 = await runHogQL(`
-        SELECT DISTINCT lower(JSONExtractString(data,'userId')) AS login_email,
-          JSONExtractString(data,'personalInfo','firstName') AS first_name,
-          JSONExtractString(data,'personalInfo','lastName')  AS last_name,
-          JSONExtractString(data,'personalInfo','phone')     AS phone
-        FROM mongodb.resumes
-        WHERE lower(JSONExtractString(data,'userId')) IN (${inClause})
-          AND JSONExtractString(data,'personalInfo','phone')!='' LIMIT 1000`);
+        SELECT DISTINCT lower(u.email) AS login_email,
+              coalesce(r.first_name,'') AS first_name,
+              coalesce(r.last_name,'')  AS last_name,
+              JSONExtractString(r.resume_data,'personalInfo','phone') AS phone
+            FROM postgres.resumes r
+            JOIN postgres.users u ON u.id = r.user_id
+            WHERE lower(u.email) IN (${inClause})
+              AND JSONExtractString(r.resume_data,'personalInfo','phone')!='' LIMIT 1000`);
 
       const phoneMap = {};
       for (const [le,fn,ln,phone] of (r2.results||[])) {
