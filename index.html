@@ -2670,6 +2670,116 @@
       html[data-theme="light"] .sidebar:hover .tab{ transition:font-size 0s linear .1s, background .15s ease, color .15s ease !important; }
       html[data-theme="light"] .sidebar .settings-btn{ transition:font-size 0s linear .1s, background .15s ease !important; }
     }
+
+    /* ══════════════════════════════════════════════════════════════════
+       AURORA LEDGER (2026-09-12) — the advanced-minimal pass.
+       Keeps the editorial flat-white discipline but upgrades it into a
+       modern analytics OS: a dreamy drifting aurora atmosphere behind a
+       crisp zinc/blue component system (hairline borders + layered
+       shadows), a gradient signature rail on KPI cards, and staged GSAP
+       entrances (see the AURORA MOTION script before the body close).
+       Wins over EDITORIAL by source order. Light-only build.
+       ══════════════════════════════════════════════════════════════════ */
+    html[data-theme="light"]{
+      --radius:9px; --radius-lg:13px;
+      --border:#e4e4e7; --border-strong:#d4d4d8;
+      --hover:#f7f7f8; --sep:#efeff1; --row-border:#efeff1;
+      --surface-2:#fafafa;
+      --text-2:#52525b; --text-3:#8e8e97;
+      --shadow-sm:0 1px 2px rgba(16,24,40,.05);
+      --shadow-md:0 1px 2px rgba(16,24,40,.05), 0 14px 34px -22px rgba(16,24,40,.22);
+      --shadow-lg:0 24px 60px -24px rgba(16,24,40,.28);
+      --aurora-a:rgba(0,101,244,.065); --aurora-b:rgba(99,102,241,.055); --aurora-c:rgba(13,148,136,.05);
+      --rail-grad:linear-gradient(90deg,#0065F4,#6366F1 55%,#0d9488);
+    }
+
+    /* ── Atmosphere: dreamy aurora + fine grain (GPU transform drift) ── */
+    html[data-theme="light"] body{ background:#fdfdfd !important; }
+    html[data-theme="light"] body::before{
+      content:"" !important; display:block !important; position:fixed; z-index:0; pointer-events:none;
+      inset:-60% -40%;
+      background:
+        radial-gradient(38% 30% at 26% 32%, var(--aurora-a), transparent 68%),
+        radial-gradient(34% 28% at 74% 22%, var(--aurora-b), transparent 66%),
+        radial-gradient(40% 34% at 58% 78%, var(--aurora-c), transparent 70%);
+      animation:nrAurora 64s ease-in-out infinite alternate;
+      will-change:transform;
+    }
+    @keyframes nrAurora{
+      0%  { transform:translate3d(-2.5%,-2%,0) scale(1); }
+      50% { transform:translate3d(2%,2.5%,0) scale(1.06); }
+      100%{ transform:translate3d(3.5%,-1.5%,0) scale(1.02); }
+    }
+    html[data-theme="light"] body::after{
+      content:"" !important; display:block !important; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.028;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    html[data-theme="light"] .app-layout{ position:relative; z-index:1; }
+    html[data-theme="light"] .app-body{ background:transparent !important; }
+
+    /* ── Cards: zinc hairline + layered shadow + living hover ── */
+    html[data-theme="light"] :is(.okpi,.nb-kpi,.ov-card,.ocard,.rev-kpi,.nb-card,.infl-card,.result-card,.panel,.table-wrap){
+      background:rgba(255,255,255,.92) !important;
+      border:1px solid var(--border) !important;
+      border-radius:var(--radius-lg) !important;
+      box-shadow:var(--shadow-md) !important;
+      transition:transform .22s cubic-bezier(.32,.72,0,1), box-shadow .22s ease, border-color .22s ease !important;
+    }
+    html[data-theme="light"] :is(.okpi,.ov-card,.ocard,.rev-kpi,.nb-card,.infl-card,.result-card):hover{
+      border-color:rgba(0,101,244,.30) !important;
+      box-shadow:var(--shadow-sm), 0 18px 44px -20px rgba(0,101,244,.25) !important;
+      transform:translateY(-2px);
+    }
+    /* KPI signature: gradient hairline rail across the top */
+    html[data-theme="light"] :is(.okpi,.nb-kpi){ position:relative; overflow:hidden; }
+    html[data-theme="light"] :is(.okpi,.nb-kpi)::before{
+      content:""; position:absolute; top:0; left:0; right:0; height:2px;
+      background:var(--rail-grad); transform-origin:left center; transform:scaleX(1);
+    }
+    .nr-enter :is(.okpi,.nb-kpi)::before{ animation:nrRail .9s cubic-bezier(.32,.72,0,1) .25s both; }
+    @keyframes nrRail{ from{ transform:scaleX(0) } to{ transform:scaleX(1) } }
+    /* rank bars grow in with each entrance */
+    .nr-enter .nb-rank-bar i{ animation:nrGrow .9s cubic-bezier(.16,1,.3,1) .15s both; transform-origin:left center; }
+    @keyframes nrGrow{ from{ transform:scaleX(0) } to{ transform:scaleX(1) } }
+
+    /* ── Header: bigger, tighter ── */
+    html[data-theme="light"] .home-title{ font-size:32px !important; font-weight:800 !important; letter-spacing:-.035em !important; }
+    html[data-theme="light"] .ov-sub{ font-size:13.5px !important; color:var(--text-3) !important; }
+
+    /* ── Controls: unified rhythm, rounded, pressable ── */
+    html[data-theme="light"] :is(.gdr-btn,.days-chip,.sort-select,.btn){ border-radius:var(--radius) !important; }
+    html[data-theme="light"] .btn, html[data-theme="light"] .gdr-btn{ transition:transform .12s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease !important; }
+    html[data-theme="light"] :is(.btn,.gdr-btn,.bucket-seg .bkt):active{ transform:scale(.965) !important; }
+    html[data-theme="light"] .btn-primary{ box-shadow:0 1px 2px rgba(16,24,40,.2), 0 10px 22px -12px rgba(10,10,10,.45) !important; }
+    html[data-theme="light"] .btn-primary:hover{ transform:translateY(-1px); background:#1f1f23 !important; }
+    html[data-theme="light"] .bucket-seg{ border-radius:999px !important; background:#f4f4f5 !important; border:1px solid var(--border) !important; padding:3px !important; }
+    html[data-theme="light"] .bucket-seg .bkt{ border-radius:999px !important; transition:background .18s ease, color .18s ease, box-shadow .18s ease !important; }
+    html[data-theme="light"] .bucket-seg .bkt.on{ background:#0a0a0a !important; color:#fff !important; box-shadow:0 2px 8px rgba(10,10,10,.28) !important; }
+
+    /* ── Tables: calm headers, soft row hover ── */
+    html[data-theme="light"] thead th{ font-size:10px !important; letter-spacing:.09em !important; color:var(--text-3) !important; border-bottom:1px solid var(--border) !important; }
+    html[data-theme="light"] tbody tr{ transition:background .14s ease; }
+    html[data-theme="light"] tbody tr:hover{ background:var(--hover) !important; }
+    html[data-theme="light"] :is(.badge,.plan-badge,.tab-badge,.pill){ border-radius:999px !important; }
+
+    /* ── Status pill: rounded-full, calm ── */
+    html[data-theme="light"] .nb-updated{ border-radius:999px !important; padding:6px 12px !important; background:rgba(255,255,255,.9) !important; }
+
+    /* ── Apex tooltips match the card system ── */
+    html[data-theme="light"] .apexcharts-tooltip{ border-radius:10px !important; border:1px solid var(--border-strong) !important; box-shadow:var(--shadow-lg) !important; backdrop-filter:none !important; }
+    html[data-theme="light"] .apexcharts-xaxistooltip, html[data-theme="light"] .apexcharts-yaxistooltip{ border-radius:8px !important; }
+
+    /* ── Scrollbars: thin zinc ── */
+    html[data-theme="light"] .app-body::-webkit-scrollbar{ width:10px; }
+    html[data-theme="light"] .app-body::-webkit-scrollbar-thumb{ background:#e4e4e7; border:3px solid #fdfdfd; border-radius:8px; }
+    html[data-theme="light"] .app-body::-webkit-scrollbar-thumb:hover{ background:#d4d4d8; }
+
+    /* ── Reduced motion: atmosphere freezes, entrances vanish ── */
+    @media (prefers-reduced-motion:reduce){
+      html[data-theme="light"] body::before{ animation:none !important; }
+      .nr-enter :is(.okpi,.nb-kpi)::before, .nr-enter .nb-rank-bar i{ animation:none !important; }
+    }
+
   </style>
 </head>
 <body>
@@ -5914,7 +6024,8 @@
         runHogQL(`
           SELECT
             sumIf(amount, currency='INR') AS inr,
-            sumIf(amount, currency='USD') AS usd
+            sumIf(amount, currency='USD') AS usd,
+            uniqExact(user_email) AS payers
           FROM postgres.payments
           WHERE status='completed'
             AND ${pgRangeFilter}
@@ -6022,6 +6133,7 @@
         payments:    payments.results || [],
         revInr:      Number(revRow[0]||0),
         revUsd:      Number(revRow[1]||0),
+        revPayers:   Number(revRow[2]||0),   // distinct paying users in range (ARPU denominator)
         sources:     sources.results     || [],
         growth:      growth.results      || [],
         dailyPay:    dailyPay.results    || [],
@@ -6130,7 +6242,10 @@
     const convGauge   = _gRC ? _gRC.rate    : convPct;
     const gaugeSignups= _gRC ? _gRC.signups : newProduct;
     const gaugePro    = _gRC ? _gRC.pro     : activePro;
-    const arpu = activePro ? Math.round(totalRevInr/activePro) : 0;
+    // ARPU = revenue in range ÷ distinct paying users in range. Old cached
+    // snapshots predate revPayers — fall back to active Pro subs for those.
+    const revPayers = (+_ovData.revPayers || 0) || activePro;
+    const arpu = revPayers ? Math.round(totalRevInr/revPayers) : 0;
 
     // Period-over-period delta chip (CEO scorecard): green ▲ / red ▼ with %.
     const deltaChip = (cur, prev) => {
@@ -6223,7 +6338,7 @@
         <div class="rev-tiles">
           <div class="rev-tile"><div class="rt-num">₹${Math.round(revInr).toLocaleString('en-IN')}</div><div class="rt-label">INR paid</div></div>
           <div class="rev-tile"><div class="rt-num">$${Math.round(revUsd).toLocaleString('en-US')}</div><div class="rt-label">USD paid</div></div>
-          <div class="rev-tile"><div class="rt-num">${activePro.toLocaleString('en-IN')}</div><div class="rt-label">Paying</div></div>
+          <div class="rev-tile"><div class="rt-num">${revPayers.toLocaleString('en-IN')}</div><div class="rt-label">Payers</div></div>
           <div class="rev-tile"><div class="rt-num">₹${arpu.toLocaleString('en-IN')}</div><div class="rt-label">Rev / payer</div></div>
         </div></div>`;
 
@@ -6287,7 +6402,11 @@
     const nsSub = nsDelta ? 'vs previous period' : tabGdrPreset('overview').label;
     const kpis2=[
       kpi('New signups', rangeSignups.toLocaleString('en-IN'), nsDelta, nsSub, 'acquire', 'Unique users who completed signup in this range. Click for acquisition channels.'),
-      kpi('Gross revenue', inrTotal(revInr,revUsd), '', revUsd>0?`incl. $${Math.round(revUsd).toLocaleString('en-US')} at ₹${USD_TO_INR}/$`:'completed Pro payments', 'revenue', 'Completed Pro payments in this range, all shown in INR. Click for revenue analytics.'),
+      kpi('Gross revenue', inrTotal(revInr,revUsd), '',
+        `₹${Math.round(revInr).toLocaleString('en-IN')} INR` +
+        (revUsd>0?` + $${Math.round(revUsd).toLocaleString('en-US')} USD`:'') +
+        (arpu?` · avg ₹${arpu.toLocaleString('en-IN')}/payer`:''),
+        'revenue', 'Completed Pro payments in this range. INR and USD collected separately; total shown in INR at ₹'+USD_TO_INR+'/$. Avg = revenue ÷ distinct paying users in this range. Click for revenue analytics.'),
       kpi('Active Pro subscribers', activePro.toLocaleString('en-IN'), '', `${convPct.toFixed(2)}% of ${usersShort} users`, 'pro', 'Users on an active Pro subscription right now. Click for the list.'),
       kpi('Total users', newProduct.toLocaleString('en-IN'), '', 'since 1 May 2026', 'search', 'All signed-up users since the relaunch. Click to search contacts.'),
     ].join('');
@@ -11843,5 +11962,49 @@
     }
   })();
 </script>
+  <!-- AURORA MOTION: staged GSAP entrances on tab switches (2026-09-12).
+       Animates ONLY on navigation, never on data re-renders, which repaint
+       innerHTML frequently and already have the global count-up observer. -->
+  <script>
+  (function(){
+    if (!window.gsap) return;
+    var reduce = false;
+    try { reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(_){}
+    var SEL = '.okpi,.nb-kpi,.ov-card,.ocard,.rev-kpi,.nb-card,.infl-card,.panel,.table-wrap,.result-card';
+    var _animT = null;
+    function nrEnter(name){
+      if (reduce) return;
+      var page = document.getElementById('page-' + name);
+      if (!page) return;
+      // retrigger the CSS keyframe layer (KPI rails, rank bars)
+      page.classList.remove('nr-enter');
+      void page.offsetWidth;
+      page.classList.add('nr-enter');
+      clearTimeout(_animT);
+      _animT = setTimeout(function(){ page.classList.remove('nr-enter'); }, 1600);
+      var cards = page.querySelectorAll(SEL);
+      if (!cards.length) return;
+      gsap.fromTo(cards,
+        { y: 16, opacity: 0 },
+        { y: 0, opacity: 1, duration: .55, ease: 'power3.out',
+          stagger: { each: .045, from: 'start' }, overwrite: 'auto', clearProps: 'transform,opacity' });
+    }
+    // wrap navigation: onclick handlers resolve the global at call time
+    if (typeof switchTab === 'function') {
+      var _orig = switchTab;
+      switchTab = function(name){
+        var prev = location.hash.slice(1);
+        _orig(name);
+        if (name !== prev) nrEnter(name);
+      };
+    }
+    // first paint
+    setTimeout(function(){
+      var active = document.querySelector('[id^="page-"].active');
+      nrEnter(active ? active.id.replace(/^page-/, '') : 'overview');
+    }, 120);
+  })();
+  </script>
+
 </body>
 </html>
