@@ -2671,110 +2671,159 @@
       html[data-theme="light"] .sidebar .settings-btn{ transition:font-size 0s linear .1s, background .15s ease !important; }
     }
 
+
     /* ══════════════════════════════════════════════════════════════════
-       AURORA LEDGER (2026-09-12) — the advanced-minimal pass.
-       Keeps the editorial flat-white discipline but upgrades it into a
-       modern analytics OS: a dreamy drifting aurora atmosphere behind a
-       crisp zinc/blue component system (hairline borders + layered
-       shadows), a gradient signature rail on KPI cards, and staged GSAP
-       entrances (see the AURORA MOTION script before the body close).
-       Wins over EDITORIAL by source order. Light-only build.
+       GLASSWORK (2026-09-12) — the fluid glass era. Replaces AURORA LEDGER.
+       A complete visual reframe, CSS-only over the same markup:
+       · the app floats as a rounded white canvas on a tinted, aurora-lit
+         workspace, with a detached rounded glass sidebar rail
+       · cards are luminous light-glass with cursor-tracking spotlights
+       · motion is springy everywhere (overshoot easings, blur-in
+         entrances via the GLASSWORK MOTION script, breathing aurora)
+       Light-only build. Wins over EDITORIAL by source order.
        ══════════════════════════════════════════════════════════════════ */
     html[data-theme="light"]{
-      --radius:9px; --radius-lg:13px;
-      --border:#e4e4e7; --border-strong:#d4d4d8;
-      --hover:#f7f7f8; --sep:#efeff1; --row-border:#efeff1;
-      --surface-2:#fafafa;
-      --text-2:#52525b; --text-3:#8e8e97;
-      --shadow-sm:0 1px 2px rgba(16,24,40,.05);
-      --shadow-md:0 1px 2px rgba(16,24,40,.05), 0 14px 34px -22px rgba(16,24,40,.22);
-      --shadow-lg:0 24px 60px -24px rgba(16,24,40,.28);
-      --aurora-a:rgba(0,101,244,.065); --aurora-b:rgba(99,102,241,.055); --aurora-c:rgba(13,148,136,.05);
+      --radius:10px; --radius-lg:16px;
+      --border:#e3e6ee; --border-strong:#cfd4e0;
+      --hover:#f4f6fa; --sep:#edf0f5; --row-border:#edf0f5;
+      --surface-2:#f7f8fb;
+      --text-2:#4d5361; --text-3:#8b909e;
+      --shadow-sm:0 1px 2px rgba(23,26,40,.05);
+      --shadow-md:0 1px 2px rgba(23,26,40,.04), 0 18px 44px -26px rgba(23,26,40,.28);
+      --shadow-lg:0 30px 70px -28px rgba(23,26,40,.35);
+      --spring:cubic-bezier(.34,1.45,.64,1);
       --rail-grad:linear-gradient(90deg,#0065F4,#6366F1 55%,#0d9488);
     }
 
-    /* ── Atmosphere: dreamy aurora + fine grain (GPU transform drift) ── */
-    html[data-theme="light"] body{ background:#fdfdfd !important; }
+    /* ── Workspace: tinted canvas, living aurora, grain ── */
+    html[data-theme="light"] body{ background:#e9edf5 !important; }
     html[data-theme="light"] body::before{
       content:"" !important; display:block !important; position:fixed; z-index:0; pointer-events:none;
-      inset:-60% -40%;
+      inset:-55% -35%;
       background:
-        radial-gradient(38% 30% at 26% 32%, var(--aurora-a), transparent 68%),
-        radial-gradient(34% 28% at 74% 22%, var(--aurora-b), transparent 66%),
-        radial-gradient(40% 34% at 58% 78%, var(--aurora-c), transparent 70%);
-      animation:nrAurora 64s ease-in-out infinite alternate;
+        radial-gradient(36% 30% at 24% 30%, rgba(0,101,244,.16), transparent 68%),
+        radial-gradient(32% 26% at 76% 18%, rgba(99,102,241,.13), transparent 66%),
+        radial-gradient(38% 32% at 60% 82%, rgba(13,148,136,.12), transparent 70%),
+        radial-gradient(26% 22% at 12% 78%, rgba(0,101,244,.09), transparent 65%);
+      animation:nrAurora 42s ease-in-out infinite alternate;
       will-change:transform;
     }
     @keyframes nrAurora{
-      0%  { transform:translate3d(-2.5%,-2%,0) scale(1); }
-      50% { transform:translate3d(2%,2.5%,0) scale(1.06); }
-      100%{ transform:translate3d(3.5%,-1.5%,0) scale(1.02); }
+      0%  { transform:translate3d(-3%,-2.5%,0) scale(1) }
+      45% { transform:translate3d(2.5%,3%,0) scale(1.08) }
+      100%{ transform:translate3d(4%,-2%,0) scale(1.03) }
     }
     html[data-theme="light"] body::after{
-      content:"" !important; display:block !important; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.028;
+      content:"" !important; display:block !important; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.03;
       background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
     }
     html[data-theme="light"] .app-layout{ position:relative; z-index:1; }
-    html[data-theme="light"] .app-body{ background:transparent !important; }
 
-    /* ── Cards: zinc hairline + layered shadow + living hover ── */
+    /* ── The floating app frame (desktop): rounded canvas + detached rail ── */
+    @media (min-width:961px){
+      html[data-theme="light"] .app-body{
+        margin:14px 14px 14px 106px !important;
+        height:calc(100dvh - 28px) !important;
+        background:rgba(255,255,255,.88) !important;
+        backdrop-filter:blur(28px) saturate(150%);
+        -webkit-backdrop-filter:blur(28px) saturate(150%);
+        border:1px solid rgba(255,255,255,.85) !important;
+        border-radius:22px !important;
+        box-shadow:0 1px 2px rgba(23,26,40,.05), 0 40px 90px -40px rgba(23,26,40,.35) !important;
+        overflow-x:hidden;
+      }
+      html[data-theme="light"] .sidebar{
+        top:14px !important; bottom:14px !important; left:14px !important;
+        border:1px solid rgba(255,255,255,.9) !important;
+        border-right:1px solid rgba(255,255,255,.9) !important;
+        border-radius:20px !important;
+        background:rgba(255,255,255,.72) !important;
+        backdrop-filter:blur(22px) saturate(150%) !important;
+        -webkit-backdrop-filter:blur(22px) saturate(150%) !important;
+        box-shadow:0 24px 60px -30px rgba(23,26,40,.35) !important;
+        overflow:hidden;
+        transition:width .28s var(--spring), box-shadow .28s ease !important;
+      }
+      html[data-theme="light"] .sidebar:hover{
+        background:rgba(255,255,255,.96) !important;
+        box-shadow:0 40px 90px -30px rgba(23,26,40,.45) !important;
+      }
+    }
+
+    /* ── Cards: luminous glass + cursor spotlight + spring hover ── */
     html[data-theme="light"] :is(.okpi,.nb-kpi,.ov-card,.ocard,.rev-kpi,.nb-card,.infl-card,.result-card,.panel,.table-wrap){
-      background:rgba(255,255,255,.92) !important;
-      border:1px solid var(--border) !important;
+      position:relative;
+      background:rgba(255,255,255,.68) !important;
+      backdrop-filter:blur(14px) saturate(140%);
+      -webkit-backdrop-filter:blur(14px) saturate(140%);
+      border:1px solid rgba(227,230,238,.9) !important;
       border-radius:var(--radius-lg) !important;
       box-shadow:var(--shadow-md) !important;
-      transition:transform .22s cubic-bezier(.32,.72,0,1), box-shadow .22s ease, border-color .22s ease !important;
+      transition:transform .35s var(--spring), box-shadow .3s ease, border-color .3s ease !important;
     }
     html[data-theme="light"] :is(.okpi,.ov-card,.ocard,.rev-kpi,.nb-card,.infl-card,.result-card):hover{
-      border-color:rgba(0,101,244,.30) !important;
-      box-shadow:var(--shadow-sm), 0 18px 44px -20px rgba(0,101,244,.25) !important;
-      transform:translateY(-2px);
+      border-color:rgba(0,101,244,.35) !important;
+      box-shadow:var(--shadow-sm), 0 26px 60px -24px rgba(0,101,244,.32) !important;
+      transform:translateY(-3px) scale(1.004);
     }
-    /* KPI signature: gradient hairline rail across the top */
-    html[data-theme="light"] :is(.okpi,.nb-kpi){ position:relative; overflow:hidden; }
+    /* cursor spotlight — driven by --mx/--my from the motion script */
+    html[data-theme="light"] :is(.okpi,.nb-kpi,.ov-card,.ocard,.rev-kpi,.nb-card,.infl-card)::after{
+      content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+      background:radial-gradient(360px circle at var(--mx,50%) var(--my,50%), rgba(0,101,244,.075), transparent 62%);
+      opacity:0; transition:opacity .35s ease;
+    }
+    html[data-theme="light"] :is(.okpi,.nb-kpi,.ov-card,.ocard,.rev-kpi,.nb-card,.infl-card):hover::after{ opacity:1; }
+    /* KPI signature rail */
+    html[data-theme="light"] :is(.okpi,.nb-kpi){ overflow:hidden; }
     html[data-theme="light"] :is(.okpi,.nb-kpi)::before{
-      content:""; position:absolute; top:0; left:0; right:0; height:2px;
-      background:var(--rail-grad); transform-origin:left center; transform:scaleX(1);
+      content:""; position:absolute; top:0; left:0; right:0; height:2px; z-index:1;
+      background:var(--rail-grad); transform-origin:left center;
     }
-    .nr-enter :is(.okpi,.nb-kpi)::before{ animation:nrRail .9s cubic-bezier(.32,.72,0,1) .25s both; }
+    .nr-enter :is(.okpi,.nb-kpi)::before{ animation:nrRail 1s var(--spring) .25s both; }
     @keyframes nrRail{ from{ transform:scaleX(0) } to{ transform:scaleX(1) } }
-    /* rank bars grow in with each entrance */
-    .nr-enter .nb-rank-bar i{ animation:nrGrow .9s cubic-bezier(.16,1,.3,1) .15s both; transform-origin:left center; }
+    .nr-enter .nb-rank-bar i{ animation:nrGrow 1s var(--spring) .15s both; transform-origin:left center; }
     @keyframes nrGrow{ from{ transform:scaleX(0) } to{ transform:scaleX(1) } }
 
-    /* ── Header: bigger, tighter ── */
-    html[data-theme="light"] .home-title{ font-size:32px !important; font-weight:800 !important; letter-spacing:-.035em !important; }
+    /* ── Header ── */
+    html[data-theme="light"] .home-title{ font-size:33px !important; font-weight:800 !important; letter-spacing:-.04em !important; }
     html[data-theme="light"] .ov-sub{ font-size:13.5px !important; color:var(--text-3) !important; }
 
-    /* ── Controls: unified rhythm, rounded, pressable ── */
-    html[data-theme="light"] :is(.gdr-btn,.days-chip,.sort-select,.btn){ border-radius:var(--radius) !important; }
-    html[data-theme="light"] .btn, html[data-theme="light"] .gdr-btn{ transition:transform .12s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease !important; }
-    html[data-theme="light"] :is(.btn,.gdr-btn,.bucket-seg .bkt):active{ transform:scale(.965) !important; }
-    html[data-theme="light"] .btn-primary{ box-shadow:0 1px 2px rgba(16,24,40,.2), 0 10px 22px -12px rgba(10,10,10,.45) !important; }
-    html[data-theme="light"] .btn-primary:hover{ transform:translateY(-1px); background:#1f1f23 !important; }
-    html[data-theme="light"] .bucket-seg{ border-radius:999px !important; background:#f4f4f5 !important; border:1px solid var(--border) !important; padding:3px !important; }
-    html[data-theme="light"] .bucket-seg .bkt{ border-radius:999px !important; transition:background .18s ease, color .18s ease, box-shadow .18s ease !important; }
-    html[data-theme="light"] .bucket-seg .bkt.on{ background:#0a0a0a !important; color:#fff !important; box-shadow:0 2px 8px rgba(10,10,10,.28) !important; }
+    /* ── Controls: springy, rounded, pressable ── */
+    html[data-theme="light"] :is(.gdr-btn,.days-chip,.sort-select,.btn){ border-radius:11px !important; }
+    html[data-theme="light"] :is(.btn,.gdr-btn,.bucket-seg .bkt,.tab){ transition:transform .25s var(--spring), box-shadow .2s ease, background .2s ease, color .2s ease, border-color .2s ease !important; }
+    html[data-theme="light"] :is(.btn,.gdr-btn,.bucket-seg .bkt):active{ transform:scale(.94) !important; }
+    html[data-theme="light"] .btn-primary{ box-shadow:0 1px 2px rgba(16,24,40,.2), 0 14px 28px -14px rgba(10,10,10,.5) !important; }
+    html[data-theme="light"] .btn-primary:hover{ transform:translateY(-1.5px) scale(1.015); background:#1f1f23 !important; }
+    html[data-theme="light"] .bucket-seg{ border-radius:999px !important; background:rgba(237,240,245,.9) !important; border:1px solid var(--border) !important; padding:3px !important; }
+    html[data-theme="light"] .bucket-seg .bkt{ border-radius:999px !important; }
+    html[data-theme="light"] .bucket-seg .bkt.on{ background:#0a0a0a !important; color:#fff !important; box-shadow:0 3px 10px rgba(10,10,10,.3) !important; }
+    html[data-theme="light"] .bucket-seg .bkt:not(.on):hover{ background:rgba(255,255,255,.9) !important; }
 
-    /* ── Tables: calm headers, soft row hover ── */
+    /* sidebar tabs: springy hover nudge */
+    @media (min-width:961px){
+      html[data-theme="light"] .sidebar:hover .tab:hover{ transform:translateX(3px); }
+    }
+
+    /* ── Tables / badges / status pill / tooltips / scrollbars ── */
     html[data-theme="light"] thead th{ font-size:10px !important; letter-spacing:.09em !important; color:var(--text-3) !important; border-bottom:1px solid var(--border) !important; }
-    html[data-theme="light"] tbody tr{ transition:background .14s ease; }
+    html[data-theme="light"] tbody tr{ transition:background .18s ease; }
     html[data-theme="light"] tbody tr:hover{ background:var(--hover) !important; }
     html[data-theme="light"] :is(.badge,.plan-badge,.tab-badge,.pill){ border-radius:999px !important; }
-
-    /* ── Status pill: rounded-full, calm ── */
-    html[data-theme="light"] .nb-updated{ border-radius:999px !important; padding:6px 12px !important; background:rgba(255,255,255,.9) !important; }
-
-    /* ── Apex tooltips match the card system ── */
-    html[data-theme="light"] .apexcharts-tooltip{ border-radius:10px !important; border:1px solid var(--border-strong) !important; box-shadow:var(--shadow-lg) !important; backdrop-filter:none !important; }
+    html[data-theme="light"] .nb-updated{ border-radius:999px !important; padding:6px 12px !important; background:rgba(255,255,255,.85) !important; backdrop-filter:blur(8px); }
+    html[data-theme="light"] .apexcharts-tooltip{ border-radius:12px !important; border:1px solid rgba(255,255,255,.9) !important; background:rgba(255,255,255,.9) !important; backdrop-filter:blur(14px) !important; box-shadow:var(--shadow-lg) !important; }
     html[data-theme="light"] .apexcharts-xaxistooltip, html[data-theme="light"] .apexcharts-yaxistooltip{ border-radius:8px !important; }
-
-    /* ── Scrollbars: thin zinc ── */
     html[data-theme="light"] .app-body::-webkit-scrollbar{ width:10px; }
-    html[data-theme="light"] .app-body::-webkit-scrollbar-thumb{ background:#e4e4e7; border:3px solid #fdfdfd; border-radius:8px; }
-    html[data-theme="light"] .app-body::-webkit-scrollbar-thumb:hover{ background:#d4d4d8; }
+    html[data-theme="light"] .app-body::-webkit-scrollbar-thumb{ background:#dfe3ec; border:3px solid #fff; border-radius:8px; }
+    html[data-theme="light"] .app-body::-webkit-scrollbar-thumb:hover{ background:#cfd4e0; }
 
-    /* ── Reduced motion: atmosphere freezes, entrances vanish ── */
+    /* mobile keeps a calm solid canvas (glass frame is desktop-only) */
+    @media (max-width:960px){
+      html[data-theme="light"] body{ background:#f4f6fa !important; }
+      html[data-theme="light"] :is(.okpi,.nb-kpi,.ov-card,.ocard,.rev-kpi,.nb-card,.infl-card,.result-card,.panel,.table-wrap){
+        background:#ffffff !important; backdrop-filter:none; -webkit-backdrop-filter:none; }
+    }
+
+    /* ── Reduced motion ── */
     @media (prefers-reduced-motion:reduce){
       html[data-theme="light"] body::before{ animation:none !important; }
       .nr-enter :is(.okpi,.nb-kpi)::before, .nr-enter .nb-rank-bar i{ animation:none !important; }
@@ -11962,9 +12011,10 @@
     }
   })();
 </script>
-  <!-- AURORA MOTION: staged GSAP entrances on tab switches (2026-09-12).
-       Animates ONLY on navigation, never on data re-renders, which repaint
-       innerHTML frequently and already have the global count-up observer. -->
+  <!-- GLASSWORK MOTION (2026-09-12): springy blur-in entrances on tab
+       switches + cursor-tracking card spotlights. Entrances fire ONLY on
+       navigation, never on data re-renders (those repaint innerHTML often
+       and already have the global count-up observer). -->
   <script>
   (function(){
     if (!window.gsap) return;
@@ -11976,20 +12026,19 @@
       if (reduce) return;
       var page = document.getElementById('page-' + name);
       if (!page) return;
-      // retrigger the CSS keyframe layer (KPI rails, rank bars)
       page.classList.remove('nr-enter');
       void page.offsetWidth;
       page.classList.add('nr-enter');
       clearTimeout(_animT);
-      _animT = setTimeout(function(){ page.classList.remove('nr-enter'); }, 1600);
-      var cards = page.querySelectorAll(SEL);
+      _animT = setTimeout(function(){ page.classList.remove('nr-enter'); }, 1800);
+      var cards = Array.prototype.slice.call(page.querySelectorAll(SEL), 0, 24);
       if (!cards.length) return;
       gsap.fromTo(cards,
-        { y: 16, opacity: 0 },
-        { y: 0, opacity: 1, duration: .55, ease: 'power3.out',
-          stagger: { each: .045, from: 'start' }, overwrite: 'auto', clearProps: 'transform,opacity' });
+        { y: 26, opacity: 0, scale: .965, filter: 'blur(6px)' },
+        { y: 0, opacity: 1, scale: 1, filter: 'blur(0px)', duration: .8,
+          ease: 'back.out(1.4)', stagger: { each: .055, from: 'start' },
+          overwrite: 'auto', clearProps: 'transform,opacity,filter' });
     }
-    // wrap navigation: onclick handlers resolve the global at call time
     if (typeof switchTab === 'function') {
       var _orig = switchTab;
       switchTab = function(name){
@@ -11998,11 +12047,29 @@
         if (name !== prev) nrEnter(name);
       };
     }
-    // first paint
     setTimeout(function(){
       var active = document.querySelector('[id^="page-"].active');
       nrEnter(active ? active.id.replace(/^page-/, '') : 'overview');
     }, 120);
+
+    // cursor spotlight: one delegated listener drives --mx/--my on the
+    // hovered card (rAF-throttled; no listeners per card, no reflow)
+    if (!reduce) {
+      var _spot = null, _spotEv = null;
+      document.addEventListener('pointermove', function(e){
+        _spotEv = e;
+        if (_spot) return;
+        _spot = requestAnimationFrame(function(){
+          _spot = null;
+          var ev = _spotEv;
+          var card = ev.target && ev.target.closest && ev.target.closest(SEL);
+          if (!card) return;
+          var r = card.getBoundingClientRect();
+          card.style.setProperty('--mx', ((ev.clientX - r.left) / r.width * 100).toFixed(1) + '%');
+          card.style.setProperty('--my', ((ev.clientY - r.top) / r.height * 100).toFixed(1) + '%');
+        });
+      }, { passive: true });
+    }
   })();
   </script>
 
