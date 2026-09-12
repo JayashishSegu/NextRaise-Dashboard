@@ -2501,178 +2501,188 @@
 
 
 
+
     /* ══════════════════════════════════════════════════════════════════
-       GLASSWORK (2026-09-12) — the fluid glass era. Replaces AURORA LEDGER.
-       A complete visual reframe, CSS-only over the same markup:
-       · the app floats as a rounded white canvas on a tinted, aurora-lit
-         workspace, with a detached rounded glass sidebar rail
-       · cards are luminous light-glass with cursor-tracking spotlights
-       · motion is springy everywhere (overshoot easings, blur-in
-         entrances via the GLASSWORK MOTION script, breathing aurora)
-       Light-only build. Wins over EDITORIAL by source order.
+       COMMAND CENTER (2026-09-12) — the from-scratch rebuild system.
+       Replaces every prior era layer below the base styles. White-first,
+       borders over shadows, one blue accent, Inter UI, decision-oriented.
+       No glass, no gradients, no aurora, no springs. All business logic,
+       routes, queries and workflows untouched — this layer + the grouped
+       sidebar + topbar markup + the Overview signal sections ARE the
+       rebuild. Wins over all earlier eras by source order.
        ══════════════════════════════════════════════════════════════════ */
     html[data-theme="light"]{
-      --radius:10px; --radius-lg:16px;
-      --border:#e3e6ee; --border-strong:#cfd4e0;
-      --hover:#f4f6fa; --sep:#edf0f5; --row-border:#edf0f5;
-      --surface-2:#f7f8fb;
-      --text-2:#4d5361; --text-3:#8b909e;
-      --shadow-sm:0 1px 2px rgba(23,26,40,.05);
-      --shadow-md:0 1px 2px rgba(23,26,40,.04), 0 18px 44px -26px rgba(23,26,40,.28);
-      --shadow-lg:0 30px 70px -28px rgba(23,26,40,.35);
-      --spring:cubic-bezier(.34,1.45,.64,1);
-      --rail-grad:linear-gradient(90deg,#0065F4,#6366F1 55%,#0d9488);
+      --canvas:#fafafa; --bg:#ffffff;
+      --surface:#ffffff; --surface-2:#fafafa; --pop:#ffffff;
+      --border:#ececef; --border-strong:#dcdce0;
+      --hover:#f6f6f7; --sep:#f1f1f3; --row-border:#f1f1f3;
+      --text:#18181b; --ink:#18181b; --text-2:#52525b; --text-3:#9b9ba3;
+      --blue:#0065F4; --blue-dark:#0049b0; --blue-soft:#f0f5ff; --blue-text:#0052c8;
+      --green:#177245; --green-soft:#ecf7f0; --green-text:#177245;
+      --red:#c2382e; --red-soft:#fdf0ee; --red-text:#c2382e;
+      --amber:#946200; --amber-soft:#fdf6e7; --amber-text:#946200;
+      --violet:#5a55c9; --violet-soft:#f1f0fb; --violet-text:#4d48b4;
+      --accent-grad:#0065F4;
+      --radius:8px; --radius-lg:12px;
+      --shadow-sm:0 1px 2px rgba(24,24,27,.04);
+      --shadow-md:0 1px 2px rgba(24,24,27,.04);
+      --shadow-lg:0 12px 32px -12px rgba(24,24,27,.18);
+      --glows:none; --glass-blur:none;
     }
+    html[data-theme="light"] body{ background:var(--canvas) !important; background-image:none !important; }
+    html[data-theme="light"] body::before, html[data-theme="light"] body::after{ display:none !important; content:none !important; animation:none !important; }
+    html[data-theme="light"] :is(body,button,input,select,textarea){ font-family:'Inter','General Sans',system-ui,sans-serif; }
 
-    /* ── Workspace: tinted canvas, living aurora, grain ── */
-    html[data-theme="light"] body{ background:#e9edf5 !important; }
-    html[data-theme="light"] body::before{
-      content:"" !important; display:block !important; position:fixed; z-index:0; pointer-events:none;
-      inset:-55% -35%;
-      background:
-        radial-gradient(36% 30% at 24% 30%, rgba(0,101,244,.16), transparent 68%),
-        radial-gradient(32% 26% at 76% 18%, rgba(99,102,241,.13), transparent 66%),
-        radial-gradient(38% 32% at 60% 82%, rgba(13,148,136,.12), transparent 70%),
-        radial-gradient(26% 22% at 12% 78%, rgba(0,101,244,.09), transparent 65%);
-      animation:nrAurora 42s ease-in-out infinite alternate;
-      will-change:transform;
-    }
-    @keyframes nrAurora{
-      0%  { transform:translate3d(-3%,-2.5%,0) scale(1) }
-      45% { transform:translate3d(2.5%,3%,0) scale(1.08) }
-      100%{ transform:translate3d(4%,-2%,0) scale(1.03) }
-    }
-    html[data-theme="light"] body::after{
-      content:"" !important; display:block !important; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.03;
-      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
-    }
-    html[data-theme="light"] .app-layout{ position:relative; z-index:1; }
-
-
-    /* ── Cards: luminous glass + cursor spotlight + spring hover ── */
-    html[data-theme="light"] :is(.okpi,.nb-kpi,.ov-card,.ocard,.rev-kpi,.nb-card,.infl-card,.result-card,.panel,.table-wrap){
-      position:relative;
-      background:rgba(255,255,255,.68) !important;
-      backdrop-filter:blur(14px) saturate(140%);
-      -webkit-backdrop-filter:blur(14px) saturate(140%);
-      border:1px solid rgba(227,230,238,.9) !important;
-      border-radius:var(--radius-lg) !important;
-      box-shadow:var(--shadow-md) !important;
-      transition:transform .35s var(--spring), box-shadow .3s ease, border-color .3s ease !important;
-    }
-    html[data-theme="light"] :is(.okpi,.ov-card,.ocard,.rev-kpi,.nb-card,.infl-card,.result-card):hover{
-      border-color:rgba(0,101,244,.35) !important;
-      box-shadow:var(--shadow-sm), 0 26px 60px -24px rgba(0,101,244,.32) !important;
-      transform:translateY(-3px) scale(1.004);
-    }
-    /* cursor spotlight — driven by --mx/--my from the motion script */
-    html[data-theme="light"] :is(.okpi,.nb-kpi,.ov-card,.ocard,.rev-kpi,.nb-card,.infl-card)::after{
-      content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
-      background:radial-gradient(360px circle at var(--mx,50%) var(--my,50%), rgba(0,101,244,.075), transparent 62%);
-      opacity:0; transition:opacity .35s ease;
-    }
-    html[data-theme="light"] :is(.okpi,.nb-kpi,.ov-card,.ocard,.rev-kpi,.nb-card,.infl-card):hover::after{ opacity:1; }
-    /* KPI signature rail */
-    html[data-theme="light"] :is(.okpi,.nb-kpi){ overflow:hidden; }
-    html[data-theme="light"] :is(.okpi,.nb-kpi)::before{
-      content:""; position:absolute; top:0; left:0; right:0; height:2px; z-index:1;
-      background:var(--rail-grad); transform-origin:left center;
-    }
-    .nr-enter :is(.okpi,.nb-kpi)::before{ animation:nrRail 1s var(--spring) .25s both; }
-    @keyframes nrRail{ from{ transform:scaleX(0) } to{ transform:scaleX(1) } }
-    .nr-enter .nb-rank-bar i{ animation:nrGrow 1s var(--spring) .15s both; transform-origin:left center; }
-    @keyframes nrGrow{ from{ transform:scaleX(0) } to{ transform:scaleX(1) } }
-
-    /* six KPI cards → two rows of three (2-col ≤1100 rule unchanged) */
-    @media (min-width:1101px){ html[data-theme="light"] .okpis{ grid-template-columns:repeat(3,1fr) !important; } }
-
-    /* ── Header ── */
-    html[data-theme="light"] .home-title{ font-size:33px !important; font-weight:800 !important; letter-spacing:-.04em !important; }
-    html[data-theme="light"] .ov-sub{ font-size:13.5px !important; color:var(--text-3) !important; }
-
-    /* ── Controls: springy, rounded, pressable ── */
-    html[data-theme="light"] :is(.gdr-btn,.days-chip,.sort-select,.btn){ border-radius:11px !important; }
-    html[data-theme="light"] :is(.btn,.gdr-btn,.bucket-seg .bkt,.tab){ transition:transform .25s var(--spring), box-shadow .2s ease, background .2s ease, color .2s ease, border-color .2s ease !important; }
-    html[data-theme="light"] :is(.btn,.gdr-btn,.bucket-seg .bkt):active{ transform:scale(.94) !important; }
-    html[data-theme="light"] .btn-primary{ box-shadow:0 1px 2px rgba(16,24,40,.2), 0 14px 28px -14px rgba(10,10,10,.5) !important; }
-    html[data-theme="light"] .btn-primary:hover{ transform:translateY(-1.5px) scale(1.015); background:#1f1f23 !important; }
-    html[data-theme="light"] .bucket-seg{ border-radius:999px !important; background:rgba(237,240,245,.9) !important; border:1px solid var(--border) !important; padding:3px !important; }
-    html[data-theme="light"] .bucket-seg .bkt{ border-radius:999px !important; }
-    html[data-theme="light"] .bucket-seg .bkt.on{ background:#0a0a0a !important; color:#fff !important; box-shadow:0 3px 10px rgba(10,10,10,.3) !important; }
-    html[data-theme="light"] .bucket-seg .bkt:not(.on):hover{ background:rgba(255,255,255,.9) !important; }
-
-    /* sidebar tabs: springy hover nudge */
-
-    /* ── Tables / badges / status pill / tooltips / scrollbars ── */
-    html[data-theme="light"] thead th{ font-size:10px !important; letter-spacing:.09em !important; color:var(--text-3) !important; border-bottom:1px solid var(--border) !important; }
-    html[data-theme="light"] tbody tr{ transition:background .18s ease; }
-    html[data-theme="light"] tbody tr:hover{ background:var(--hover) !important; }
-    html[data-theme="light"] :is(.badge,.plan-badge,.tab-badge,.pill){ border-radius:999px !important; }
-    html[data-theme="light"] .nb-updated{ border-radius:999px !important; padding:6px 12px !important; background:rgba(255,255,255,.85) !important; backdrop-filter:blur(8px); }
-    html[data-theme="light"] .apexcharts-tooltip{ border-radius:12px !important; border:1px solid rgba(255,255,255,.9) !important; background:rgba(255,255,255,.9) !important; backdrop-filter:blur(14px) !important; box-shadow:var(--shadow-lg) !important; }
-    html[data-theme="light"] .apexcharts-xaxistooltip, html[data-theme="light"] .apexcharts-yaxistooltip{ border-radius:8px !important; }
-    html[data-theme="light"] .app-body::-webkit-scrollbar{ width:10px; }
-    html[data-theme="light"] .app-body::-webkit-scrollbar-thumb{ background:#dfe3ec; border:3px solid #fff; border-radius:8px; }
-    html[data-theme="light"] .app-body::-webkit-scrollbar-thumb:hover{ background:#cfd4e0; }
-
-    /* mobile keeps a calm solid canvas (glass frame is desktop-only) */
-    @media (max-width:960px){
-      html[data-theme="light"] body{ background:#f4f6fa !important; }
-      html[data-theme="light"] :is(.okpi,.nb-kpi,.ov-card,.ocard,.rev-kpi,.nb-card,.infl-card,.result-card,.panel,.table-wrap){
-        background:#ffffff !important; backdrop-filter:none; -webkit-backdrop-filter:none; }
-    }
-
-    /* ── Reduced motion ── */
-    @media (prefers-reduced-motion:reduce){
-      html[data-theme="light"] body::before{ animation:none !important; }
-      .nr-enter :is(.okpi,.nb-kpi)::before, .nr-enter .nb-rank-bar i{ animation:none !important; }
-    }
-
-
-    /* ══ STUDIO SHELL (2026-09-12) — permanent labeled sidebar, no hover-
-       expand. The whole app is one floating frosted frame on the aurora
-       workspace: a static 238px sidebar panel (labels, groups and badges
-       always visible) beside the content pane. Replaces every collapsible
-       rail block. Tablet ≤960 keeps the base labeled sidebar; the mobile
-       drawer ≤600 is untouched. ══════════════════════════════════════ */
+    /* ── Shell: fixed white sidebar · sticky top bar · independent scroll ── */
     @media (min-width:961px){
-      html[data-theme="light"] .app-layout{
-        position:relative; z-index:1; display:flex;
-        margin:14px; height:calc(100dvh - 28px);
-        background:rgba(255,255,255,.9);
-        backdrop-filter:blur(28px) saturate(150%); -webkit-backdrop-filter:blur(28px) saturate(150%);
-        border:1px solid rgba(255,255,255,.9); border-radius:22px;
-        box-shadow:0 1px 2px rgba(23,26,40,.05), 0 40px 90px -40px rgba(23,26,40,.35);
-        overflow:hidden;
-      }
-      html[data-theme="light"] .sidebar{
-        position:relative; width:238px; flex:0 0 238px;
-        display:flex; flex-direction:column; overflow:hidden;
-        background:rgba(250,251,253,.8) !important;
-        border:none !important; border-right:1px solid var(--border) !important;
-        border-radius:0 !important; box-shadow:none !important;
-        backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
-      }
-      html[data-theme="light"] .sidebar-brand{ padding:20px 20px 12px; flex:0 0 auto; }
-      html[data-theme="light"] .sidebar-nav{
-        flex:1 1 0%; min-height:0; overflow-y:auto; padding:4px 0 8px;
-        scrollbar-width:thin; scrollbar-color:var(--border-strong) transparent;
-      }
-      html[data-theme="light"] .sidebar-nav::-webkit-scrollbar{ width:4px; }
-      html[data-theme="light"] .sidebar-nav::-webkit-scrollbar-thumb{ background:var(--border-strong); border-radius:2px; }
-      html[data-theme="light"] .sidebar-footer{ flex:0 0 auto; }
-      html[data-theme="light"] .tab{ margin:2px 12px; padding:9px 14px; border-radius:10px; white-space:nowrap; }
-      html[data-theme="light"] .tab:hover{ transform:translateX(3px); }
-      html[data-theme="light"] .nav-label{ padding:12px 26px 3px; white-space:nowrap; }
-      html[data-theme="light"] .app-body{
-        flex:1 1 0%; min-width:0;
-        margin:0 !important; height:100% !important;
-        background:transparent !important; border:none !important;
-        border-radius:0 !important; box-shadow:none !important;
-        backdrop-filter:none; -webkit-backdrop-filter:none;
-        overflow-x:hidden;
-      }
+      html[data-theme="light"] .app-layout{ position:relative; z-index:1; display:flex; margin:0; height:100dvh;
+        background:transparent; border:none; border-radius:0; box-shadow:none; overflow:hidden; backdrop-filter:none; -webkit-backdrop-filter:none; }
+      html[data-theme="light"] .sidebar{ position:relative; width:240px; flex:0 0 240px; display:flex; flex-direction:column; overflow:hidden;
+        background:#fcfcfd !important; border:none !important; border-right:1px solid var(--border) !important;
+        border-radius:0 !important; box-shadow:none !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+      html[data-theme="light"] .app-body{ flex:1 1 0%; min-width:0; margin:0 !important; height:100dvh !important;
+        background:var(--canvas) !important; border:none !important; border-radius:0 !important; box-shadow:none !important; overflow-x:hidden; }
+      html[data-theme="light"] .page{ max-width:1500px; margin:0 auto; }
     }
+    html[data-theme="light"] .sidebar-brand{ padding:18px 18px 12px; flex:0 0 auto; }
+    html[data-theme="light"] .sidebar-nav{ flex:1 1 0%; min-height:0; overflow-y:auto; padding:2px 0 10px;
+      scrollbar-width:thin; scrollbar-color:var(--border-strong) transparent; }
+    html[data-theme="light"] .sidebar-nav::-webkit-scrollbar{ width:4px; }
+    html[data-theme="light"] .sidebar-nav::-webkit-scrollbar-thumb{ background:var(--border-strong); border-radius:2px; }
+    html[data-theme="light"] .sidebar-footer{ flex:0 0 auto; border-top:1px solid var(--border); }
+
+    /* nav groups (collapsible) */
+    html[data-theme="light"] .nav-group-h{
+      display:flex; align-items:center; justify-content:space-between; width:calc(100% - 24px);
+      margin:10px 12px 2px; padding:5px 8px; border:none; background:none; cursor:pointer;
+      font-family:inherit; font-size:10.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase;
+      color:var(--text-3); border-radius:6px; transition:color .15s ease, background .15s ease; }
+    html[data-theme="light"] .nav-group-h:hover{ color:var(--text-2); background:var(--hover); }
+    html[data-theme="light"] .nav-group-h .gch{ width:11px; height:11px; transition:transform .18s ease; transform:rotate(-90deg); opacity:.7; }
+    html[data-theme="light"] .nav-group.open .nav-group-h .gch{ transform:rotate(0deg); }
+    html[data-theme="light"] .nav-group-items{ display:none; }
+    html[data-theme="light"] .nav-group.open .nav-group-items{ display:block; }
+    html[data-theme="light"] .tab{
+      display:flex; align-items:center; gap:10px; margin:1px 12px; padding:7px 10px;
+      border-radius:7px; font-size:13px !important; font-weight:500 !important; color:var(--text-2) !important;
+      white-space:nowrap; border:none !important; transition:background .13s ease, color .13s ease !important; transform:none !important; }
+    html[data-theme="light"] .tab:hover{ background:var(--hover) !important; color:var(--text) !important; transform:none !important; }
+    html[data-theme="light"] .tab.active,
+    html[data-theme="light"] .tab[class*="tab-"].active{
+      background:var(--blue-soft) !important; color:var(--blue-text) !important; font-weight:600 !important;
+      border:none !important; box-shadow:none !important; }
+    html[data-theme="light"] .tab .ic-sm{ width:15px; height:15px; flex:none; color:inherit !important; }
+    html[data-theme="light"] .tab-badge{ margin-left:auto; font-size:10.5px; font-weight:600; padding:1px 7px;
+      background:#f1f1f3 !important; color:var(--text-2) !important; border:none !important; }
+    html[data-theme="light"] .nav-label{ display:none; }   /* group headers replace the old flat labels */
+    html[data-theme="light"] .nav-sep{ display:none; }
+
+    /* top bar (desktop) */
+    html[data-theme="light"] .cc-topbar{
+      position:sticky; top:0; z-index:60; height:56px; display:flex; align-items:center; gap:12px;
+      padding:0 28px; background:rgba(255,255,255,.94); border-bottom:1px solid var(--border);
+      -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
+    html[data-theme="light"] .cc-tb-title{ font-size:14.5px; font-weight:600; color:var(--text); letter-spacing:-.01em; }
+    html[data-theme="light"] .cc-tb-crumb{ font-size:12.5px; color:var(--text-3); }
+    html[data-theme="light"] .cc-tb-right{ margin-left:auto; display:flex; align-items:center; gap:8px; }
+    html[data-theme="light"] .cc-tb-btn{
+      display:inline-flex; align-items:center; gap:7px; height:32px; padding:0 12px; cursor:pointer;
+      font-family:inherit; font-size:12.5px; font-weight:500; color:var(--text-2);
+      background:#fff; border:1px solid var(--border); border-radius:7px; transition:border-color .15s ease, color .15s ease, background .15s ease; }
+    html[data-theme="light"] .cc-tb-btn:hover{ border-color:var(--border-strong); color:var(--text); }
+    html[data-theme="light"] .cc-tb-btn .ic-sm{ width:13px; height:13px; }
+    html[data-theme="light"] .cc-tb-kbd{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--text-3);
+      border:1px solid var(--border); border-radius:4px; padding:1px 5px; background:var(--surface-2); }
+    @media (max-width:960px){ html[data-theme="light"] .cc-topbar{ display:none; } }
+
+    /* ── Cards: hairline borders, whisper shadow, no lift ── */
+    html[data-theme="light"] :is(.okpi,.nb-kpi,.ov-card,.ocard,.rev-kpi,.nb-card,.infl-card,.result-card,.panel,.table-wrap){
+      position:relative; background:#ffffff !important;
+      border:1px solid var(--border) !important; border-radius:var(--radius-lg) !important;
+      box-shadow:var(--shadow-sm) !important;
+      backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+      transition:border-color .15s ease !important; transform:none !important; }
+    html[data-theme="light"] :is(.okpi,.ov-card,.ocard,.rev-kpi,.nb-card,.infl-card,.result-card):hover{
+      border-color:var(--border-strong) !important; box-shadow:var(--shadow-sm) !important; transform:none !important; }
+    html[data-theme="light"] :is(.okpi,.nb-kpi)::before,
+    html[data-theme="light"] :is(.okpi,.nb-kpi,.ov-card,.ocard,.rev-kpi,.nb-card,.infl-card)::after{ content:none !important; animation:none !important; }
+    html[data-theme="light"] .nb-clk:hover{ border-color:rgba(0,101,244,.45) !important; }
+
+    /* KPI cards: compact, quiet */
+    html[data-theme="light"] :is(.okpi,.nb-kpi){ padding:14px 16px 13px !important; }
+    html[data-theme="light"] :is(.nb-kpi-l,.rev-kpi-label,.okpi-l){ font-size:12px !important; font-weight:500 !important;
+      letter-spacing:0 !important; text-transform:none !important; color:var(--text-2) !important; }
+    html[data-theme="light"] :is(.nb-kpi-v,.okpi-val,.rev-kpi-num){ font-size:24px !important; font-weight:600 !important;
+      letter-spacing:-.02em !important; margin-top:6px !important; }
+    html[data-theme="light"] .nb-kpi-sub{ font-size:12px !important; color:var(--text-3) !important; margin-top:4px !important; }
+    @media (min-width:1101px){ html[data-theme="light"] .okpis{ grid-template-columns:repeat(3,1fr) !important; gap:12px !important; } }
+    @media (min-width:1360px){ html[data-theme="light"] .okpis{ grid-template-columns:repeat(6,1fr) !important; } }
+
+    /* page headers: quieter (top bar holds context) */
+    html[data-theme="light"] .home-title{ font-size:24px !important; font-weight:600 !important; letter-spacing:-.025em !important; }
+    html[data-theme="light"] .ov-sub{ font-size:13px !important; color:var(--text-3) !important; }
+    html[data-theme="light"] .page{ padding-top:20px; }
+
+    /* ── Controls ── */
+    html[data-theme="light"] :is(.gdr-btn,.days-chip,.sort-select,.btn,.cc-tb-btn){ border-radius:7px !important; }
+    html[data-theme="light"] :is(.btn,.gdr-btn){ transition:background .15s ease, border-color .15s ease, color .15s ease !important; transform:none !important; }
+    html[data-theme="light"] :is(.btn,.gdr-btn,.bucket-seg .bkt):active{ transform:none !important; }
+    html[data-theme="light"] .btn-primary{ background:var(--ink) !important; box-shadow:none !important; }
+    html[data-theme="light"] .btn-primary:hover{ background:#2d2d31 !important; transform:none !important; }
+    html[data-theme="light"] .bucket-seg{ border-radius:8px !important; background:#f4f4f5 !important; border:1px solid var(--border) !important; padding:2px !important; }
+    html[data-theme="light"] .bucket-seg .bkt{ border-radius:6px !important; font-weight:500 !important; transition:background .15s ease, color .15s ease !important; }
+    html[data-theme="light"] .bucket-seg .bkt.on{ background:#ffffff !important; color:var(--text) !important; font-weight:600 !important;
+      box-shadow:0 1px 2px rgba(24,24,27,.08) !important; }
+    html[data-theme="light"] .bucket-seg .bkt:not(.on):hover{ color:var(--text) !important; background:transparent !important; }
+
+    /* ── Tables ── */
+    html[data-theme="light"] thead th{ font-size:11px !important; font-weight:500 !important; letter-spacing:.02em !important;
+      text-transform:none !important; color:var(--text-3) !important; border-bottom:1px solid var(--border) !important; }
+    html[data-theme="light"] tbody td{ font-size:13px !important; }
+    html[data-theme="light"] tbody tr{ transition:background .12s ease; }
+    html[data-theme="light"] tbody tr:hover{ background:var(--hover) !important; }
+    html[data-theme="light"] :is(.badge,.plan-badge,.tab-badge,.pill){ border-radius:6px !important; font-weight:500 !important; }
+    html[data-theme="light"] .nb-updated{ border-radius:7px !important; padding:5px 10px !important; background:#fff !important;
+      border:1px solid var(--border) !important; backdrop-filter:none !important; font-size:12px !important; }
+
+    /* ── Overview signal sections (What changed · Needs attention) ── */
+    html[data-theme="light"] .cc-sec-t{ font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--text-3); margin:0 0 10px; }
+    html[data-theme="light"] .cc-feed{ display:flex; flex-direction:column; }
+    html[data-theme="light"] .cc-feed-row{ display:flex; align-items:center; gap:11px; padding:10px 2px; cursor:pointer;
+      border-bottom:1px solid var(--sep); font-size:13.5px; color:var(--text); transition:background .12s ease; }
+    html[data-theme="light"] .cc-feed-row:last-child{ border-bottom:none; }
+    html[data-theme="light"] .cc-feed-row:hover{ background:var(--hover); }
+    html[data-theme="light"] .cc-dot{ width:7px; height:7px; border-radius:99px; flex:none; background:var(--text-3); }
+    html[data-theme="light"] .cc-dot.up{ background:#1e9e5a; } html[data-theme="light"] .cc-dot.down{ background:#d4483d; }
+    html[data-theme="light"] .cc-dot.warn{ background:#e0a63a; } html[data-theme="light"] .cc-dot.info{ background:var(--blue); }
+    html[data-theme="light"] .cc-feed-row .go{ margin-left:auto; color:var(--text-3); font-size:12px; opacity:0; transition:opacity .12s ease; }
+    html[data-theme="light"] .cc-feed-row:hover .go{ opacity:1; }
+    html[data-theme="light"] .cc-att{ display:flex; flex-direction:column; }
+    html[data-theme="light"] .cc-att-row{ display:flex; align-items:center; gap:12px; padding:11px 2px; border-bottom:1px solid var(--sep); }
+    html[data-theme="light"] .cc-att-row:last-child{ border-bottom:none; }
+    html[data-theme="light"] .cc-att-n{ font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums;
+      font-size:15px; font-weight:600; min-width:44px; text-align:right; color:var(--text); }
+    html[data-theme="light"] .cc-att-n.warn{ color:var(--amber-text); } html[data-theme="light"] .cc-att-n.bad{ color:var(--red-text); }
+    html[data-theme="light"] .cc-att-l{ font-size:13.5px; color:var(--text); }
+    html[data-theme="light"] .cc-att-s{ font-size:12px; color:var(--text-3); margin-top:1px; }
+    html[data-theme="light"] .cc-att-go{ margin-left:auto; flex:none; font-family:inherit; font-size:12px; font-weight:500; cursor:pointer;
+      color:var(--text-2); background:#fff; border:1px solid var(--border); border-radius:6px; padding:5px 11px;
+      transition:border-color .13s ease, color .13s ease; }
+    html[data-theme="light"] .cc-att-go:hover{ border-color:var(--border-strong); color:var(--text); }
+
+    /* ── Charts, skeletons, scrollbars ── */
+    html[data-theme="light"] .apexcharts-tooltip{ border-radius:8px !important; border:1px solid var(--border-strong) !important;
+      background:#fff !important; backdrop-filter:none !important; box-shadow:var(--shadow-lg) !important; }
+    html[data-theme="light"] :is(.nr-skel,.nb-skel){ border-radius:var(--radius) !important;
+      background:linear-gradient(90deg,#f4f4f5 25%,#ececef 42%,#f4f4f5 58%) !important; background-size:200% 100% !important; }
+    html[data-theme="light"] .app-body::-webkit-scrollbar{ width:10px; }
+    html[data-theme="light"] .app-body::-webkit-scrollbar-thumb{ background:#e4e4e7; border:3px solid var(--canvas); border-radius:8px; }
+
+    /* entrance hooks kept but quiet (used by the COMMAND MOTION script) */
+    .nr-enter .nb-rank-bar i{ animation:nrGrow .6s cubic-bezier(.22,.61,.36,1) both; transform-origin:left center; }
+    @keyframes nrGrow{ from{ transform:scaleX(0) } to{ transform:scaleX(1) } }
+    @media (prefers-reduced-motion:reduce){ .nr-enter .nb-rank-bar i{ animation:none !important; } }
+
   </style>
 </head>
 <body>
@@ -2740,54 +2750,107 @@
       </div>
     </div>
     <nav class="sidebar-nav">
-      <div class="nav-label">Overview</div>
-      <a class="tab active" id="tab-overview" onclick="switchTab('overview')"href="#overview" title="Live business overview">
+      <div class="nav-group open" id="ng-workspace" data-label="Workspace">
+      <a class="tab active" id="tab-overview" onclick="switchTab('overview')" href="#overview" title="Live business overview">
         <svg class="ic-sm"><use href="#i-grid"/></svg> Overview
       </a>
-      <a class="tab" id="tab-report" onclick="switchTab('report')"href="#report" title="CEO Marketing Report — hero KPIs + channel spend">
-        <svg class="ic-sm"><use href="#i-trending"/></svg> Report
+      <a class="tab" id="tab-search" onclick="switchTab('search')" href="#search" title="Look up any user by email, name or PostHog UUID">
+        <svg class="ic-sm"><use href="#i-search"/></svg> Global Search
       </a>
-      <a class="tab" id="tab-daily" onclick="switchTab('daily')"href="#daily" title="Daily metrics dashboard">
-        <svg class="ic-sm"><use href="#i-calendar"/></svg> Daily
+      </div>
+      <div class="nav-group open" id="ng-analytics" data-label="Analytics">
+        <button class="nav-group-h" onclick="ccToggleGroup('ng-analytics')" aria-label="Toggle Analytics">
+          <span>Analytics</span><svg class="gch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="nav-group-items">
+      <a class="tab" id="tab-acquire" onclick="switchTab('acquire')" href="#acquire" title="Acquisition channels & source breakdown">
+        <svg class="ic-sm"><use href="#i-globe"/></svg> Acquisition
       </a>
-      <a class="tab" id="tab-insights" onclick="switchTab('insights')"href="#insights" title="Signup → activation → pro funnel & saved metrics">
-        <svg class="ic-sm"><use href="#i-pie"/></svg> Insights
+      <a class="tab" id="tab-activation" onclick="switchTab('activation')" href="#activation" title="Activation funnel, engagement, time-to-convert">
+        <svg class="ic-sm"><use href="#i-zap"/></svg> Activation
       </a>
-      <a class="tab" id="tab-search" onclick="switchTab('search')"href="#search" title="Look up any user by email, name or PostHog UUID">
-        <svg class="ic-sm"><use href="#i-search"/></svg> Search
+      <a class="tab" id="tab-retention" onclick="switchTab('retention')" href="#retention" title="Weekly retention cohorts">
+        <svg class="ic-sm"><use href="#i-refresh"/></svg> Retention
       </a>
-      <div class="nav-sep"></div>
-      <div class="nav-label nl-gtm">Growth</div>
-      <a class="tab" id="tab-acquire" onclick="switchTab('acquire')"href="#acquire" title="Acquisition channels & source breakdown">
-        <svg class="ic-sm"><use href="#i-globe"/></svg> Acquire
+      <a class="tab" id="tab-lifecycle" onclick="switchTab('lifecycle')" href="#lifecycle" title="New, returning, resurrected & dormant users">
+        <svg class="ic-sm"><use href="#i-users"/></svg> Lifecycle
       </a>
-      <a class="tab" id="tab-activation" onclick="switchTab('activation')"href="#activation" title="Activation funnel, engagement (DAU/WAU), time-to-convert">
-        <svg class="ic-sm"><use href="#i-zap"/></svg> Activate
-      </a>
-      <a class="tab tab-green" id="tab-revenue" onclick="switchTab('revenue')"href="#revenue" title="Monthly revenue, ARR, top payers">
+      <a class="tab" id="tab-revenue" onclick="switchTab('revenue')" href="#revenue" title="Revenue, ARR, plan mix, top payers">
         <svg class="ic-sm"><use href="#i-coins"/></svg> Monetization
         <span class="tab-badge" id="revTabBadge">—</span>
       </a>
-      <a class="tab" id="tab-retention" onclick="switchTab('retention')"href="#retention" title="Weekly retention cohorts">
-        <svg class="ic-sm"><use href="#i-refresh"/></svg> Retention
+      <a class="tab" id="tab-referrals" onclick="switchTab('referrals')" href="#referrals" title="Referral program funnel & top referrers">
+        <svg class="ic-sm"><use href="#i-share"/></svg> Referrals
       </a>
-      <a class="tab" id="tab-lifecycle" onclick="switchTab('lifecycle')"href="#lifecycle" title="New, returning, resurrecting & dormant users">
-        <svg class="ic-sm"><use href="#i-users"/></svg> Lifecycle
+      <a class="tab" id="tab-emails" onclick="switchTab('emails')" href="#emails" title="Email send → deliver → open → click funnel">
+        <svg class="ic-sm"><use href="#i-check-circle"/></svg> Email
       </a>
-      <a class="tab tab-rose" id="tab-influencers" onclick="switchTab('influencers')"href="#influencers" title="Referrers ranked by signups they drove — primary growth channel">
+      <a class="tab" id="tab-influencers" onclick="switchTab('influencers')" href="#influencers" title="Referrers ranked by signups driven">
         <svg class="ic-sm"><use href="#i-megaphone"/></svg> Influencers
         <span class="tab-badge" id="inflTabBadge">—</span>
       </a>
-      <a class="tab" id="tab-emails" onclick="switchTab('emails')"href="#emails" title="Email send → deliver → open → click funnel">
-        <svg class="ic-sm"><use href="#i-check-circle"/></svg> Emails
+      <a class="tab" id="tab-features" onclick="switchTab('features')" href="#features" title="Feature usage leaderboard">
+        <svg class="ic-sm"><use href="#i-pie"/></svg> Features
       </a>
-      <a class="tab" id="tab-referrals" onclick="switchTab('referrals')"href="#referrals" title="Referral program funnel & top referrers">
-        <svg class="ic-sm"><use href="#i-share"/></svg> Referrals
+      <a class="tab" id="tab-quality" onclick="switchTab('quality')" href="#quality" title="Errors, friction and conversion blockers">
+        <svg class="ic-sm"><use href="#i-alert"/></svg> Quality
       </a>
-      <a class="tab tab-purple" id="tab-pro" onclick="switchTab('pro')"href="#pro">
+      <a class="tab" id="tab-insights" onclick="switchTab('insights')" href="#insights" title="Signup → activation → pro funnel">
+        <svg class="ic-sm"><use href="#i-trending"/></svg> Insights
+      </a>
+      <a class="tab" id="tab-daily" onclick="switchTab('daily')" href="#daily" title="Daily metrics">
+        <svg class="ic-sm"><use href="#i-calendar"/></svg> Daily
+      </a>
+        </div>
+      </div>
+      <div class="nav-group" id="ng-users" data-label="Users">
+        <button class="nav-group-h" onclick="ccToggleGroup('ng-users')" aria-label="Toggle Users">
+          <span>Users</span><svg class="gch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="nav-group-items">
+      <a class="tab" id="tab-pro" onclick="switchTab('pro')" href="#pro" title="Active Pro subscribers">
         <svg class="ic-sm"><use href="#i-star"/></svg> Pro Users
         <span class="tab-badge" id="proTabBadge">—</span>
       </a>
+      <a class="tab" id="tab-power" onclick="switchTab('power')" href="#power" title="Most engaged users, ranked">
+        <svg class="ic-sm"><use href="#i-trophy"/></svg> Power Users
+      </a>
+      <a class="tab" id="tab-abandoned" onclick="switchTab('abandoned')" href="#abandoned" title="Hit the paywall but did not pay">
+        <svg class="ic-sm"><use href="#i-cart"/></svg> Abandoned Checkout
+      </a>
+      <a class="tab" id="tab-expiring" onclick="switchTab('expiring')" href="#expiring" title="Subscriptions ending soon">
+        <svg class="ic-sm"><use href="#i-alert"/></svg> Expiring Subscriptions
+      </a>
+      <a class="tab" id="tab-credits" onclick="switchTab('credits')" href="#credits" title="Users who used up their free credits">
+        <svg class="ic-sm"><use href="#i-zap"/></svg> Exhausted Credits
+      </a>
+      <a class="tab" id="tab-uninstalled" onclick="switchTab('uninstalled')" href="#uninstalled" title="Users who removed the extension">
+        <svg class="ic-sm"><use href="#i-user-x"/></svg> Uninstalled
+      </a>
+      <a class="tab" id="tab-salahkart" onclick="switchTab('salahkart')" href="#salahkart" title="Pre-launch (Salahkart) users">
+        <svg class="ic-sm"><use href="#i-users"/></svg> Legacy Users
+      </a>
+      <a class="tab" id="tab-skpro" onclick="switchTab('skpro')" href="#skpro" title="Pre-launch Pro users">
+        <svg class="ic-sm"><use href="#i-star"/></svg> Legacy Pro
+      </a>
+        </div>
+      </div>
+      <div class="nav-group" id="ng-reports" data-label="Reports">
+        <button class="nav-group-h" onclick="ccToggleGroup('ng-reports')" aria-label="Toggle Reports">
+          <span>Reports</span><svg class="gch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="nav-group-items">
+      <a class="tab" id="tab-weekly" onclick="switchTab('weekly')" href="#weekly" title="This week vs last week">
+        <svg class="ic-sm"><use href="#i-calendar"/></svg> Weekly Report
+      </a>
+      <a class="tab" id="tab-monthly" onclick="switchTab('monthly')" href="#monthly" title="This month vs last month">
+        <svg class="ic-sm"><use href="#i-calendar"/></svg> Monthly Report
+      </a>
+      <a class="tab" id="tab-report" onclick="switchTab('report')" href="#report" title="CEO marketing report — hero KPIs + channel spend">
+        <svg class="ic-sm"><use href="#i-trending"/></svg> Marketing Report
+      </a>
+        </div>
+      </div>
     </nav>
     <div class="sidebar-footer">
       <button class="settings-btn" onclick="openSettings()">
@@ -2797,6 +2860,19 @@
   </aside>
 
   <div class="app-body">
+
+  <header class="cc-topbar">
+    <div class="cc-tb-title" id="ccTbTitle">Overview</div>
+    <div class="cc-tb-crumb" id="ccTbCrumb">Workspace</div>
+    <div class="cc-tb-right">
+      <button class="cc-tb-btn" onclick="ccGlobalRefresh()" title="Clear cached queries and reload">
+        <svg class="ic-sm"><use href="#i-refresh"/></svg> Refresh
+      </button>
+      <button class="cc-tb-btn" onclick="window.__cmdk&&window.__cmdk()" title="Command palette">
+        <svg class="ic-sm"><use href="#i-search"/></svg> Search <span class="cc-tb-kbd">⌘K</span>
+      </button>
+    </div>
+  </header>
 
   <!-- ── Overview page ── -->
   <div class="page active" id="page-overview">
@@ -6316,11 +6392,49 @@
       kpi('Total users', newProduct.toLocaleString('en-IN'), '', 'since 1 May 2026', 'search', 'All signed-up users since the relaunch. Click to search contacts.'),
     ].join('');
 
-    const aiCard=`<div class="nb-card nb-ai"><div class="nb-ai-badge">✦ Key opportunities</div>
-      <div class="nb-ai-sec"><span class="nb-ai-k perf">Top performer</span><span class="nb-ai-v"><b>${h(topCh.label)}</b> drove <b>${(topCh.value||0).toLocaleString('en-IN')}</b> signups, ${topShare.toFixed(0)}% of acquisition.</span></div>
-      <div class="nb-ai-sec"><span class="nb-ai-k risk">Risk</span><span class="nb-ai-v">Pro-plan rate is <b>${convGauge.toFixed(2)}%</b>, ${gapPts.toFixed(2)} pts below the 5% target.</span></div>
-      <div class="nb-ai-sec"><span class="nb-ai-k act">Do next</span><span class="nb-ai-v">Scale <b>${h(topCh.label)}</b> and test the Pro upgrade flow. About <b>${upgradesNeeded.toLocaleString('en-IN')}</b> more upgrades reach the goal.</span></div>
-      <button class="nb-ai-cta" onclick="switchTab('acquire')">View source breakdown →</button></div>`;
+    // ── WHAT CHANGED — meaningful movements, every row clickable ──
+    const _fmtPct = v => `${v>=0?'+':''}${v.toFixed(1)}%`;
+    const changed = [];
+    if (newWeekPrev > 0) {
+      const d = (newWeek-newWeekPrev)/newWeekPrev*100;
+      changed.push({dot:d>=0?'up':'down', t:`Signups ${d>=0?'up':'down'} <b>${_fmtPct(Math.abs(d)*(d>=0?1:-1)).replace('+','')}</b> this week (${newWeek.toLocaleString('en-IN')} vs ${newWeekPrev.toLocaleString('en-IN')})`, go:'acquire'});
+    }
+    changed.push({dot:'info', t:`<b>${h(topCh.label)}</b> drove <b>${(topCh.value||0).toLocaleString('en-IN')}</b> signups — ${topShare.toFixed(0)}% of acquisition`, go:'acquire'});
+    changed.push({dot: convGauge<5?'down':'up', t:`Pro-plan rate is <b>${convGauge.toFixed(2)}%</b>${convGauge<5?`, ${gapPts.toFixed(2)} pts below the 5% target`:' — on target'}`, go:'insights'});
+    if (revUsd > 0) {
+      const usdShare = totalRevInr ? (revUsd*USD_TO_INR)/totalRevInr*100 : 0;
+      changed.push({dot:'info', t:`International revenue: <b>$${Math.round(revUsd).toLocaleString('en-US')}</b> from ${revUsdPayers||'—'} USD payers (${usdShare.toFixed(0)}% of revenue)`, go:'revenue'});
+    }
+    if (arpu) changed.push({dot:'info', t:`Average revenue per payer is <b>₹${arpu.toLocaleString('en-IN')}</b> across ${revPayers.toLocaleString('en-IN')} payers`, go:'revenue'});
+    changed.push({dot:'warn', t:`About <b>${upgradesNeeded.toLocaleString('en-IN')}</b> more upgrades reach the 5% goal — test the Pro upgrade flow`, go:'activation'});
+    const aiCard=`<div class="nb-card"><div class="cc-sec-t">What changed</div>
+      <div class="cc-feed">${changed.slice(0,6).map(c =>
+        `<div class="cc-feed-row" onclick="switchTab('${c.go}')"><span class="cc-dot ${c.dot}"></span><span>${c.t}</span><span class="go">Open →</span></div>`).join('')}
+      </div></div>`;
+
+    // ── NEEDS ATTENTION — operational queue from the cached user segments ──
+    const _att = [];
+    // count = live rows if that tab loaded this session, else its 30-min cache
+    const _SEG_ROWS = { credits: () => (typeof _allRows!=='undefined' && _creditsLoaded) ? _allRows : null,
+                        abandoned: () => (typeof _abandRows!=='undefined' && _abandLoaded) ? _abandRows : null,
+                        expiring: () => (typeof _expiringRows!=='undefined' && _expiringRows.length) ? _expiringRows : null,
+                        uninstalled: () => (typeof _uninstRows!=='undefined' && _uninstRows.length) ? _uninstRows : null };
+    const _seg = (key, label, sub, tabName, sev) => {
+      let n = null;
+      try { const live = _SEG_ROWS[key] && _SEG_ROWS[key](); if (Array.isArray(live)) n = live.length; } catch(_){}
+      if (n == null) { try { const d = tcLoad(key); if (Array.isArray(d)) n = d.length; } catch(_){} }
+      _att.push({n, label, sub, tab: tabName, sev});
+    };
+    _seg('abandoned', 'Abandoned checkouts', 'hit the paywall but never paid', 'abandoned', 'bad');
+    _seg('expiring',  'Subscriptions expiring soon', 'renewals to save this week', 'expiring', 'warn');
+    _seg('credits',   'Users out of credits', 'free credits exhausted — upgrade candidates', 'credits', 'warn');
+    _seg('uninstalled','Uninstalled the extension', 'churn-risk users to win back', 'uninstalled', '');
+    const attCard=`<div class="nb-card"><div class="cc-sec-t">Needs attention</div>
+      <div class="cc-att">${_att.map(a =>
+        `<div class="cc-att-row"><span class="cc-att-n ${a.n==null?'':a.sev}">${a.n==null?'—':a.n.toLocaleString('en-IN')}</span>
+          <span><div class="cc-att-l">${a.label}</div><div class="cc-att-s">${a.n==null?'open the list to load the live count':a.sub}</div></span>
+          <button class="cc-att-go" onclick="switchTab('${a.tab}')">View users</button></div>`).join('')}
+      </div></div>`;
 
     const gaugeCard=`<div class="nb-card"><div class="nb-cardh"><div><div class="nb-t">Pro-plan rate</div><div class="nb-note">signups now on a Pro plan (not payment-based)</div></div></div>
       <div id="nbGauge"></div>
@@ -6366,8 +6480,8 @@
 
     document.getElementById('overviewArea').innerHTML =
       `<div class="okpis">${kpis2}</div>
-       <div class="nb-grid2">${aiCard}${gaugeCard}</div>
-       ${convPeriodCard}
+       <div class="nb-grid2">${aiCard}${attCard}</div>
+       <div class="nb-grid2">${gaugeCard}${convPeriodCard}</div>
        ${lineCard}
        <div class="nb-grid2">${acqCard}${txCard}</div>`;
     { const _bu = budgetPauseUntil();
@@ -11867,65 +11981,83 @@
     }
   })();
 </script>
-  <!-- GLASSWORK MOTION (2026-09-12): springy blur-in entrances on tab
-       switches + cursor-tracking card spotlights. Entrances fire ONLY on
-       navigation, never on data re-renders (those repaint innerHTML often
-       and already have the global count-up observer). -->
+  <!-- COMMAND MOTION + SHELL (2026-09-12): fast subtle entrances, grouped
+       sidebar behaviour, top-bar sync. Entrances fire only on navigation. -->
   <script>
   (function(){
-    if (!window.gsap) return;
     var reduce = false;
     try { reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(_){}
     var SEL = '.okpi,.nb-kpi,.ov-card,.ocard,.rev-kpi,.nb-card,.infl-card,.panel,.table-wrap,.result-card';
     var _animT = null;
     function nrEnter(name){
-      if (reduce) return;
       var page = document.getElementById('page-' + name);
       if (!page) return;
-      page.classList.remove('nr-enter');
-      void page.offsetWidth;
-      page.classList.add('nr-enter');
+      page.classList.remove('nr-enter'); void page.offsetWidth; page.classList.add('nr-enter');
       clearTimeout(_animT);
-      _animT = setTimeout(function(){ page.classList.remove('nr-enter'); }, 1800);
+      _animT = setTimeout(function(){ page.classList.remove('nr-enter'); }, 1200);
+      if (reduce || !window.gsap) return;
       var cards = Array.prototype.slice.call(page.querySelectorAll(SEL), 0, 24);
       if (!cards.length) return;
-      gsap.fromTo(cards,
-        { y: 26, opacity: 0, scale: .965, filter: 'blur(6px)' },
-        { y: 0, opacity: 1, scale: 1, filter: 'blur(0px)', duration: .8,
-          ease: 'back.out(1.4)', stagger: { each: .055, from: 'start' },
-          overwrite: 'auto', clearProps: 'transform,opacity,filter' });
+      gsap.fromTo(cards, { y: 6, opacity: 0 },
+        { y: 0, opacity: 1, duration: .28, ease: 'power2.out',
+          stagger: { each: .025 }, overwrite: 'auto', clearProps: 'transform,opacity' });
     }
+
+    // grouped sidebar: toggle + persistence + auto-open the active group
+    window.ccToggleGroup = function(id){
+      var g = document.getElementById(id); if (!g) return;
+      g.classList.toggle('open');
+      try {
+        var open = JSON.parse(localStorage.getItem('nr_nav_open') || '{}');
+        open[id] = g.classList.contains('open');
+        localStorage.setItem('nr_nav_open', JSON.stringify(open));
+      } catch(_){}
+    };
+    function ccRestoreGroups(){
+      var open = {};
+      try { open = JSON.parse(localStorage.getItem('nr_nav_open') || '{}'); } catch(_){}
+      document.querySelectorAll('.nav-group').forEach(function(g){
+        if (g.id in open) g.classList.toggle('open', !!open[g.id]);
+      });
+    }
+    function ccRevealActive(name){
+      var tab = document.getElementById('tab-' + name);
+      var group = tab && tab.closest('.nav-group');
+      if (group && !group.classList.contains('open')) group.classList.add('open');
+    }
+
+    // top-bar sync
+    function ccSyncTopbar(name){
+      var t = document.getElementById('ccTbTitle');
+      if (t && typeof TAB_TITLES !== 'undefined') t.textContent = TAB_TITLES[name] || name;
+      var g = document.getElementById('tab-' + name);
+      var group = g && g.closest('.nav-group');
+      var c = document.getElementById('ccTbCrumb');
+      if (c) c.textContent = group ? (group.dataset.label || '') : '';
+    }
+    window.ccGlobalRefresh = function(){
+      try { Object.keys(localStorage).filter(function(k){ return k.indexOf('nr_q_') === 0; }).forEach(function(k){ localStorage.removeItem(k); }); } catch(_){}
+      location.reload();
+    };
+
     if (typeof switchTab === 'function') {
       var _orig = switchTab;
       switchTab = function(name){
         var prev = location.hash.slice(1);
         _orig(name);
+        // repaint Overview's signal sections with current segment counts
+        if (name === 'overview') { try { if (typeof renderOverview === 'function' && typeof _ovData !== 'undefined' && _ovData) renderOverview(); } catch(_){} }
+        ccRevealActive(name);
+        ccSyncTopbar(name);
         if (name !== prev) nrEnter(name);
       };
     }
+    ccRestoreGroups();
     setTimeout(function(){
       var active = document.querySelector('[id^="page-"].active');
-      nrEnter(active ? active.id.replace(/^page-/, '') : 'overview');
+      var name = active ? active.id.replace(/^page-/, '') : 'overview';
+      ccRevealActive(name); ccSyncTopbar(name); nrEnter(name);
     }, 120);
-
-    // cursor spotlight: one delegated listener drives --mx/--my on the
-    // hovered card (rAF-throttled; no listeners per card, no reflow)
-    if (!reduce) {
-      var _spot = null, _spotEv = null;
-      document.addEventListener('pointermove', function(e){
-        _spotEv = e;
-        if (_spot) return;
-        _spot = requestAnimationFrame(function(){
-          _spot = null;
-          var ev = _spotEv;
-          var card = ev.target && ev.target.closest && ev.target.closest(SEL);
-          if (!card) return;
-          var r = card.getBoundingClientRect();
-          card.style.setProperty('--mx', ((ev.clientX - r.left) / r.width * 100).toFixed(1) + '%');
-          card.style.setProperty('--my', ((ev.clientY - r.top) / r.height * 100).toFixed(1) + '%');
-        });
-      }, { passive: true });
-    }
   })();
   </script>
 
