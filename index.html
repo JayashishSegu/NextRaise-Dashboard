@@ -2758,6 +2758,97 @@
       html[data-theme="light"] .mc-meter-bar i, html[data-theme="light"] .nr-seen .mc-meter-bar i{ transition:none; width:var(--w) !important; }
     }
 
+
+    /* ══ CONTROL ROOM composition layer (2026-09-12) ═══════════════════
+       Kills the card-grid look on the Overview: borderless compositions,
+       three tonal surface levels instead of outlines, floating metrics,
+       editorial typography, a tapering flow-stream, a momentum timeline.
+       Data, ids and logic untouched. Wins by source order. ═══════════ */
+
+    /* Overview sections live ON the canvas — no boxes */
+    html[data-theme="light"] #page-overview .nb-card,
+    html[data-theme="light"] #page-overview .ov-card,
+    html[data-theme="light"] #page-overview .ocard{
+      border:none !important; box-shadow:none !important; background:transparent !important;
+      border-radius:14px !important; }
+    /* Level-2 tonal bands give rhythm where isolation helps */
+    html[data-theme="light"] #page-overview .mc-pulse,
+    html[data-theme="light"] #page-overview .mc-band{
+      background:#f7f8fa !important; padding:24px 28px 18px !important; }
+    /* hero: open composition, expressive type, faint blue atmosphere */
+    html[data-theme="light"] .mc-hero{ padding:30px 8px 10px !important; overflow:visible !important; }
+    html[data-theme="light"] .mc-hero::before{ inset:-30% -10%;
+      background:radial-gradient(46% 60% at 18% 20%, rgba(0,101,244,.06), transparent 70%); }
+    html[data-theme="light"] .mc-hero-head{ font-size:30px; font-weight:700; letter-spacing:-.03em; color:var(--text);
+      margin-top:6px; max-width:640px; line-height:1.15; }
+    html[data-theme="light"] .mc-hero-head b{ color:var(--blue); font-weight:700; }
+    html[data-theme="light"] .mc-hero-row{ gap:56px; margin-top:26px; align-items:center; }
+    html[data-theme="light"] .mc-ring{ width:196px; height:196px; }
+    html[data-theme="light"] .mc-score{ font-size:52px; }
+    html[data-theme="light"] .mc-signals{ grid-template-columns:repeat(2,minmax(210px,1fr)); gap:4px 40px; max-width:640px; }
+    html[data-theme="light"] .mc-sig{ font-size:14px; padding:10px 0; transition:opacity .18s ease; }
+    html[data-theme="light"] .mc-signals:hover .mc-sig{ opacity:.45; }
+    html[data-theme="light"] .mc-signals:hover .mc-sig:hover{ opacity:1; }
+    html[data-theme="light"] .mc-sig:hover .d{ font-size:14px; }
+    html[data-theme="light"] .mc-sig .d{ transition:font-size .15s ease; }
+
+    /* floating metrics: the KPI strip stops being boxes */
+    html[data-theme="light"] #page-overview .okpis{ gap:0 36px !important; margin:6px 0 10px; }
+    html[data-theme="light"] #page-overview .okpi{
+      border:none !important; background:transparent !important; box-shadow:none !important;
+      border-radius:0 !important; padding:12px 0 10px !important;
+      border-top:2px solid var(--text) !important; }
+    html[data-theme="light"] #page-overview .okpi:hover{ border-top-color:var(--blue) !important; transform:none !important; }
+    html[data-theme="light"] #page-overview .okpi .nb-kpi-v{ font-size:27px !important; transition:font-size .15s ease; }
+    html[data-theme="light"] #page-overview .okpi:hover .nb-kpi-v{ font-size:29px !important; }
+    html[data-theme="light"] #page-overview .nb-clk-arrow{ display:none; }
+
+    /* section headings become editorial */
+    html[data-theme="light"] #page-overview .nb-t{ font-size:19px !important; font-weight:700 !important; letter-spacing:-.02em; }
+    html[data-theme="light"] #page-overview .nb-note{ font-size:13px !important; }
+
+    /* flow stream canvas */
+    html[data-theme="light"] .mc-pulse canvas{ height:170px; }
+    html[data-theme="light"] .mc-pulse-wrap::before{ display:none; }
+    html[data-theme="light"] .mc-stage .n{ font-size:26px; letter-spacing:-.02em; }
+    html[data-theme="light"] .mc-stage .l{ font-size:11.5px; }
+
+    /* momentum timeline */
+    html[data-theme="light"] .mc-mom{ display:flex; align-items:flex-start; margin-top:10px; position:relative; padding:26px 4px 4px; }
+    html[data-theme="light"] .mc-mom::before{ content:""; position:absolute; left:10px; right:10px; top:33px; height:1px; background:var(--border-strong); }
+    html[data-theme="light"] .mc-mom-d{ flex:1; min-width:0; position:relative; cursor:default; }
+    html[data-theme="light"] .mc-mom-d i{ position:absolute; top:3px; left:0; width:9px; height:9px; border-radius:99px;
+      background:#fff; border:2px solid var(--blue); transition:transform .18s ease, background .18s ease; }
+    html[data-theme="light"] .mc-mom-d:hover i{ transform:scale(1.5); background:var(--blue); }
+    html[data-theme="light"] .mc-mom-d .dl{ margin-top:20px; font-size:11px; color:var(--text-3); }
+    html[data-theme="light"] .mc-mom-d .dv{ font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; color:var(--text); }
+    html[data-theme="light"] .mc-mom-d .dr{ font-size:11px; color:var(--green-text); }
+    html[data-theme="light"] .mc-mom-d:hover .dv{ color:var(--blue-text); }
+
+    /* what changed / attention: on-canvas, band-separated, no boxes */
+    html[data-theme="light"] #page-overview .cc-feed-row{ font-size:14px; }
+    html[data-theme="light"] .cc-att-row{ padding:9px 2px; }
+
+    /* sidebar: quieter, animated left indicator */
+    html[data-theme="light"] .tab{ position:relative; }
+    html[data-theme="light"] .tab.active, html[data-theme="light"] .tab[class*="tab-"].active{
+      background:rgba(0,101,244,.06) !important; }
+    html[data-theme="light"] .tab::before{ content:""; position:absolute; left:-12px; top:50%; height:0; width:2px;
+      background:var(--blue); border-radius:2px; transform:translateY(-50%); transition:height .22s cubic-bezier(.22,.61,.36,1); }
+    html[data-theme="light"] .tab.active::before{ height:16px; }
+    html[data-theme="light"] .tab .ic-sm{ width:14px; height:14px; opacity:.8; }
+
+    /* dedupe: the topbar owns Refresh on the overview */
+    @media (min-width:961px){ html[data-theme="light"] #ovRefreshBtn{ display:none !important; } }
+
+    @media (max-width:760px){
+      html[data-theme="light"] .mc-hero-head{ font-size:22px; }
+      html[data-theme="light"] .mc-ring{ width:150px; height:150px; }
+      html[data-theme="light"] .mc-score{ font-size:38px; }
+      html[data-theme="light"] #page-overview .okpis{ gap:0 20px !important; }
+      html[data-theme="light"] .mc-mom-d:nth-child(n+8){ display:none; }
+    }
+
     /* entrance hooks kept but quiet (used by the COMMAND MOTION script) */
     .nr-enter .nb-rank-bar i{ animation:nrGrow .6s cubic-bezier(.22,.61,.36,1) both; transform-origin:left center; }
     @keyframes nrGrow{ from{ transform:scaleX(0) } to{ transform:scaleX(1) } }
@@ -2830,7 +2921,7 @@
       </div>
     </div>
     <nav class="sidebar-nav">
-      <div class="nav-group open" id="ng-workspace" data-label="Workspace">
+      <div class="nav-group open" id="ng-command" data-label="Command">
       <a class="tab active" id="tab-overview" onclick="switchTab('overview')" href="#overview" title="Live business overview">
         <svg class="ic-sm"><use href="#i-grid"/></svg> Overview
       </a>
@@ -2838,9 +2929,9 @@
         <svg class="ic-sm"><use href="#i-search"/></svg> Global Search
       </a>
       </div>
-      <div class="nav-group open" id="ng-analytics" data-label="Analytics">
-        <button class="nav-group-h" onclick="ccToggleGroup('ng-analytics')" aria-label="Toggle Analytics">
-          <span>Analytics</span><svg class="gch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg>
+      <div class="nav-group open" id="ng-growth" data-label="Growth">
+        <button class="nav-group-h" onclick="ccToggleGroup('ng-growth')" aria-label="Toggle Growth">
+          <span>Growth</span><svg class="gch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg>
         </button>
         <div class="nav-group-items">
       <a class="tab" id="tab-acquire" onclick="switchTab('acquire')" href="#acquire" title="Acquisition channels & source breakdown">
@@ -2859,27 +2950,8 @@
         <svg class="ic-sm"><use href="#i-coins"/></svg> Monetization
         <span class="tab-badge" id="revTabBadge">—</span>
       </a>
-      <a class="tab" id="tab-referrals" onclick="switchTab('referrals')" href="#referrals" title="Referral program funnel & top referrers">
-        <svg class="ic-sm"><use href="#i-share"/></svg> Referrals
-      </a>
-      <a class="tab" id="tab-emails" onclick="switchTab('emails')" href="#emails" title="Email send → deliver → open → click funnel">
-        <svg class="ic-sm"><use href="#i-check-circle"/></svg> Email
-      </a>
-      <a class="tab" id="tab-influencers" onclick="switchTab('influencers')" href="#influencers" title="Referrers ranked by signups driven">
-        <svg class="ic-sm"><use href="#i-megaphone"/></svg> Influencers
-        <span class="tab-badge" id="inflTabBadge">—</span>
-      </a>
-      <a class="tab" id="tab-features" onclick="switchTab('features')" href="#features" title="Feature usage leaderboard">
-        <svg class="ic-sm"><use href="#i-pie"/></svg> Features
-      </a>
-      <a class="tab" id="tab-quality" onclick="switchTab('quality')" href="#quality" title="Errors, friction and conversion blockers">
-        <svg class="ic-sm"><use href="#i-alert"/></svg> Quality
-      </a>
       <a class="tab" id="tab-insights" onclick="switchTab('insights')" href="#insights" title="Signup → activation → pro funnel">
         <svg class="ic-sm"><use href="#i-trending"/></svg> Insights
-      </a>
-      <a class="tab" id="tab-daily" onclick="switchTab('daily')" href="#daily" title="Daily metrics">
-        <svg class="ic-sm"><use href="#i-calendar"/></svg> Daily
       </a>
         </div>
       </div>
@@ -2915,19 +2987,45 @@
       </a>
         </div>
       </div>
+      <div class="nav-group" id="ng-intel" data-label="Intelligence">
+        <button class="nav-group-h" onclick="ccToggleGroup('ng-intel')" aria-label="Toggle Intelligence">
+          <span>Intelligence</span><svg class="gch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="nav-group-items">
+      <a class="tab" id="tab-influencers" onclick="switchTab('influencers')" href="#influencers" title="Referrers ranked by signups driven">
+        <svg class="ic-sm"><use href="#i-megaphone"/></svg> Influencers
+        <span class="tab-badge" id="inflTabBadge">—</span>
+      </a>
+      <a class="tab" id="tab-referrals" onclick="switchTab('referrals')" href="#referrals" title="Referral program funnel & top referrers">
+        <svg class="ic-sm"><use href="#i-share"/></svg> Referrals
+      </a>
+      <a class="tab" id="tab-emails" onclick="switchTab('emails')" href="#emails" title="Email send → deliver → open → click funnel">
+        <svg class="ic-sm"><use href="#i-check-circle"/></svg> Email
+      </a>
+      <a class="tab" id="tab-features" onclick="switchTab('features')" href="#features" title="Feature usage leaderboard">
+        <svg class="ic-sm"><use href="#i-pie"/></svg> Features
+      </a>
+      <a class="tab" id="tab-quality" onclick="switchTab('quality')" href="#quality" title="Errors, friction and conversion blockers">
+        <svg class="ic-sm"><use href="#i-alert"/></svg> Quality
+      </a>
+        </div>
+      </div>
       <div class="nav-group" id="ng-reports" data-label="Reports">
         <button class="nav-group-h" onclick="ccToggleGroup('ng-reports')" aria-label="Toggle Reports">
           <span>Reports</span><svg class="gch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg>
         </button>
         <div class="nav-group-items">
+      <a class="tab" id="tab-report" onclick="switchTab('report')" href="#report" title="CEO marketing report — hero KPIs + channel spend">
+        <svg class="ic-sm"><use href="#i-trending"/></svg> Marketing Report
+      </a>
+      <a class="tab" id="tab-daily" onclick="switchTab('daily')" href="#daily" title="Daily metrics">
+        <svg class="ic-sm"><use href="#i-calendar"/></svg> Daily
+      </a>
       <a class="tab" id="tab-weekly" onclick="switchTab('weekly')" href="#weekly" title="This week vs last week">
         <svg class="ic-sm"><use href="#i-calendar"/></svg> Weekly Report
       </a>
       <a class="tab" id="tab-monthly" onclick="switchTab('monthly')" href="#monthly" title="This month vs last month">
         <svg class="ic-sm"><use href="#i-calendar"/></svg> Monthly Report
-      </a>
-      <a class="tab" id="tab-report" onclick="switchTab('report')" href="#report" title="CEO marketing report — hero KPIs + channel spend">
-        <svg class="ic-sm"><use href="#i-trending"/></svg> Marketing Report
       </a>
         </div>
       </div>
@@ -6579,10 +6677,14 @@
     const _R = 62, _CIRC = 2*Math.PI*_R;
     const heroCard = `<div class="nb-card nb-full mc-hero">
       <div class="mc-greet">${_greet}, team</div>
-      <div class="mc-hero-sub">Here's how NextRaise is performing · ${rangeLabel}</div>
+      <div class="mc-hero-head">${
+        growthScore>=60 ? 'Your growth engine is <b>accelerating</b>.'
+        : growthScore>=40 ? 'Growth is <b>steady</b> — conversion is the lever.'
+        : 'Growth needs <b>attention</b> — conversion is far below target.'}</div>
+      <div class="mc-hero-sub">${rangeLabel} · every signal below is live</div>
       <div class="mc-hero-row">
         <div class="mc-ring" title="Composite: conversion vs 5% target (40%) · signup momentum (30%) · revenue momentum (30%)">
-          <svg width="148" height="148" viewBox="0 0 148 148">
+          <svg width="100%" height="100%" viewBox="0 0 148 148">
             <defs><linearGradient id="mcArcGrad" x1="0" y1="0" x2="1" y2="1">
               <stop offset="0%" stop-color="#0065F4"/><stop offset="100%" stop-color="#5a55c9"/></linearGradient></defs>
             <circle class="track" cx="74" cy="74" r="${_R}" fill="none" stroke-width="9"/>
@@ -6616,6 +6718,18 @@
         return `<div class="mc-stage"><div class="n">${(s.n||0).toLocaleString('en-IN')}</div><div class="l">${s.l}${cv!=null?` · <span class="c">${cv.toFixed(1)}%</span>`:''}</div></div>`;}).join('')}
       </div></div>`;
 
+    // Business momentum — the range's days as an interactive timeline
+    const momCard = `<div class="nb-card nb-full"><div class="nb-cardh"><div>
+        <div class="nb-t">Business momentum</div>
+        <div class="nb-note">each day of ${rangeLabel.toLowerCase()} · hover a day</div></div></div>
+      <div class="mc-mom">${growthSeries.slice(-14).map((x,i,arr)=>{
+        const p = payMap[x.d]; const rev = p?Math.round((p.inr||0)+(p.usd||0)*USD_TO_INR):0;
+        const d = new Date(x.d); const lbl = isNaN(d.getTime())?String(x.d).slice(5):d.toLocaleDateString('en-IN',{weekday:'short'});
+        return `<div class="mc-mom-d" title="${x.d} — ${x.v.toLocaleString('en-IN')} signups · ₹${rev.toLocaleString('en-IN')} revenue"><i></i>
+          <div class="dl">${lbl}</div><div class="dv">${x.v>=1000?(x.v/1000).toFixed(1)+'k':x.v}</div>
+          <div class="dr">${rev?('₹'+(rev>=1000?(rev/1000).toFixed(0)+'k':rev)):'&nbsp;'}</div></div>`;}).join('')}
+      </div></div>`;
+
     // Business health — animated meters over the same honest scores
     const _meters = [
       { l:'Acquisition', v:_acqScore, s:_sigDelta==null?'no prior period in range':`signups ${_fmtD(_sigDelta)} vs previous week` },
@@ -6645,6 +6759,7 @@
        ${pulseCard}
        <div class="okpis">${kpis2}</div>
        ${lineCard}
+       ${momCard}
        <div class="nb-grid2">${aiCard}${attCard}</div>
        <div class="nb-grid2">${healthCard}${gaugeCard}</div>
        ${convPeriodCard}
@@ -6683,7 +6798,8 @@
         document.querySelectorAll('#page-overview .nb-card').forEach(el => io.observe(el));
         if (_rm) document.querySelectorAll('#page-overview .nb-card').forEach(el => el.classList.add('nr-seen'));
       } catch(_){}
-      // live pulse canvas — particle flow over the real stage conversions
+      // flow-stream canvas — tapering band whose widths ARE the real stage
+      // volumes; particles ride the band, drop-offs fall away and fade.
       try { if (window._mcPulseStop) window._mcPulseStop(); } catch(_){}
       (function(){
         const cv = document.getElementById('mcPulse');
@@ -6692,49 +6808,74 @@
         const ctx = cv.getContext('2d');
         const DPR = Math.min(2, window.devicePixelRatio||1);
         let W = 0, H = 0, dots = [], raf = 0, killed = false;
+        const _rm2 = matchMedia('(prefers-reduced-motion: reduce)').matches;
         function size(){ const r = cv.getBoundingClientRect(); if (!r.width) return;
-          W = r.width; H = 130; cv.width = W*DPR; cv.height = H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
-        // survival fraction at each gate = the REAL conversion between stages
-        const g1 = stages[0] ? (stages[1]/stages[0]) : 0;
+          W = r.width; H = 170; cv.width = W*DPR; cv.height = H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
+        const g1 = stages[0] ? Math.min(1, stages[1]/stages[0]) : 0;
         const g2 = stages[1] ? Math.min(1, stages[2]/stages[1]) : 0;
-        const N = 240;
-        function spawn(x){ return { x: x!=null?x:-6, y: 24 + Math.random()*(H-48),
-          v: .3 + Math.random()*.45, r: 1 + Math.random()*1.1, s: 0,
-          die: Math.random() > g1 ? 1 : (Math.random() > g2 ? 2 : 3), a: .5 + Math.random()*.4 }; }
-        // guarantee a handful of full-journey dots so the flow reads even at sub-1% conversion
-        function seedSurvivors(arr){ let need = Math.max(3, Math.round(N*g1*g2)) - arr.filter(d=>d.die===3).length;
-          for (const d of arr) { if (need<=0) break; if (d.die!==3){ d.die=3; need--; } } }
-        function init(){ dots = []; for (let i=0;i<N;i++) dots.push(spawn(Math.random()*W)); seedSurvivors(dots); }
-        const COLS = ['#9aa7bd', '#0065F4', '#1e9e5a'];
+        // band half-heights, honest sqrt scale with a 3px visibility floor
+        const MAXH = 56;
+        const hh = [MAXH, Math.max(3, MAXH*Math.sqrt(g1)), Math.max(2.5, MAXH*Math.sqrt(g1*g2))];
+        const CY = 66;
+        const X = () => [8, W*0.42, W*0.78, W-8];
+        function bandY(x){ const [x0,x1,x2,x3] = X();
+          const seg = x < x1 ? [x0,x1,hh[0],hh[1]] : x < x2 ? [x1,x2,hh[1],hh[2]] : [x2,x3,hh[2],hh[2]];
+          const t = Math.min(1, Math.max(0, (x-seg[0])/(seg[1]-seg[0]||1)));
+          const e = t*t*(3-2*t);   // smoothstep taper
+          return seg[2] + (seg[3]-seg[2])*e; }
+        function drawBand(){
+          const [x0,,,x3] = X();
+          ctx.beginPath();
+          for (let x=x0; x<=x3; x+=6) { const y = bandY(x); if (x===x0) ctx.moveTo(x, CY-y); else ctx.lineTo(x, CY-y); }
+          for (let x=x3; x>=x0; x-=6) ctx.lineTo(x, CY+bandY(x));
+          ctx.closePath();
+          const gr = ctx.createLinearGradient(0,0,W,0);
+          gr.addColorStop(0,'rgba(0,101,244,.10)'); gr.addColorStop(.55,'rgba(0,101,244,.14)'); gr.addColorStop(1,'rgba(30,158,90,.16)');
+          ctx.fillStyle = gr; ctx.fill();
+        }
+        const N = 150;
+        function spawn(x){ const off = (Math.random()*2-1);
+          return { x: x!=null?x:-4, off, v:.5+Math.random()*.6, r:1.1+Math.random()*1.1,
+            s:0, dead:false, dy:0, dv:0, a:.55+Math.random()*.4,
+            die: Math.random() > g1 ? 1 : (Math.random() > g2 ? 2 : 3) }; }
+        function seed(arr){ let need = 4 - arr.filter(d=>d.die===3).length;
+          for (const d of arr){ if (need<=0) break; if (d.die!==3){ d.die=3; need--; } } }
+        function init(){ dots=[]; for(let i=0;i<N;i++) dots.push(spawn(Math.random()*W)); seed(dots); }
+        const COLS = ['#5b8ecf', '#0065F4', '#1e9e5a'];
         function frame(){
           if (killed) return;
           const page = document.getElementById('page-overview');
           if (document.hidden || !page || !page.classList.contains('active')) { raf = setTimeout(frame, 600); return; }
           if (!W) { size(); if (!W) { raf = setTimeout(frame, 600); return; } if (!dots.length) init(); }
           ctx.clearRect(0,0,W,H);
-          const gx1 = W*0.45, gx2 = W*0.8;
-          // gate lines
-          ctx.strokeStyle = 'rgba(24,24,27,.07)'; ctx.lineWidth = 1;
-          [gx1,gx2].forEach(x=>{ ctx.beginPath(); ctx.moveTo(x,12); ctx.lineTo(x,H-12); ctx.stroke(); });
+          drawBand();
+          const [,x1,x2] = X();
           for (const d of dots) {
             d.x += d.v;
-            const st = d.x < gx1 ? 0 : d.x < gx2 ? 1 : 2;
-            if (st > d.s) { d.s = st;
-              if (st >= d.die) { Object.assign(d, spawn()); continue; } }
+            const st = d.x < x1 ? 0 : d.x < x2 ? 1 : 2;
+            if (!d.dead && st > d.s) { d.s = st;
+              if (st >= d.die) { d.dead = true; d.dv = .3 + Math.random()*.5; } }
+            if (d.dead) {
+              d.dy += d.dv; d.a *= .965;
+              if (d.a < .03 || CY + d.dy > H) { Object.assign(d, spawn()); continue; }
+            }
+            const y = CY + d.off * (bandY(d.x) - 1.5) + d.dy;
             ctx.globalAlpha = d.a;
-            ctx.fillStyle = COLS[d.s];
-            ctx.beginPath(); ctx.arc(d.x, d.y, d.r + d.s*.4, 0, 6.2832); ctx.fill();
-            if (d.x > W + 6) Object.assign(d, spawn());
+            ctx.fillStyle = d.dead ? '#c4cbd8' : COLS[d.s];
+            ctx.beginPath(); ctx.arc(d.x, y, d.r + (d.dead?0:d.s*.4), 0, 6.2832); ctx.fill();
+            if (d.x > W + 4) Object.assign(d, spawn());
           }
           ctx.globalAlpha = 1;
           raf = requestAnimationFrame(frame);
         }
-        function staticDraw(){ size(); if (!W) return; init(); ctx.clearRect(0,0,W,H);
-          for (const d of dots) { const st = d.x < W*0.45 ? 0 : d.x < W*0.8 ? 1 : 2; if (st >= d.die) continue;
-            ctx.globalAlpha = d.a; ctx.fillStyle = COLS[st];
-            ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, 6.2832); ctx.fill(); } ctx.globalAlpha = 1; }
+        function staticDraw(){ size(); if (!W) return; init(); ctx.clearRect(0,0,W,H); drawBand();
+          const [,x1,x2] = X();
+          for (const d of dots){ const st = d.x < x1 ? 0 : d.x < x2 ? 1 : 2; if (st >= d.die) continue;
+            ctx.globalAlpha=d.a; ctx.fillStyle=COLS[st];
+            ctx.beginPath(); ctx.arc(d.x, CY + d.off*(bandY(d.x)-1.5), d.r, 0, 6.2832); ctx.fill(); }
+          ctx.globalAlpha=1; }
         size(); init();
-        if (_rm) staticDraw(); else frame();
+        if (_rm2) staticDraw(); else frame();
         const onR = ()=>{ W=0; };
         window.addEventListener('resize', onR);
         window._mcPulseStop = function(){ killed = true;
@@ -12288,6 +12429,14 @@
       if (c) c.textContent = group ? (group.dataset.label || '') : '';
     }
     window.ccGlobalRefresh = function(){
+      // page-aware: refresh the ACTIVE screen's data instead of a hard reload
+      try {
+        var active = document.querySelector('[id^="page-"].active');
+        var name = active ? active.id.replace(/^page-/, '') : 'overview';
+        if (name === 'overview' && typeof refreshOverview === 'function') { refreshOverview(); return; }
+        var btn = active && active.querySelector('.btn-secondary[onclick*="fetch"], .btn[onclick*="refreshTab"]');
+        if (btn) { btn.click(); return; }
+      } catch(_){}
       try { Object.keys(localStorage).filter(function(k){ return k.indexOf('nr_q_') === 0; }).forEach(function(k){ localStorage.removeItem(k); }); } catch(_){}
       location.reload();
     };
