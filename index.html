@@ -2678,6 +2678,86 @@
     html[data-theme="light"] .app-body::-webkit-scrollbar{ width:10px; }
     html[data-theme="light"] .app-body::-webkit-scrollbar-thumb{ background:#e4e4e7; border:3px solid var(--canvas); border-radius:8px; }
 
+
+    /* ══ MISSION CONTROL layer (2026-09-12) — the visual story on top of
+       the Command Center system. White stays dominant; motion makes the
+       real data feel alive. All numbers remain live — no mock data. ══ */
+
+    /* hero: growth score + signals, with an almost-imperceptible blue glow */
+    html[data-theme="light"] .mc-hero{ position:relative; overflow:hidden; padding:26px 28px !important; }
+    html[data-theme="light"] .mc-hero::before{ content:""; position:absolute; inset:-40% -20%; pointer-events:none;
+      background:radial-gradient(42% 55% at 22% 30%, rgba(0,101,244,.05), transparent 70%); }
+    html[data-theme="light"] .mc-greet{ font-size:12px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--text-3); }
+    html[data-theme="light"] .mc-hero-sub{ font-size:13.5px; color:var(--text-2); margin-top:3px; }
+    html[data-theme="light"] .mc-hero-row{ display:flex; align-items:center; gap:34px; margin-top:16px; flex-wrap:wrap; }
+    html[data-theme="light"] .mc-ring{ position:relative; width:148px; height:148px; flex:none; }
+    html[data-theme="light"] .mc-ring svg{ transform:rotate(-90deg); }
+    html[data-theme="light"] .mc-ring .track{ stroke:#eef0f4; }
+    html[data-theme="light"] .mc-ring .arc{ stroke:url(#mcArcGrad); stroke-linecap:round;
+      transition:stroke-dashoffset 1.4s cubic-bezier(.22,.61,.36,1); }
+    html[data-theme="light"] .mc-ring-c{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    html[data-theme="light"] .mc-score{ font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums;
+      font-size:36px; font-weight:600; letter-spacing:-.03em; color:var(--text); line-height:1; }
+    html[data-theme="light"] .mc-score-l{ font-size:10.5px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--text-3); margin-top:5px; }
+    html[data-theme="light"] .mc-signals{ display:grid; grid-template-columns:repeat(2,minmax(190px,1fr)); gap:9px 26px; flex:1; min-width:260px; }
+    html[data-theme="light"] .mc-sig{ display:flex; align-items:center; gap:10px; font-size:13.5px; color:var(--text); padding:7px 0; border-bottom:1px solid var(--sep); }
+    html[data-theme="light"] .mc-sig:nth-last-child(-n+2){ border-bottom:none; }
+    html[data-theme="light"] .mc-sig .d{ font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:600; margin-left:auto; }
+    html[data-theme="light"] .mc-sig .d.up{ color:#1e9e5a; } html[data-theme="light"] .mc-sig .d.down{ color:#d4483d; }
+    html[data-theme="light"] .mc-sig .d.flat{ color:var(--text-3); }
+    html[data-theme="light"] .mc-sig .ic{ width:7px; height:7px; border-radius:99px; background:var(--blue); opacity:.75; flex:none; }
+
+    /* live business pulse: canvas particle flow over real conversion ratios */
+    html[data-theme="light"] .mc-pulse{ padding:20px 24px 14px !important; }
+    html[data-theme="light"] .mc-pulse canvas{ display:block; width:100%; height:130px; }
+    html[data-theme="light"] .mc-pulse-wrap{ position:relative; }
+    html[data-theme="light"] .mc-pulse-wrap::before{ content:""; position:absolute; inset:0; pointer-events:none;
+      background:linear-gradient(90deg, rgba(0,101,244,.03) 0 45%, rgba(0,101,244,.055) 45% 80%, rgba(30,158,90,.06) 80% 100%);
+      border-radius:8px; }
+    html[data-theme="light"] .mc-stages{ display:flex; margin-top:6px; }
+    html[data-theme="light"] .mc-stage{ flex:1; text-align:left; }
+    html[data-theme="light"] .mc-stage:last-child{ text-align:right; }
+    html[data-theme="light"] .mc-stage .n{ font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums; font-size:16px; font-weight:600; color:var(--text); }
+    html[data-theme="light"] .mc-stage .l{ font-size:11px; color:var(--text-3); margin-top:1px; }
+    html[data-theme="light"] .mc-stage .c{ font-size:11px; color:var(--blue-text); font-weight:600; }
+
+    /* business health meters (fill animates when scrolled into view) */
+    html[data-theme="light"] .mc-meter{ padding:9px 0; border-bottom:1px solid var(--sep); }
+    html[data-theme="light"] .mc-meter:last-child{ border-bottom:none; }
+    html[data-theme="light"] .mc-meter-h{ display:flex; align-items:baseline; gap:10px; margin-bottom:7px; }
+    html[data-theme="light"] .mc-meter-l{ font-size:12px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--text-2); }
+    html[data-theme="light"] .mc-meter-v{ margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; color:var(--text); }
+    html[data-theme="light"] .mc-meter-s{ font-size:11.5px; color:var(--text-3); }
+    html[data-theme="light"] .mc-meter-bar{ height:6px; border-radius:4px; background:#f1f2f5; overflow:hidden; }
+    html[data-theme="light"] .mc-meter-bar i{ display:block; height:100%; border-radius:4px; width:0;
+      background:linear-gradient(90deg, rgba(0,101,244,.55), var(--blue)); transition:width 1.1s cubic-bezier(.22,.61,.36,1); }
+    html[data-theme="light"] .mc-meter-bar i.warn{ background:linear-gradient(90deg, rgba(224,166,58,.5), #d99a26); }
+    html[data-theme="light"] .mc-meter-bar i.bad{ background:linear-gradient(90deg, rgba(212,72,61,.5), #d4483d); }
+    html[data-theme="light"] .nr-seen .mc-meter-bar i{ width:var(--w); }
+
+    /* what-changed: timeline rail */
+    html[data-theme="light"] .cc-feed{ position:relative; padding-left:4px; }
+    html[data-theme="light"] .cc-feed-row{ position:relative; padding-left:18px; }
+    html[data-theme="light"] .cc-feed-row::before{ content:""; position:absolute; left:2.5px; top:0; bottom:0; width:1px; background:var(--sep); }
+    html[data-theme="light"] .cc-feed-row:first-child::before{ top:50%; }
+    html[data-theme="light"] .cc-feed-row:last-child::before{ bottom:50%; }
+    html[data-theme="light"] .cc-feed-row .cc-dot{ position:absolute; left:0; top:50%; transform:translateY(-50%); box-shadow:0 0 0 3px #fff; }
+
+    /* big growth chart with metric toggle */
+    html[data-theme="light"] .mc-tgls{ display:flex; gap:4px; background:#f4f4f5; border:1px solid var(--border); border-radius:8px; padding:2px; }
+    html[data-theme="light"] .mc-tgl{ font-family:inherit; font-size:12px; font-weight:500; color:var(--text-2); cursor:pointer;
+      border:none; background:none; border-radius:6px; padding:4px 12px; transition:background .15s ease, color .15s ease; }
+    html[data-theme="light"] .mc-tgl.on{ background:#fff; color:var(--text); font-weight:600; box-shadow:0 1px 2px rgba(24,24,27,.08); }
+
+    @media (max-width:760px){
+      html[data-theme="light"] .mc-hero-row{ gap:18px; }
+      html[data-theme="light"] .mc-signals{ grid-template-columns:1fr; }
+    }
+    @media (prefers-reduced-motion:reduce){
+      html[data-theme="light"] .mc-ring .arc{ transition:none; }
+      html[data-theme="light"] .mc-meter-bar i, html[data-theme="light"] .nr-seen .mc-meter-bar i{ transition:none; width:var(--w) !important; }
+    }
+
     /* entrance hooks kept but quiet (used by the COMMAND MOTION script) */
     .nr-enter .nb-rank-bar i{ animation:nrGrow .6s cubic-bezier(.22,.61,.36,1) both; transform-origin:left center; }
     @keyframes nrGrow{ from{ transform:scaleX(0) } to{ transform:scaleX(1) } }
@@ -6475,14 +6555,99 @@
       <div class="nb-ranks cvp">${convRows}</div>
       <div class="nb-note cvp-foot">Recent short windows read low because upgrades lag signup by days. Compare against last month and all-time for a settled rate.</div></div>`;
 
-    const lineCard=`<div class="nb-card nb-full"><div class="nb-cardh"><div><div class="nb-t">Daily signups</div><div class="nb-note">${growthTotal.toLocaleString('en-IN')} total · ${rangeLabel}</div></div>
-      <div class="nb-leg"><span><i style="background:var(--blue)"></i>Signups</span></div></div><div id="nbLine" style="margin:6px -6px -8px"></div></div>`;
+    // ═══ MISSION CONTROL: hero · pulse · health (all from live _ovData) ═══
+    // Signal deltas
+    const _sigDelta = newWeekPrev > 0 ? (newWeek - newWeekPrev) / newWeekPrev * 100 : null;
+    // Revenue momentum: latest day vs the mean of the days before it (in range)
+    let _revMom = null;
+    { const rd = revDaily.filter((_,i)=>i<revDaily.length);
+      if (rd.length >= 3) { const last = rd[rd.length-1] || rd[rd.length-2] || 0;
+        const prior = rd.slice(0, -1); const mean = prior.reduce((a,b)=>a+b,0) / (prior.length||1);
+        if (mean > 0) _revMom = (last - mean) / mean * 100; } }
+    const _clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+    // Growth Score — honest composite, formula in the tooltip:
+    //   40% conversion vs the 5% pro-rate target, 30% signup momentum,
+    //   30% revenue momentum (50 = flat; capped ±50).
+    const _convScore = _clamp(convGauge/5*100, 0, 100);
+    const _acqScore  = _sigDelta==null ? 50 : _clamp(50 + _sigDelta/2, 0, 100);
+    const _revScore  = _revMom==null ? 50 : _clamp(50 + _revMom/2, 0, 100);
+    const growthScore = Math.round((_convScore*.4 + _acqScore*.3 + _revScore*.3)*10)/10;
+    const _fmtD = v => v==null ? '—' : `${v>=0?'+':''}${v.toFixed(1)}%`;
+    const _dc = v => v==null ? 'flat' : v>=0 ? 'up' : 'down';
+    const _hour = new Date(Date.now() + 5.5*3600000).getUTCHours();
+    const _greet = _hour < 12 ? 'Good morning' : _hour < 17 ? 'Good afternoon' : 'Good evening';
+    const _R = 62, _CIRC = 2*Math.PI*_R;
+    const heroCard = `<div class="nb-card nb-full mc-hero">
+      <div class="mc-greet">${_greet}, team</div>
+      <div class="mc-hero-sub">Here's how NextRaise is performing · ${rangeLabel}</div>
+      <div class="mc-hero-row">
+        <div class="mc-ring" title="Composite: conversion vs 5% target (40%) · signup momentum (30%) · revenue momentum (30%)">
+          <svg width="148" height="148" viewBox="0 0 148 148">
+            <defs><linearGradient id="mcArcGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#0065F4"/><stop offset="100%" stop-color="#5a55c9"/></linearGradient></defs>
+            <circle class="track" cx="74" cy="74" r="${_R}" fill="none" stroke-width="9"/>
+            <circle class="arc" id="mcArc" cx="74" cy="74" r="${_R}" fill="none" stroke-width="9"
+              stroke-dasharray="${_CIRC.toFixed(1)}" stroke-dashoffset="${_CIRC.toFixed(1)}"
+              data-target="${(_CIRC*(1-growthScore/100)).toFixed(1)}"/>
+          </svg>
+          <div class="mc-ring-c"><div class="mc-score stat-num">${growthScore}</div><div class="mc-score-l">Growth score</div></div>
+        </div>
+        <div class="mc-signals">
+          <div class="mc-sig"><span class="ic"></span>Acquisition <span class="d ${_dc(_sigDelta)}">${_fmtD(_sigDelta)}</span></div>
+          <div class="mc-sig"><span class="ic"></span>Pro-plan rate <span class="d ${convGauge>=5?'up':'down'}">${convGauge.toFixed(2)}%</span></div>
+          <div class="mc-sig"><span class="ic"></span>Revenue momentum <span class="d ${_dc(_revMom)}">${_fmtD(_revMom)}</span></div>
+          <div class="mc-sig"><span class="ic"></span>Revenue / payer <span class="d flat">${arpu?('₹'+arpu.toLocaleString('en-IN')):'—'}</span></div>
+        </div>
+      </div></div>`;
+
+    // Live business pulse — particles flow through the REAL conversion stages
+    const _pulseStages = [
+      { l:'Signups',  n:gaugeSignups },
+      { l:'Pro plan', n:gaugePro },
+      { l:'Payers · this range', n:revPayers },
+    ];
+    const pulseCard = `<div class="nb-card nb-full mc-pulse"><div class="nb-cardh"><div>
+        <div class="nb-t">Live business pulse</div>
+        <div class="nb-note">this range's cohort flowing signup → pro → paid · widths are real conversion</div></div></div>
+      <div class="mc-pulse-wrap"><canvas id="mcPulse"></canvas></div>
+      <div class="mc-stages">${_pulseStages.map((s,i)=>{
+        const prev=_pulseStages[i-1];
+        const cv=(prev&&prev.n&&s.n<=prev.n)?(s.n/prev.n*100):null;   // hide % when not cohort-comparable
+        return `<div class="mc-stage"><div class="n">${(s.n||0).toLocaleString('en-IN')}</div><div class="l">${s.l}${cv!=null?` · <span class="c">${cv.toFixed(1)}%</span>`:''}</div></div>`;}).join('')}
+      </div></div>`;
+
+    // Business health — animated meters over the same honest scores
+    const _meters = [
+      { l:'Acquisition', v:_acqScore, s:_sigDelta==null?'no prior period in range':`signups ${_fmtD(_sigDelta)} vs previous week` },
+      { l:'Conversion',  v:_convScore, s:`pro-plan rate ${convGauge.toFixed(2)}% of the 5% target` },
+      { l:'Revenue',     v:_revScore, s:_revMom==null?'needs 3+ days of data':`latest day ${_fmtD(_revMom)} vs range average` },
+    ];
+    const healthCard = `<div class="nb-card"><div class="cc-sec-t">Business health</div>
+      ${_meters.map(m=>{ const cls=m.v>=60?'':m.v>=35?'warn':'bad';
+        return `<div class="mc-meter"><div class="mc-meter-h"><span class="mc-meter-l">${m.l}</span><span class="mc-meter-s">${m.s}</span><span class="mc-meter-v">${Math.round(m.v)}</span></div>
+        <div class="mc-meter-bar"><i class="${cls}" style="--w:${Math.round(m.v)}%"></i></div></div>`;}).join('')}
+      <div class="nb-note" style="margin-top:10px">Scores are computed from this range's live data: 50 = flat momentum, 100 = at target.</div></div>`;
+
+    // Big growth chart with a real metric toggle (both series are live data)
+    window._nbLineMetric = window._nbLineMetric || 'signups';
+    const _revTotalD = revDaily.reduce((a,b)=>a+b,0);
+    const lineCard=`<div class="nb-card nb-full"><div class="nb-cardh"><div><div class="nb-t">Growth performance</div><div class="nb-note" id="nbLineNote">${growthTotal.toLocaleString('en-IN')} signups · ₹${_revTotalD.toLocaleString('en-IN')} revenue · ${rangeLabel}</div></div>
+      <div class="mc-tgls" role="tablist">
+        <button class="mc-tgl${window._nbLineMetric==='signups'?' on':''}" onclick="nrSetLineMetric('signups',this)">Signups</button>
+        <button class="mc-tgl${window._nbLineMetric==='revenue'?' on':''}" onclick="nrSetLineMetric('revenue',this)">Revenue</button>
+      </div></div><div id="nbLine" style="margin:6px -6px -8px"></div></div>`;
+    window._nbSeries = { signups:{ name:'Signups', data:dailyVals, fmt:v=>v>=1000?(v/1000).toFixed(1)+'k':Math.round(v) },
+                         revenue:{ name:'Revenue (₹)', data:revDaily, fmt:v=>v>=100000?('₹'+(v/100000).toFixed(1)+'L'):v>=1000?('₹'+(v/1000).toFixed(1)+'k'):('₹'+Math.round(v)) } };
+
 
     document.getElementById('overviewArea').innerHTML =
-      `<div class="okpis">${kpis2}</div>
-       <div class="nb-grid2">${aiCard}${attCard}</div>
-       <div class="nb-grid2">${gaugeCard}${convPeriodCard}</div>
+      `${heroCard}
+       ${pulseCard}
+       <div class="okpis">${kpis2}</div>
        ${lineCard}
+       <div class="nb-grid2">${aiCard}${attCard}</div>
+       <div class="nb-grid2">${healthCard}${gaugeCard}</div>
+       ${convPeriodCard}
        <div class="nb-grid2">${acqCard}${txCard}</div>`;
     { const _bu = budgetPauseUntil();
       if (_bu) renderOvPill('paused', _bu);
@@ -6501,7 +6666,82 @@
       const stateCol = !below ? GRN : '#b45309';
       push('#nbGauge',{chart:{type:'radialBar',height:210,fontFamily:'IBM Plex Mono',animations:{enabled:true,speed:1100}},series:[goalPct],plotOptions:{radialBar:{startAngle:-120,endAngle:120,hollow:{size:'60%'},track:{background:'#efefec'},dataLabels:{name:{show:true,offsetY:20,color:'#8a8a92',fontSize:'11px',fontFamily:'General Sans'},value:{offsetY:-12,fontSize:'26px',fontWeight:700,color:stateCol,formatter:()=>convGauge.toFixed(2)+'%'}}}},colors:[stateCol],stroke:{lineCap:'round'},labels:['vs 5% goal']});
       // daily line — zero-baseline y-axis so the chart doesn't dramatise (A3)
-      push('#nbLine',{...AX,chart:{...AX.chart,type:'area',height:230},series:[{name:'Signups',data:dailyVals}],stroke:{curve:'smooth',width:3,colors:[BLUE]},fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.32,opacityTo:0,stops:[0,95]}},colors:[BLUE],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},xaxis:{categories:dailyCats,axisBorder:{show:false},axisTicks:{show:false},labels:{style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}}},yaxis:{min:0,labels:{formatter:v=>v>=1000?(v/1000).toFixed(1)+'k':Math.round(v),style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}}}});
+      const _m0 = window._nbSeries[window._nbLineMetric] || window._nbSeries.signups;
+      push('#nbLine',{...AX,chart:{...AX.chart,type:'area',height:300,dropShadow:{enabled:true,top:6,left:0,blur:8,opacity:.14,color:'#0065F4'}},series:[{name:_m0.name,data:_m0.data}],stroke:{curve:'smooth',width:3,colors:[BLUE]},fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.30,opacityTo:0,stops:[0,95]}},colors:[BLUE],markers:{size:0,hover:{size:6,strokeWidth:3}},dataLabels:{enabled:false},xaxis:{categories:dailyCats,axisBorder:{show:false},axisTicks:{show:false},labels:{style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}}},yaxis:{min:0,labels:{formatter:_m0.fmt,style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}}}});
+      window._nbLineChart = window._ovCharts[window._ovCharts.length-1];
+      // ═══ MISSION CONTROL post-render: ring draw, meters reveal, pulse ═══
+      const _rm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const arc = document.getElementById('mcArc');
+      if (arc) {
+        const t = arc.dataset.target;
+        if (_rm) arc.style.strokeDashoffset = t;
+        else requestAnimationFrame(()=>requestAnimationFrame(()=>{ arc.style.strokeDashoffset = t; }));
+      }
+      // reveal-on-scroll for the health meters (and any .nr-reveal section)
+      try {
+        const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('nr-seen'); io.unobserve(e.target); } }), { threshold:.25 });
+        document.querySelectorAll('#page-overview .nb-card').forEach(el => io.observe(el));
+        if (_rm) document.querySelectorAll('#page-overview .nb-card').forEach(el => el.classList.add('nr-seen'));
+      } catch(_){}
+      // live pulse canvas — particle flow over the real stage conversions
+      try { if (window._mcPulseStop) window._mcPulseStop(); } catch(_){}
+      (function(){
+        const cv = document.getElementById('mcPulse');
+        if (!cv || !cv.getContext) return;
+        const stages = [gaugeSignups||0, gaugePro||0, revPayers||0];
+        const ctx = cv.getContext('2d');
+        const DPR = Math.min(2, window.devicePixelRatio||1);
+        let W = 0, H = 0, dots = [], raf = 0, killed = false;
+        function size(){ const r = cv.getBoundingClientRect(); if (!r.width) return;
+          W = r.width; H = 130; cv.width = W*DPR; cv.height = H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
+        // survival fraction at each gate = the REAL conversion between stages
+        const g1 = stages[0] ? (stages[1]/stages[0]) : 0;
+        const g2 = stages[1] ? Math.min(1, stages[2]/stages[1]) : 0;
+        const N = 240;
+        function spawn(x){ return { x: x!=null?x:-6, y: 24 + Math.random()*(H-48),
+          v: .3 + Math.random()*.45, r: 1 + Math.random()*1.1, s: 0,
+          die: Math.random() > g1 ? 1 : (Math.random() > g2 ? 2 : 3), a: .5 + Math.random()*.4 }; }
+        // guarantee a handful of full-journey dots so the flow reads even at sub-1% conversion
+        function seedSurvivors(arr){ let need = Math.max(3, Math.round(N*g1*g2)) - arr.filter(d=>d.die===3).length;
+          for (const d of arr) { if (need<=0) break; if (d.die!==3){ d.die=3; need--; } } }
+        function init(){ dots = []; for (let i=0;i<N;i++) dots.push(spawn(Math.random()*W)); seedSurvivors(dots); }
+        const COLS = ['#9aa7bd', '#0065F4', '#1e9e5a'];
+        function frame(){
+          if (killed) return;
+          const page = document.getElementById('page-overview');
+          if (document.hidden || !page || !page.classList.contains('active')) { raf = setTimeout(frame, 600); return; }
+          if (!W) { size(); if (!W) { raf = setTimeout(frame, 600); return; } if (!dots.length) init(); }
+          ctx.clearRect(0,0,W,H);
+          const gx1 = W*0.45, gx2 = W*0.8;
+          // gate lines
+          ctx.strokeStyle = 'rgba(24,24,27,.07)'; ctx.lineWidth = 1;
+          [gx1,gx2].forEach(x=>{ ctx.beginPath(); ctx.moveTo(x,12); ctx.lineTo(x,H-12); ctx.stroke(); });
+          for (const d of dots) {
+            d.x += d.v;
+            const st = d.x < gx1 ? 0 : d.x < gx2 ? 1 : 2;
+            if (st > d.s) { d.s = st;
+              if (st >= d.die) { Object.assign(d, spawn()); continue; } }
+            ctx.globalAlpha = d.a;
+            ctx.fillStyle = COLS[d.s];
+            ctx.beginPath(); ctx.arc(d.x, d.y, d.r + d.s*.4, 0, 6.2832); ctx.fill();
+            if (d.x > W + 6) Object.assign(d, spawn());
+          }
+          ctx.globalAlpha = 1;
+          raf = requestAnimationFrame(frame);
+        }
+        function staticDraw(){ size(); if (!W) return; init(); ctx.clearRect(0,0,W,H);
+          for (const d of dots) { const st = d.x < W*0.45 ? 0 : d.x < W*0.8 ? 1 : 2; if (st >= d.die) continue;
+            ctx.globalAlpha = d.a; ctx.fillStyle = COLS[st];
+            ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, 6.2832); ctx.fill(); } ctx.globalAlpha = 1; }
+        size(); init();
+        if (_rm) staticDraw(); else frame();
+        const onR = ()=>{ W=0; };
+        window.addEventListener('resize', onR);
+        window._mcPulseStop = function(){ killed = true;
+          try { cancelAnimationFrame(raf); clearTimeout(raf); } catch(_){}
+          window.removeEventListener('resize', onR); };
+      })();
+
     }, 30);
   }
 
@@ -11981,6 +12221,18 @@
     }
   })();
 </script>
+  <script>
+  // Growth-chart metric toggle — swaps between the two LIVE series in memory.
+  function nrSetLineMetric(m, btn){
+    try {
+      window._nbLineMetric = m;
+      const s = window._nbSeries && window._nbSeries[m]; if (!s || !window._nbLineChart) return;
+      document.querySelectorAll('.mc-tgl').forEach(b=>b.classList.remove('on'));
+      if (btn) btn.classList.add('on');
+      window._nbLineChart.updateOptions({ series:[{name:s.name, data:s.data}], yaxis:{min:0,labels:{formatter:s.fmt,style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}}} }, false, true);
+    } catch(_){}
+  }
+  </script>
   <!-- COMMAND MOTION + SHELL (2026-09-12): fast subtle entrances, grouped
        sidebar behaviour, top-bar sync. Entrances fire only on navigation. -->
   <script>
