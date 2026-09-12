@@ -2784,6 +2784,9 @@
     .nr-enter .nb-rank-bar i{ animation:nrGrow 1s var(--spring) .15s both; transform-origin:left center; }
     @keyframes nrGrow{ from{ transform:scaleX(0) } to{ transform:scaleX(1) } }
 
+    /* six KPI cards → two rows of three (2-col ≤1100 rule unchanged) */
+    @media (min-width:1101px){ html[data-theme="light"] .okpis{ grid-template-columns:repeat(3,1fr) !important; } }
+
     /* ── Header ── */
     html[data-theme="light"] .home-title{ font-size:33px !important; font-weight:800 !important; letter-spacing:-.04em !important; }
     html[data-theme="light"] .ov-sub{ font-size:13.5px !important; color:var(--text-3) !important; }
@@ -6074,7 +6077,9 @@
           SELECT
             sumIf(amount, currency='INR') AS inr,
             sumIf(amount, currency='USD') AS usd,
-            uniqExact(user_email) AS payers
+            uniqExact(user_email) AS payers,
+            uniqExactIf(user_email, currency='INR') AS inr_payers,
+            uniqExactIf(user_email, currency='USD') AS usd_payers
           FROM postgres.payments
           WHERE status='completed'
             AND ${pgRangeFilter}
@@ -6182,7 +6187,9 @@
         payments:    payments.results || [],
         revInr:      Number(revRow[0]||0),
         revUsd:      Number(revRow[1]||0),
-        revPayers:   Number(revRow[2]||0),   // distinct paying users in range (ARPU denominator)
+        revPayers:    Number(revRow[2]||0),   // distinct paying users in range (ARPU denominator)
+        revInrPayers: Number(revRow[3]||0),
+        revUsdPayers: Number(revRow[4]||0),
         sources:     sources.results     || [],
         growth:      growth.results      || [],
         dailyPay:    dailyPay.results    || [],
@@ -6295,6 +6302,8 @@
     // snapshots predate revPayers — fall back to active Pro subs for those.
     const revPayers = (+_ovData.revPayers || 0) || activePro;
     const arpu = revPayers ? Math.round(totalRevInr/revPayers) : 0;
+    const revInrPayers = +_ovData.revInrPayers || 0;
+    const revUsdPayers = +_ovData.revUsdPayers || 0;
 
     // Period-over-period delta chip (CEO scorecard): green ▲ / red ▼ with %.
     const deltaChip = (cur, prev) => {
@@ -6457,6 +6466,12 @@
         (arpu?` · avg ₹${arpu.toLocaleString('en-IN')}/payer`:''),
         'revenue', 'Completed Pro payments in this range. INR and USD collected separately; total shown in INR at ₹'+USD_TO_INR+'/$. Avg = revenue ÷ distinct paying users in this range. Click for revenue analytics.'),
       kpi('Active Pro subscribers', activePro.toLocaleString('en-IN'), '', `${convPct.toFixed(2)}% of ${usersShort} users`, 'pro', 'Users on an active Pro subscription right now. Click for the list.'),
+      kpi('₹ Revenue (INR)', '₹' + Math.round(revInr).toLocaleString('en-IN'), '',
+        revInrPayers ? `${revInrPayers.toLocaleString('en-IN')} payers (INR)` : 'completed INR payments',
+        'revenue', 'Revenue collected in rupees in this range, with the number of distinct INR payers.'),
+      kpi('$ Revenue (USD)', '$' + (+revUsd).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}), '',
+        revUsdPayers ? `${revUsdPayers.toLocaleString('en-IN')} payers (USD)` : 'completed USD payments',
+        'revenue', 'Revenue collected in dollars in this range, with the number of distinct USD payers.'),
       kpi('Total users', newProduct.toLocaleString('en-IN'), '', 'since 1 May 2026', 'search', 'All signed-up users since the relaunch. Click to search contacts.'),
     ].join('');
 
