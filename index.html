@@ -2673,15 +2673,6 @@
 
     /* six KPI cards → two rows of three on wide screens */
     @media (min-width:1101px){ html[data-theme="light"] .okpis{ grid-template-columns:repeat(3,1fr) !important; } }
-    /* TODAY card */
-    html[data-theme="light"] .td-live{ font-size:11px; font-weight:500; color:var(--text-3); margin-left:10px; letter-spacing:0; text-transform:none; }
-    html[data-theme="light"] .td-live i{ display:inline-block; width:6px; height:6px; border-radius:99px; background:var(--green); margin-right:5px; animation:tdPulse 2.4s ease-in-out infinite; }
-    @keyframes tdPulse{ 0%,100%{ opacity:1 } 50%{ opacity:.35 } }
-    html[data-theme="light"] .td-tiles{ margin-top:10px; }
-    html[data-theme="light"] .td-sub{ font-size:11px; color:var(--text-3); margin-top:3px; }
-    html[data-theme="light"] .td-d{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:600; }
-    html[data-theme="light"] .td-d.up{ color:var(--green-text); } html[data-theme="light"] .td-d.down{ color:var(--red-text); }
-    @media (prefers-reduced-motion:reduce){ html[data-theme="light"] .td-live i{ animation:none; } }
   </style>
 </head>
 <body>
@@ -5118,29 +5109,18 @@
   // Periods shown in the Overview "Free → Pro by period" breakdown (no Custom)
   const CONV_PRESETS = GDR_PRESETS.filter(p => p.key !== 'custom');
   // Independent date range per tab — changing one tab never touches others
-  // ── Shared date range across the ANALYTICS tabs ───────────────────────
-  // Previously each tab kept its own range, so Overview on 'All time' and
-  // Insights on '7d' silently described different windows and their numbers
-  // "didn't match". Now every analytics screen shares ONE window, so switching
-  // between them always compares the same period. Operational LIST tabs (pro,
-  // credits, power, influencers, abandoned, uninstalled) keep an independent
-  // range — they're lookup lists (default all-time), not comparative analytics,
-  // and their queries are range-bound so forcing 7d would truncate the list.
-  const _SHARED_RANGE_TABS = new Set(['overview','insights','revenue','activation','acquire',
-    'retention','lifecycle','weekly','monthly','daily','features','quality','emails','referrals','report']);
-  const _isShared = k => typeof k === 'string' && _SHARED_RANGE_TABS.has(k);
-  let _globalRange = '7d';
-  let _globalCustom = undefined;   // { from:'YYYY-MM-DD', to:'YYYY-MM-DD' }
-  const _listRanges = { pro:'all', power:'7d', influencers:'all', abandoned:'thisMonth', uninstalled:'thisMonth', credits:'all' };
-  const _listCustom = {};
-  const _tabRanges = new Proxy({}, {
-    get(_t, k) { return _isShared(k) ? _globalRange : (_listRanges[k] || '7d'); },
-    set(_t, k, v) { if (_isShared(k)) _globalRange = v; else if (typeof k === 'string') _listRanges[k] = v; return true; },
+  // ── Independent date range PER TAB (2026-09-16: un-shared on request) ──
+  // Each screen keeps its own window: changing the filter on Overview never
+  // touches Insights, Revenue, etc. The Today card is date-filter-independent
+  // by construction (it always queries today+yesterday IST).
+  const _tabRangesBase = new Proxy({ overview:'7d', revenue:'all', activation:'all',
+    pro:'all', power:'7d', influencers:'all', abandoned:'thisMonth', uninstalled:'thisMonth',
+    acquire:'7d', insights:'7d', credits:'all' }, {
+    get(t, k) { return k in t ? t[k] : (typeof k === 'string' ? '7d' : undefined); },
   });
-  const _tabCustom = new Proxy({}, {
-    get(_t, k) { return _isShared(k) ? _globalCustom : _listCustom[k]; },
-    set(_t, k, v) { if (_isShared(k)) _globalCustom = v; else if (typeof k === 'string') _listCustom[k] = v; return true; },
-  });
+  const _tabRanges = _tabRangesBase;
+  const _tabCustom = {};   // tab -> { from:'YYYY-MM-DD', to:'YYYY-MM-DD' }
+  const _isShared = () => false;   // kept for call sites; nothing is shared any more
   let _activeGdrTab = null;
 
   // ── IST-aware range boundaries (start inclusive, end exclusive) ──
@@ -5251,9 +5231,8 @@
     if (!p || _tabRanges[tab] === key) { closeTabGdr(); return; }
     _tabRanges[tab] = key;
     closeTabGdr();
-    if (_isShared(tab)) _invalidateAllTabs();   // shared window changed → other analytics tabs re-query on view
-    updateAllGdrBtns();
-    _gdrRefetch(tab);       // reload the visible tab now
+    updateTabGdrBtn(tab);   // per-tab: only this tab's pill and data change
+    _gdrRefetch(tab);
   }
 
   // Custom range: reveal the date inputs inside the dropdown (don't close it)
@@ -5274,9 +5253,8 @@
     _tabCustom[tab] = { from, to };
     _tabRanges[tab] = 'custom';
     closeTabGdr();
-    if (_isShared(tab)) _invalidateAllTabs();   // shared window changed → other analytics tabs re-query on view
-    updateAllGdrBtns();
-    _gdrRefetch(tab);       // reload the visible tab now
+    updateTabGdrBtn(tab);   // per-tab: only this tab's pill and data change
+    _gdrRefetch(tab);
   }
 
   function updateTabGdrBtn(tab) {
@@ -6325,30 +6303,6 @@
                   : _nsRange==='7d'    ? sDelta(newWeek, newWeekPrev)
                   : '';
     const nsSub = nsDelta ? 'vs previous period' : tabGdrPreset('overview').label;
-    // ── TODAY — signups / paid users / payments / revenue for today (IST),
-    //    each vs yesterday, independent of the selected range ──
-    const _tIso = gdrBounds('today').startDate, _yIso = gdrBounds('yest').startDate;
-    const _tpRows = _ovData.todayPay || [];
-    const _tpBy = {}; for (const r of _tpRows) _tpBy[r[0]] = { cnt:+r[1]||0, payers:+r[2]||0, inr:+r[3]||0, usd:+r[4]||0 };
-    const _tp = _tpBy[_tIso], _yp = _tpBy[_yIso];
-    const _tRev = _tp ? Math.round(_tp.inr + _tp.usd*USD_TO_INR) : (_ovData.todayPay ? 0 : null);
-    const _yRev = _yp ? Math.round(_yp.inr + _yp.usd*USD_TO_INR) : null;
-    const _tdD = (t,y) => (t==null||y==null||!y) ? '' :
-      `<span class="td-d ${t>=y?'up':'down'}">${t>=y?'▲':'▼'} ${Math.abs((t-y)/y*100).toFixed(0)}%</span>`;
-    const _tdTile = (label, val, delta, sub) =>
-      `<div class="rev-tile"><div class="rt-num">${val==null?'—':val}</div>
-        <div class="rt-label">${label}</div>
-        <div class="td-sub">${delta||''}${sub?` <span>${sub}</span>`:''}</div></div>`;
-    const todayCard = `<div class="nb-card nb-full"><div class="nb-cardh"><div>
-        <div class="nb-t">Today <span class="td-live"><i></i>updates through the day</span></div>
-        <div class="nb-note">today (IST) vs yesterday · independent of the date filter</div></div></div>
-      <div class="rev-tiles td-tiles">
-        ${_tdTile('Signups today', newToday.toLocaleString('en-IN'), _tdD(newToday, newYesterday), `${newYesterday.toLocaleString('en-IN')} yest`)}
-        ${_tdTile('Users converted today', _tp?_tp.payers.toLocaleString('en-IN'):(_ovData.todayPay?'0':null), _tp&&_yp?_tdD(_tp.payers,_yp.payers):'', _yp?`${_yp.payers} yest`:'')}
-        ${_tdTile('Payments today', _tp?_tp.cnt.toLocaleString('en-IN'):(_ovData.todayPay?'0':null), _tp&&_yp?_tdD(_tp.cnt,_yp.cnt):'', _yp?`${_yp.cnt} yest`:'')}
-        ${_tdTile('Revenue today', _tRev!=null?('₹'+_tRev.toLocaleString('en-IN')):null, _tdD(_tRev,_yRev), _yRev!=null?`₹${_yRev.toLocaleString('en-IN')} yest`:'')}
-      </div>${_ovData.todayPay?'':'<div class="nb-note" style="margin-top:8px">Payment figures appear after the next data refresh.</div>'}</div>`;
-
     const kpis2=[
       kpi('New signups', rangeSignups.toLocaleString('en-IN'), nsDelta, nsSub, 'acquire', 'Unique users who completed signup in this range. Click for acquisition channels.'),
       kpi('Gross revenue', inrTotal(revInr,revUsd), '',
@@ -6416,7 +6370,6 @@
 
     document.getElementById('overviewArea').innerHTML =
       `<div class="okpis">${kpis2}</div>
-       ${todayCard}
        <div class="nb-grid2">${aiCard}${gaugeCard}</div>
        ${convPeriodCard}
        ${lineCard}
