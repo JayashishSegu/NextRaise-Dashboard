@@ -2849,6 +2849,22 @@
       html[data-theme="light"] .mc-mom-d:nth-child(n+8){ display:none; }
     }
 
+
+    /* TODAY strip */
+    html[data-theme="light"] .mc-today{ padding:20px 28px 18px !important; }
+    html[data-theme="light"] .td-live{ font-size:11px; font-weight:500; color:var(--text-3); margin-left:10px; letter-spacing:0; text-transform:none; }
+    html[data-theme="light"] .td-live i{ display:inline-block; width:6px; height:6px; border-radius:99px; background:#1e9e5a; margin-right:5px; animation:tdPulse 2.4s ease-in-out infinite; }
+    @keyframes tdPulse{ 0%,100%{ opacity:1 } 50%{ opacity:.35 } }
+    html[data-theme="light"] .mc-tds{ display:grid; grid-template-columns:repeat(4,1fr); gap:0 32px; margin-top:6px; }
+    html[data-theme="light"] .mc-td{ padding:6px 0 2px; border-top:1px solid var(--border-strong); }
+    html[data-theme="light"] .td-l{ font-size:12px; font-weight:500; color:var(--text-2); }
+    html[data-theme="light"] .td-v{ font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums; font-size:26px; font-weight:600; letter-spacing:-.02em; color:var(--text); margin-top:5px; }
+    html[data-theme="light"] .td-s{ font-size:11.5px; color:var(--text-3); margin-top:3px; display:flex; gap:8px; align-items:baseline; }
+    html[data-theme="light"] .td-d{ font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; }
+    html[data-theme="light"] .td-d.up{ color:#1e9e5a; } html[data-theme="light"] .td-d.down{ color:#d4483d; }
+    @media (max-width:900px){ html[data-theme="light"] .mc-tds{ grid-template-columns:repeat(2,1fr); gap:10px 20px; } }
+    @media (prefers-reduced-motion:reduce){ html[data-theme="light"] .td-live i{ animation:none; } }
+
     /* entrance hooks kept but quiet (used by the COMMAND MOTION script) */
     .nr-enter .nb-rank-bar i{ animation:nrGrow .6s cubic-bezier(.22,.61,.36,1) both; transform-origin:left center; }
     @keyframes nrGrow{ from{ transform:scaleX(0) } to{ transform:scaleX(1) } }
@@ -6136,7 +6152,7 @@
             ) ${countsBucketOuter}
           )`);
       // The remaining 8 queries are lighter — run them together (gated to 2).
-      const [signups, payments, revenue, sources, growth, dailyPay, influencers, pgSubscribers] = await Promise.all([
+      const [signups, payments, revenue, sources, growth, dailyPay, influencers, pgSubscribers, todayPay] = await Promise.all([
         runHogQL(`
           SELECT email, name, plan, created_at FROM (
             SELECT argMaxIf(toString(person.properties.email), timestamp, person.properties.email!='') AS email,
@@ -6264,6 +6280,22 @@
           WHERE email NOT LIKE '%@nextraise.ai'
             AND email NOT LIKE '%@creditdharma.in'
             AND lower(email) NOT LIKE '%test%'${bucketEmailFilter('email', _ovGdr.scanDays)}`).catch(()=>({results:[]})),
+        // Today snapshot: payments / distinct payers / revenue for today +
+        // yesterday (IST), independent of the selected range. Tiny postgres read.
+        runHogQL(`
+          SELECT toString(toDate(toTimeZone(created_at,'Asia/Kolkata'))) AS day,
+            count() AS cnt,
+            uniqExact(user_email) AS payers,
+            sumIf(amount, currency='INR') AS inr,
+            sumIf(amount, currency='USD') AS usd
+          FROM postgres.payments
+          WHERE status='completed'
+            AND created_at >= toDateTime('${gdrBounds('yest').startDate} 00:00:00')
+            AND created_at <  toDateTime('${gdrBounds('today').endDate} 00:00:00')
+            AND user_email NOT LIKE '%@nextraise.ai'
+            AND user_email NOT LIKE '%@creditdharma.in'
+            AND lower(user_email) NOT LIKE '%test%'${bucketEmailFilter('user_email', _ovGdr.scanDays)}
+          GROUP BY day ORDER BY day LIMIT 3`).catch(()=>({results:[]})),
       ]);
       const revRow = (revenue.results||[])[0] || [0,0];
       // Override Active Pro/Basic with postgres (more accurate than PostHog person props)
@@ -6288,6 +6320,7 @@
         sources:     sources.results     || [],
         growth:      growth.results      || [],
         dailyPay:    dailyPay.results    || [],
+        todayPay:    todayPay.results   || [],   // [day, cnt, payers, inr, usd] for yest+today (IST)
         influencers: influencers.results || [],
         convByPeriod: CONV_PRESETS.map((p,i) => {
           // period conversion cols are appended to the counts query after the 13 base cols
@@ -6742,6 +6775,31 @@
         <div class="mc-meter-bar"><i class="${cls}" style="--w:${Math.round(m.v)}%"></i></div></div>`;}).join('')}
       <div class="nb-note" style="margin-top:10px">Scores are computed from this range's live data: 50 = flat momentum, 100 = at target.</div></div>`;
 
+    // ── TODAY strip — signups / paid users / payments / revenue for today
+    //    (IST), each vs yesterday, independent of the selected range ──
+    const _tIso = gdrBounds('today').startDate, _yIso = gdrBounds('yest').startDate;
+    const _tpRows = _ovData.todayPay || [];
+    const _tpBy = {}; for (const r of _tpRows) _tpBy[r[0]] = { cnt:+r[1]||0, payers:+r[2]||0, inr:+r[3]||0, usd:+r[4]||0 };
+    const _tp = _tpBy[_tIso], _yp = _tpBy[_yIso];
+    const _tRev = _tp ? Math.round(_tp.inr + _tp.usd*USD_TO_INR) : null;
+    const _yRev = _yp ? Math.round(_yp.inr + _yp.usd*USD_TO_INR) : null;
+    const _tdD = (t,y) => (t==null||y==null||!y) ? '' :
+      `<span class="td-d ${t>=y?'up':'down'}">${t>=y?'▲':'▼'} ${Math.abs((t-y)/y*100).toFixed(0)}%</span>`;
+    const _tdCell = (label, val, delta, sub) =>
+      `<div class="mc-td"><div class="td-l">${label}</div>
+        <div class="td-v">${val==null?'—':val}</div>
+        <div class="td-s">${delta||''}${sub?`<span>${sub}</span>`:''}</div></div>`;
+    const _hasTP = !!(_tp || _yp) || _tpRows.length > 0 || '_legacy';
+    const todayCard = `<div class="nb-card nb-full mc-band mc-today"><div class="nb-cardh"><div>
+        <div class="nb-t">Today <span class="td-live"><i></i>updates through the day</span></div>
+        <div class="nb-note">signups · conversions · payments · revenue — today (IST) vs yesterday</div></div></div>
+      <div class="mc-tds">
+        ${_tdCell('Signups today', newToday.toLocaleString('en-IN'), _tdD(newToday, newYesterday), `${newYesterday.toLocaleString('en-IN')} yesterday`)}
+        ${_tdCell('Users converted today', _tp?_tp.payers.toLocaleString('en-IN'):(_ovData.todayPay?'0':null), _tp&&_yp?_tdD(_tp.payers,_yp.payers):'', _yp?`${_yp.payers} yesterday`:'')}
+        ${_tdCell('Payments today', _tp?_tp.cnt.toLocaleString('en-IN'):(_ovData.todayPay?'0':null), _tp&&_yp?_tdD(_tp.cnt,_yp.cnt):'', _yp?`${_yp.cnt} yesterday`:'')}
+        ${_tdCell('Revenue today', _tRev!=null?('₹'+_tRev.toLocaleString('en-IN')):(_ovData.todayPay?'₹0':null), _tdD(_tRev,_yRev), _yRev!=null?`₹${_yRev.toLocaleString('en-IN')} yesterday`:'')}
+      </div>${_ovData.todayPay?'':'<div class="nb-note" style="margin-top:8px">Payment figures appear after the next data refresh.</div>'}</div>`;
+
     // Big growth chart with a real metric toggle (both series are live data)
     window._nbLineMetric = window._nbLineMetric || 'signups';
     const _revTotalD = revDaily.reduce((a,b)=>a+b,0);
@@ -6756,6 +6814,7 @@
 
     document.getElementById('overviewArea').innerHTML =
       `${heroCard}
+       ${todayCard}
        ${pulseCard}
        <div class="okpis">${kpis2}</div>
        ${lineCard}
