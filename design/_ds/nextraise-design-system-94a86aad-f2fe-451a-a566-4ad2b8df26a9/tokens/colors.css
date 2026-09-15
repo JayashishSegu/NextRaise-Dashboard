@@ -1,0 +1,99 @@
+:root{
+/* --- Ink: headings and the marketing CTA (sampled #0F1C3D) -------- */
+--ink-900:#0F1C3D;
+--ink-800:#16264F;
+--ink-700:#1E3161;
+--ink-panel:#0F1729;   /* in-app sidebar + match panels */
+--ink-panel-deep:#060813;
+
+/* --- Logo blue: the mark only (assets/logo-mark.svg) -------------- */
+--brand-logo:#0066F5;
+
+/* --- Action blue: interactive brand surface (sampled #2952FF) ----- */
+--action-50:#EEF2FF;
+--action-100:#DEE5FF;
+--action-200:#BFCBFF;
+--action-300:#94A8FF;
+--action-400:#5C79FF;
+--action-500:#2952FF;
+--action-600:#1B3FE0;
+--action-700:#152FA8;
+--action-800:#102177;
+--action-900:#0A164C;
+
+/* --- Neutrals: cool, faintly blue (sampled) ---------------------- */
+--neutral-0:#FFFFFF;
+--neutral-25:#FBFCFF;
+--neutral-50:#F5F7FF;
+--neutral-100:#EEF1F8;
+--neutral-200:#E3E7F0;
+--neutral-300:#CDD3E0;
+--neutral-400:#A2A6B3;
+--neutral-500:#70778B;   /* secondary UI text, e.g. SIGN IN */
+--neutral-600:#5A6377;
+--neutral-700:#3F4A66;   /* body copy */
+--neutral-900:#0F1C3D;
+
+/* --- Success green: match scores and completed states only -------- */
+--success-50:#EDFAF3;
+--success-100:#D3F3E3;
+--success-200:#A6E7C6;
+--success-500:#19B672;
+--success-600:#12945B;
+--success-700:#0D7147;
+
+/* --- Support hues (status only) --------------------------------- */
+--amber-100:#FEF1D9;
+--amber-500:#F59E0C;
+--amber-700:#B4740E;
+--red-100:#FDE7E7;
+--red-500:#E5484D;
+--red-700:#AE2A2E;
+--sky-100:#E3F1FD;
+--sky-500:#1D9BF0;   /* verified badge */
+--sky-700:#0F6FB0;
+
+/* --- Semantic text ---------------------------------------------- */
+--text-heading:var(--ink-900);
+--text-body:var(--neutral-700);
+--text-muted:var(--neutral-500);
+--text-subtle:var(--neutral-400);
+--text-on-brand:var(--neutral-0);
+--text-brand:var(--action-600);
+--text-link:var(--action-600);
+--text-link-hover:var(--action-700);
+--text-success:var(--success-600);
+--text-danger:var(--red-500);
+--text-warning:var(--amber-700);
+
+/* --- Semantic surfaces ------------------------------------------ */
+--surface-page:var(--neutral-0);
+--surface-muted:var(--neutral-50);
+--surface-card:var(--neutral-0);
+--surface-inset:var(--neutral-100);
+--surface-cta:var(--ink-900);          /* marketing primary button */
+--surface-cta-hover:var(--ink-800);
+--surface-brand:var(--action-500);     /* in-product primary button, selection */
+--surface-brand-hover:var(--action-600);
+--surface-brand-soft:var(--action-50);
+--surface-success-soft:var(--success-50);
+--surface-dark:var(--ink-900);
+--surface-panel-dark:var(--ink-panel);
+--surface-scrim:rgba(15,28,61,.48);
+--surface-glass:rgba(255,255,255,.86);
+
+/* --- Semantic borders ------------------------------------------- */
+--border-subtle:var(--neutral-200);
+--border-default:var(--neutral-300);
+--border-strong:var(--neutral-400);
+--border-brand:var(--action-500);
+--border-focus:var(--action-500);
+--grid-line:#EDF0F7;   /* faint hero graph-paper grid */
+
+/* --- Score ramp (match %, ATS score) ---------------------------- */
+--score-strong:var(--success-500);
+--score-mid:var(--amber-500);
+--score-weak:var(--red-500);
+--score-track:var(--neutral-200);
+--score-track-dark:rgba(255,255,255,.14);
+}

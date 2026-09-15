@@ -1,0 +1,29 @@
+:root{
+--space-0:0px;
+--space-1:2px;
+--space-2:4px;
+--space-3:8px;
+--space-4:12px;
+--space-5:16px;
+--space-6:20px;
+--space-7:24px;
+--space-8:32px;
+--space-9:40px;
+--space-10:56px;
+--space-11:72px;
+--space-12:96px;
+--space-13:128px;
+
+/* Semantic */
+--gap-inline:8px;         /* icon to label */
+--gap-control:12px;       /* between buttons / chips */
+--gap-card:16px;          /* inside a card */
+--gap-stack:24px;         /* between cards */
+--gap-section:96px;       /* between marketing sections */
+--pad-card:20px;
+--pad-card-lg:24px;
+--pad-page:24px;
+--container-max:1200px;
+--container-narrow:720px;
+--extension-panel:360px;
+}

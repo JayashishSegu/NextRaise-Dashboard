@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/nextraise-design-system-94a86aad-f2fe-451a-a566-4ad2b8df26a9/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/nextraise-design-system-94a86aad-f2fe-451a-a566-4ad2b8df26a9/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/nextraise-design-system-94a86aad-f2fe-451a-a566-4ad2b8df26a9/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/nextraise-design-system-94a86aad-f2fe-451a-a566-4ad2b8df26a9/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/nextraise-design-system-94a86aad-f2fe-451a-a566-4ad2b8df26a9/tokens/radius.css">
+  <link rel="stylesheet" href="_ds/nextraise-design-system-94a86aad-f2fe-451a-a566-4ad2b8df26a9/tokens/elevation.css">
+  <link rel="stylesheet" href="_ds/nextraise-design-system-94a86aad-f2fe-451a-a566-4ad2b8df26a9/tokens/motion.css">
+  <link rel="stylesheet" href="_ds/nextraise-design-system-94a86aad-f2fe-451a-a566-4ad2b8df26a9/tokens/base.css">
+  <link rel="stylesheet" href="_ds/nextraise-design-system-94a86aad-f2fe-451a-a566-4ad2b8df26a9/styles.css">
+  <script src="_ds/nextraise-design-system-94a86aad-f2fe-451a-a566-4ad2b8df26a9/_ds_bundle.js"></script>
+  <style>
+    body{margin:0;background:var(--neutral-50);font-family:var(--font-sans)}
+    button{font:inherit;border:0;background:none;padding:0;margin:0;cursor:pointer;color:inherit;text-align:inherit;-webkit-tap-highlight-color:transparent}
+    a{color:var(--text-link);text-decoration:none}a:hover{color:var(--text-link-hover)}
+    ::-webkit-scrollbar{width:0;height:0}
+
+    @keyframes nrRise{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+    @keyframes nrSheet{from{transform:translateY(100%)}to{transform:none}}
+    @keyframes nrFade{from{opacity:0}to{opacity:1}}
+    @keyframes nrDrift{0%{transform:translate(0,0)}50%{transform:translate(18px,-22px)}100%{transform:translate(0,0)}}
+    [data-glass="true"]{background:var(--neutral-50) !important}
+    [data-glass="true"]::before{content:"";position:absolute;width:320px;height:320px;border-radius:50%;left:-120px;top:120px;background:radial-gradient(circle,rgba(41,82,255,.18),rgba(41,82,255,0) 70%);animation:nrDrift 14s ease-in-out infinite;pointer-events:none}
+    [data-glass="true"]::after{content:"";position:absolute;width:300px;height:300px;border-radius:50%;right:-110px;bottom:60px;background:radial-gradient(circle,rgba(25,182,114,.14),rgba(25,182,114,0) 70%);animation:nrDrift 18s ease-in-out infinite reverse;pointer-events:none}
+    [data-glass="true"] [data-card]{position:relative;isolation:isolate;background:rgba(255,255,255,.58) !important;border:1px solid rgba(255,255,255,.85) !important;border-radius:24px !important;box-shadow:0 12px 36px rgba(15,28,61,.08),inset 0 1px 0 rgba(255,255,255,.9) !important;backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6);animation:nrRise 560ms cubic-bezier(.22,.61,.36,1) both;transition:transform 200ms cubic-bezier(.2,0,.2,1),box-shadow 200ms}
+    [data-glass="true"] [data-card]::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background:linear-gradient(135deg,rgba(255,255,255,.7),rgba(255,255,255,0) 45%);pointer-events:none}
+    [data-glass="true"] [data-scroll]>*:nth-child(2){animation-delay:60ms}[data-glass="true"] [data-scroll]>*:nth-child(3){animation-delay:120ms}[data-glass="true"] [data-scroll]>*:nth-child(4){animation-delay:180ms}[data-glass="true"] [data-scroll]>*:nth-child(5){animation-delay:240ms}[data-glass="true"] [data-scroll]>*:nth-child(6){animation-delay:300ms}
+    [data-glass="true"] [data-scroll]>div>[data-card]:nth-child(2){animation-delay:60ms}[data-glass="true"] [data-scroll]>div>[data-card]:nth-child(3){animation-delay:120ms}[data-glass="true"] [data-scroll]>div>[data-card]:nth-child(4){animation-delay:180ms}
+    [data-glass="true"] button[data-card]:active{transform:scale(.97)}
+    [data-glass="true"] [data-header]{background:rgba(255,255,255,.55) !important;border-bottom:1px solid rgba(255,255,255,.8) !important;backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6);z-index:2}
+    [data-glass="true"] [data-seg]{background:rgba(15,28,61,.06) !important;border:1px solid rgba(255,255,255,.7);box-shadow:inset 0 1px 3px rgba(15,28,61,.10),0 1px 0 rgba(255,255,255,.8);backdrop-filter:blur(16px) saturate(1.5);-webkit-backdrop-filter:blur(16px) saturate(1.5)}
+    [data-glass="true"] [data-seg]>button{transition:color 220ms cubic-bezier(.2,0,.2,1),transform 140ms}
+    [data-glass="true"] [data-thumb]{background:linear-gradient(160deg,rgba(255,255,255,.95),rgba(255,255,255,.55)) !important;border:1px solid rgba(255,255,255,.95);backdrop-filter:blur(20px) saturate(1.8);-webkit-backdrop-filter:blur(20px) saturate(1.8);box-shadow:0 6px 18px rgba(15,28,61,.14),0 1px 2px rgba(15,28,61,.08),inset 0 1px 0 #fff,inset 0 -1px 0 rgba(15,28,61,.06) !important;transition:transform 460ms cubic-bezier(.34,1.3,.64,1),width 200ms !important;overflow:hidden}
+    [data-glass="true"] [data-thumb]::after{content:"";position:absolute;left:10%;right:10%;top:2px;height:45%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,255,255,0));pointer-events:none}
+    [data-glass="true"] [data-seg]>button:active{transform:scale(.94)}
+    [data-glass="true"] [data-teamthumb]{background:rgba(255,255,255,.7) !important;border:1px solid rgba(255,255,255,.95);box-shadow:0 6px 18px rgba(15,28,61,.10),inset 0 1px 0 #fff;transition:transform 420ms cubic-bezier(.34,1.2,.64,1) !important}
+    [data-glass="true"] [data-team]:active{transform:scale(.97)}
+    [data-glass="true"] [data-seg]>button:active{transform:scale(.96)}
+    [data-glass="true"] [data-pill]{background:rgba(255,255,255,.7) !important;border:1px solid rgba(255,255,255,.9) !important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 4px 14px rgba(15,28,61,.08),inset 0 1px 0 #fff !important;transition:transform 140ms}
+    [data-glass="true"] [data-pill]:active{transform:scale(.96)}
+    [data-glass="true"] [data-bar]{border-radius:8px 8px 4px 4px !important;transition:height 720ms cubic-bezier(.34,1.25,.64,1),background 200ms !important;box-shadow:inset 0 1px 0 rgba(255,255,255,.45)}
+    [data-glass="true"] [data-tabbar]{left:16px !important;right:16px !important;bottom:14px !important;border-radius:999px;border:1px solid rgba(255,255,255,.9) !important;background:rgba(255,255,255,.62) !important;backdrop-filter:blur(28px) saturate(1.7);-webkit-backdrop-filter:blur(28px) saturate(1.7);box-shadow:0 12px 36px rgba(15,28,61,.14),inset 0 1px 0 #fff;overflow:hidden}
+    [data-glass="true"] [data-tabbar]>div:nth-child(2),[data-glass="true"] [data-tabbar]>div:nth-child(3){height:6px !important}
+    [data-glass="true"] [data-tabbar] button{transition:color 200ms,transform 200ms cubic-bezier(.34,1.4,.64,1)}
+    [data-glass="true"] [data-tabbar] button:active{transform:scale(.9)}
+    [data-glass="true"] [data-sub]{background:var(--neutral-50) !important;transition:transform 380ms cubic-bezier(.32,.72,0,1) !important}
+    [data-glass="true"] [data-sheet]{background:rgba(255,255,255,.78) !important;border:1px solid rgba(255,255,255,.95);border-bottom:0;border-radius:32px 32px 0 0 !important;backdrop-filter:blur(32px) saturate(1.7);-webkit-backdrop-filter:blur(32px) saturate(1.7);animation:nrSheet 420ms cubic-bezier(.32,.72,0,1) both}
+    [data-glass="true"] [data-scrim]{background:rgba(15,28,61,.28) !important;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:nrFade 240ms ease-out both}
+    [data-toast]{animation:nrRise 320ms cubic-bezier(.22,.61,.36,1) both}
+    [data-glass="true"] [data-toast]>span{background:rgba(15,28,61,.82) !important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.18)}
+    [data-mode="dark"] [data-toast]>span{background:rgba(255,255,255,.92) !important;color:#0F1C3D !important}
+    [data-glass="true"] [data-sheet] button{transition:background 200ms,transform 140ms}[data-glass="true"] [data-sheet] button:active{transform:scale(.98)}
+    @media (prefers-reduced-motion:reduce){[data-glass="true"] *,[data-glass="true"]::before,[data-glass="true"]::after{animation:none !important;transition:none !important}}
+    /* Dark appearance: remap tokens inside the screen */
+    [data-mode="dark"]{--neutral-0:#131A2B;--neutral-50:#090D18;--neutral-100:#1A2236;--neutral-200:#242E46;--neutral-300:#33405E;--text-heading:#F2F5FB;--text-body:#C9D1E1;--text-muted:#9AA4BB;--text-subtle:#737E98;--text-link:#9DB2FF;--text-brand:#9DB2FF;--action-50:rgba(92,121,255,.22);--action-200:#3A55B8;--action-500:#5C79FF;--action-600:#9DB2FF;--ink-900:#F2F5FB;--border-subtle:#242E46;--border-default:#33405E;--surface-glass:rgba(19,26,43,.82);--surface-scrim:rgba(0,0,0,.55);--score-track:rgba(255,255,255,.10);--amber-100:#3A2C10;--amber-700:#F5B94A;--success-50:rgba(25,182,114,.18);--surface-success-soft:rgba(25,182,114,.18);--surface-brand-soft:rgba(92,121,255,.22);--surface-inset:#1A2236;--surface-card:#131A2B;--text-success:#3ED08E;--red-100:#3D1A1C;--red-700:#FF7A7F;--shadow-sm:0 1px 3px rgba(0,0,0,.4);--shadow-xs:0 1px 2px rgba(0,0,0,.4);--shadow-xl:0 24px 64px rgba(0,0,0,.6);color:var(--text-heading);background:var(--neutral-50) !important;transition:background 320ms,color 320ms}
+    [data-mode="dark"] [data-card],[data-mode="dark"] [data-header],[data-mode="dark"] [data-sub],[data-mode="dark"] [data-sheet],[data-mode="dark"] [data-tabbar]{transition:background 320ms,border-color 320ms,color 320ms}
+    [data-glass="true"][data-mode="dark"]::before{background:radial-gradient(circle,rgba(92,121,255,.28),rgba(92,121,255,0) 70%)}
+    [data-glass="true"][data-mode="dark"]::after{background:radial-gradient(circle,rgba(25,182,114,.16),rgba(25,182,114,0) 70%)}
+    [data-glass="true"][data-mode="dark"] [data-card]{background:rgba(255,255,255,.055) !important;border:1px solid rgba(255,255,255,.11) !important;box-shadow:0 16px 40px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.10) !important}
+    [data-glass="true"][data-mode="dark"] [data-card]::before{background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,0) 45%)}
+    [data-glass="true"][data-mode="dark"] [data-header]{background:rgba(9,13,24,.6) !important;border-bottom:1px solid rgba(255,255,255,.08) !important}
+    [data-glass="true"][data-mode="dark"] [data-seg]{background:rgba(255,255,255,.06) !important;border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px 3px rgba(0,0,0,.45)}
+    [data-glass="true"][data-mode="dark"] [data-thumb]{background:linear-gradient(160deg,rgba(255,255,255,.22),rgba(255,255,255,.10)) !important;border:1px solid rgba(255,255,255,.22);box-shadow:0 6px 18px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.28) !important}
+    [data-glass="true"][data-mode="dark"] [data-thumb]::after{background:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,0))}
+    [data-glass="true"][data-mode="dark"] [data-pill]{background:rgba(255,255,255,.07) !important;border:1px solid rgba(255,255,255,.12) !important;box-shadow:0 4px 14px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.12) !important;color:var(--text-heading) !important}
+    [data-glass="true"][data-mode="dark"] [data-tabbar]{background:rgba(19,26,43,.62) !important;border:1px solid rgba(255,255,255,.12) !important;box-shadow:0 16px 40px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.12)}
+    [data-glass="true"][data-mode="dark"] [data-sheet]{background:rgba(19,26,43,.84) !important;border:1px solid rgba(255,255,255,.12);border-bottom:0}
+    [data-glass="true"][data-mode="dark"] [data-teamthumb]{background:rgba(255,255,255,.08) !important;border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+    [data-glass="true"][data-mode="dark"] [data-scrim]{background:rgba(0,0,0,.5) !important}
+    [data-mode="dark"] [data-bar]{box-shadow:0 0 18px -4px rgba(92,121,255,.55),inset 0 1px 0 rgba(255,255,255,.25) !important}
+    [data-mode="dark"] [data-chart]{border-bottom:1px solid rgba(255,255,255,.10)}
+    [data-mode="dark"] [data-live]{background:rgba(25,182,114,.14) !important;border-color:rgba(25,182,114,.3) !important}
+    [data-mode="dark"] img[alt="NextRaise"]{box-shadow:0 0 0 1px rgba(255,255,255,.12)}
+  </style>
+</helmet>
+<div data-glass="{{ isGlass }}" data-mode="{{ modeAttr }}" style="position:relative;height:100%;min-height:600px;display:flex;flex-direction:column;background:var(--neutral-50);font-family:var(--font-sans);color:var(--text-heading);overflow:hidden;font-variant-numeric:tabular-nums">
+
+  <!-- Header -->
+  <div data-header="" style="background:var(--neutral-0);border-bottom:1px solid var(--border-subtle);flex:none">
+    <sc-if value="{{ isIos }}" hint-placeholder-val="{{ true }}"><div style="height:54px"></div></sc-if>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px 0 20px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <img src="assets/logo-mark.svg" alt="NextRaise" style="width:28px;height:28px;border-radius:8px">
+        <button onClick="{{ openTeams }}" data-team="" style="display:flex;flex-direction:column;align-items:flex-start;gap:0;min-height:44px;justify-content:center">
+          <span style="font-size:17px;font-weight:700;letter-spacing:-0.02em;line-height:1.2">{{ headerTitle }}</span>
+          <span style="display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:600;color:var(--text-muted);line-height:1.2"><span style="width:7px;height:7px;border-radius:50%;background: {{ teamColor }}"></span>{{ teamName }}<x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevrons-up-down" size="{{ 12 }}" hint-size="12px,12px"></x-import></span>
+        </button>
+      </div>
+      <div style="display:flex;align-items:center;gap:2px">
+        <button style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;position:relative;color:var(--text-body)" onClick="{{ openAlerts }}">
+          <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="bell" size="{{ 22 }}" hint-size="22px,22px"></x-import>
+          <span style="position:absolute;top:10px;right:11px;width:8px;height:8px;border-radius:50%;background:var(--red-500);border:2px solid var(--neutral-0)"></span>
+        </button>
+        <button style="width:44px;height:44px;display:flex;align-items:center;justify-content:center">
+          <span style="width:32px;height:32px;border-radius:50%;background:var(--action-50);color:var(--action-600);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:var(--ring-inset)">JS</span>
+        </button>
+      </div>
+    </div>
+    <!-- Range + live -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 20px 0">
+      <button onClick="{{ openSheet }}" data-pill="" style="height:36px;display:inline-flex;align-items:center;gap:8px;padding:0 12px 0 12px;border-radius:999px;border:1px solid var(--border-default);background:var(--neutral-0);box-shadow:var(--shadow-xs);font-size:13px;font-weight:600;color:var(--text-heading);white-space:nowrap">
+        <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="calendar" size="{{ 14 }}" hint-size="14px,14px"></x-import>
+        <span>{{ rangeLabel }}</span>
+        <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevron-down" size="{{ 14 }}" hint-size="14px,14px"></x-import>
+      </button>
+      <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Badge" tone="live" dot="{{ true }}" data-live="" hint-size="auto,24px"><span style="white-space:nowrap">Live · {{ liveAgo }}</span></x-import>
+    </div>
+    <!-- Global attribution toggle -->
+    <div style="margin:12px 20px 12px;position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:3px;border-radius:999px;background:var(--neutral-100)" data-seg="">
+      <span data-thumb="" style="position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px) / 3);border-radius:999px;background:var(--neutral-0);box-shadow:var(--shadow-sm);transition:transform 320ms cubic-bezier(.32,.72,0,1);transform: {{ thumbX }}"></span>
+      <sc-for list="{{ views }}" as="v" hint-placeholder-count="3">
+        <button onClick="{{ v.onTap }}" aria-pressed="{{ v.active }}" style="position:relative;height:36px;border-radius:999px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;transition:color 220ms cubic-bezier(.2,0,.2,1),transform 140ms;color: {{ v.color }}">{{ v.label }}</button>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- Stale banner -->
+  <sc-if value="{{ stale }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:none;display:flex;align-items:flex-start;gap:10px;padding:10px 20px;background:var(--amber-100);color:var(--amber-700);font-size:12px;font-weight:600;line-height:1.4;border-bottom:1px solid var(--border-subtle)">
+      <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="alert-triangle" size="{{ 16 }}" hint-size="16px,16px"></x-import>
+      <span style="flex:1">PostHog hourly read budget exhausted. Showing the snapshot from 14 min ago; retrying at 10:15.</span>
+    </div>
+  </sc-if>
+
+  <!-- Scroll area -->
+  <div data-scroll="" style="flex:1;min-height:0;overflow:auto;padding:16px 16px 96px;display:flex;flex-direction:column;gap:12px;transition:opacity 140ms;opacity: {{ contentOpacity }}">
+
+    <sc-if value="{{ isOverviewTab }}" hint-placeholder-val="{{ true }}">
+
+      <!-- Hero: signups -->
+      <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:20px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">New signups · {{ rangeLabel }}</div>
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:6px">
+          <div style="font-size:40px;font-weight:800;letter-spacing:-0.03em;line-height:1">{{ signupsFmt }}</div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;padding-bottom:2px">
+            <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Badge" tone="{{ deltaTone }}" hint-size="auto,24px">{{ deltaText }}</x-import>
+            <span style="font-size:11px;font-weight:500;color:var(--text-subtle)">{{ prevText }}</span>
+          </div>
+        </div>
+        <!-- bar chart -->
+        <div style="margin-top:18px;position:relative">
+          <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;top:-4px;left:0;right:0;display:flex;justify-content:center;pointer-events:none">
+              <span style="background:var(--ink-900);color:var(--neutral-0);font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px">{{ selText }}</span>
+            </div>
+          </sc-if>
+          <div data-chart="" style="height:120px;display:flex;align-items:flex-end;gap:{{ barGap }};padding-top:22px">
+            <sc-for list="{{ bars }}" as="b" hint-placeholder-count="7">
+              <button onClick="{{ b.onTap }}" aria-label="{{ b.aria }}" style="flex:1;min-width:0;height:100%;display:flex;align-items:flex-end">
+                <span data-bar="" style="display:block;width:100%;border-radius:4px 4px 2px 2px;transition:height 520ms cubic-bezier(.2,0,.2,1),background 140ms;height: {{ b.h }};background: {{ b.bg }}"></span>
+              </button>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:{{ barGap }};margin-top:6px">
+            <sc-for list="{{ bars }}" as="b" hint-placeholder-count="7">
+              <span style="flex:1;min-width:0;text-align:center;font-size:10px;font-weight:500;color:var(--text-subtle);white-space:nowrap;overflow:hidden">{{ b.label }}</span>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI grid -->
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+        <button onClick="{{ openPayments }}" data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:16px;display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Revenue</span>
+          <span style="font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1.1">{{ inrFmt }}</span>
+          <span style="font-size:12px;font-weight:500;color:var(--text-muted)">+ {{ usdFmt }} · {{ paymentsFmt }} payments</span>
+        </button>
+        <button onClick="{{ openPro }}" data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:16px;display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Active Pro</span>
+          <span style="font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1.1">{{ activeProFmt }}</span>
+          <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ proPct }} of {{ usersFmt }} users</span>
+        </button>
+        <button onClick="{{ openPro }}" data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:16px;display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Signed up &amp; paid</span>
+          <span style="font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1.1">{{ paidFmt }}</span>
+          <span style="font-size:12px;font-weight:500;color: {{ paidDeltaColor }}">{{ paidDeltaText }}</span>
+        </button>
+        <button onClick="{{ openPayments }}" data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:16px;display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Payers · ARPU</span>
+          <span style="font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1.1">{{ payersFmt }}</span>
+          <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ arpuFmt }} per payer</span>
+        </button>
+      </div>
+
+      <!-- Acquisition -->
+      <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:15px;font-weight:700;letter-spacing:-0.01em">Acquisition</span>
+          <button onClick="{{ openSources }}" style="height:32px;padding:0 4px;font-size:13px;font-weight:600;color:var(--text-link);display:inline-flex;align-items:center;gap:2px">See all <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevron-right" size="{{ 14 }}" hint-size="14px,14px"></x-import></button>
+        </div>
+        <sc-for list="{{ topSources }}" as="s" hint-placeholder-count="5">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:13px">
+              <span style="font-weight:600;color:var(--text-heading)">{{ s.name }}</span>
+              <span style="font-weight:700;color:var(--text-heading)">{{ s.nFmt }} <span style="font-weight:500;color:var(--text-subtle)">· {{ s.conv }} paid</span></span>
+            </div>
+            <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.ProgressBar" value="{{ s.pct }}" tone="var(--action-500)" height="{{ 6 }}" hint-size="100%,6px"></x-import>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- Recent signups -->
+      <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:12px 20px 8px;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 4px">
+          <span style="font-size:15px;font-weight:700;letter-spacing:-0.01em">Recent signups</span>
+          <button onClick="{{ openSignups }}" style="height:32px;padding:0 4px;font-size:13px;font-weight:600;color:var(--text-link);display:inline-flex;align-items:center;gap:2px">See all <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevron-right" size="{{ 14 }}" hint-size="14px,14px"></x-import></button>
+        </div>
+        <sc-for list="{{ recentSignups }}" as="u" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;gap:12px;min-height:56px;border-top:1px solid var(--neutral-100)">
+            <span style="width:36px;height:36px;border-radius:50%;background:var(--neutral-100);color:var(--text-body);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">{{ u.init }}</span>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+              <span style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.name }}</span>
+              <span style="font-size:12px;font-weight:500;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.email }}</span>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none">
+              <span style="font-size:12px;font-weight:600;color:var(--text-body)">{{ u.source }}</span>
+              <span style="font-size:11px;font-weight:500;color:var(--text-subtle)">{{ u.when }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- Recent payments -->
+      <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:12px 20px 8px;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 4px">
+          <span style="font-size:15px;font-weight:700;letter-spacing:-0.01em">Recent payments</span>
+          <button onClick="{{ openPayments }}" style="height:32px;padding:0 4px;font-size:13px;font-weight:600;color:var(--text-link);display:inline-flex;align-items:center;gap:2px">See all <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevron-right" size="{{ 14 }}" hint-size="14px,14px"></x-import></button>
+        </div>
+        <sc-for list="{{ recentPayments }}" as="p" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid var(--neutral-100)">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+              <span style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.email }}</span>
+              <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ p.plan }} · {{ p.when }}</span>
+            </div>
+            <span style="font-size:15px;font-weight:700;color:var(--text-success);flex:none">{{ p.amount }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- Conversion by period -->
+      <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:16px 20px 8px">
+        <div style="font-size:15px;font-weight:700;letter-spacing:-0.01em;padding-bottom:8px">Signup → Pro by period</div>
+        <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:0 16px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-subtle);padding:6px 0">
+          <span>Period</span><span style="text-align:right">Signups</span><span style="text-align:right">Pro</span><span style="text-align:right">Rate</span>
+        </div>
+        <sc-for list="{{ convRows }}" as="c" hint-placeholder-count="5">
+          <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:0 16px;align-items:center;min-height:40px;border-top:1px solid var(--neutral-100);font-size:13px">
+            <span style="font-weight:600">{{ c.label }}</span>
+            <span style="text-align:right;font-weight:500;color:var(--text-body)">{{ c.s }}</span>
+            <span style="text-align:right;font-weight:500;color:var(--text-body)">{{ c.p }}</span>
+            <span style="text-align:right;font-weight:700;color: {{ c.color }}">{{ c.rate }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="text-align:center;font-size:11px;font-weight:500;color:var(--text-subtle);padding:8px 0">PostHog project 399417 · Asia/Kolkata · internal and test accounts excluded</div>
+    </sc-if>
+
+    <!-- REPORT tab -->
+    <sc-if value="{{ isReportTab }}" hint-placeholder-val="{{ false }}">
+      <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:20px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1">
+            <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);white-space:nowrap">CEO Report · {{ viewLabel }}</span>
+            <span style="font-size:20px;font-weight:800;letter-spacing:-0.02em;line-height:1.1;white-space:nowrap">{{ rangeLabel }}</span>
+          </div>
+          <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Button" variant="accent" size="sm" icon="share-2" on-click="{{ exportReport }}" hint-size="auto,34px">Export</x-import>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+          <sc-for list="{{ reportKpis }}" as="k" hint-placeholder-count="6">
+            <div style="background:var(--neutral-50);border-radius:12px;padding:12px 12px 10px;display:flex;flex-direction:column;gap:3px;min-width:0">
+              <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ k.l }}</span>
+              <span style="font-size:18px;font-weight:800;letter-spacing:-0.02em;line-height:1.1;white-space:nowrap">{{ k.v }}</span>
+              <span style="font-size:11px;font-weight:500;line-height:1.3;color: {{ k.c }}">{{ k.d }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <sc-if value="{{ reportShowsSocial }}" hint-placeholder-val="{{ false }}">
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:16px 20px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-size:15px;font-weight:700;letter-spacing:-0.01em">Creator content</span>
+            <span style="font-size:12px;font-weight:500;color:var(--text-muted)">manual entries · {{ socialEntries }} posts</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+            <sc-for list="{{ socialKpis }}" as="k" hint-placeholder-count="4">
+              <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+                <span style="font-size:17px;font-weight:800;letter-spacing:-0.02em">{{ k.v }}</span>
+                <span style="font-size:11px;font-weight:500;color:var(--text-muted)">{{ k.l }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:16px;font-size:12px;font-weight:500;color:var(--text-body);border-top:1px solid var(--neutral-100);padding-top:10px">
+            <span>Engagement <strong style="color:var(--text-heading)">{{ engagement }}</strong></span>
+            <span>Cost per view <strong style="color:var(--text-heading)">{{ cpv }}</strong></span>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ reportShowsCompare }}" hint-placeholder-val="{{ false }}">
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:16px 20px 8px">
+          <div style="font-size:15px;font-weight:700;letter-spacing:-0.01em;padding-bottom:8px">Influencer vs Perf</div>
+          <div style="display:grid;grid-template-columns:1fr auto auto;gap:0 20px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-subtle);padding:6px 0">
+            <span></span><span style="text-align:right;color:var(--success-600)">Influencer</span><span style="text-align:right;color:var(--amber-700)">Perf</span>
+          </div>
+          <sc-for list="{{ compareRows }}" as="c" hint-placeholder-count="6">
+            <div style="display:grid;grid-template-columns:1fr auto auto;gap:0 20px;align-items:center;min-height:40px;border-top:1px solid var(--neutral-100);font-size:13px">
+              <span style="font-weight:600">{{ c.l }}</span>
+              <span style="text-align:right;font-weight:700">{{ c.a }}</span>
+              <span style="text-align:right;font-weight:700">{{ c.b }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:16px 20px 8px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:8px">
+          <span style="font-size:15px;font-weight:700;letter-spacing:-0.01em">{{ reportTableTitle }}</span>
+          <span style="font-size:12px;font-weight:500;color:var(--text-muted)">sorted by revenue</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:0 14px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-subtle);padding:6px 0">
+          <span>{{ reportTableFirst }}</span><span style="text-align:right">Spend</span><span style="text-align:right">Sales</span><span style="text-align:right">ROAS</span>
+        </div>
+        <sc-for list="{{ reportRows }}" as="r" hint-placeholder-count="5">
+          <button onClick="{{ r.onTap }}" style="width:100%;display:grid;grid-template-columns:1fr auto auto auto;gap:0 14px;align-items:center;min-height:52px;border-top:1px solid var(--neutral-100);font-size:13px;text-align:left">
+            <span style="display:flex;flex-direction:column;gap:1px;min-width:0">
+              <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+              <span style="font-size:11px;font-weight:500;color:var(--text-muted)">{{ r.meta }}</span>
+            </span>
+            <span style="text-align:right;font-weight:500;color:var(--text-body)">{{ r.spend }}</span>
+            <span style="text-align:right;font-weight:600">{{ r.sales }}</span>
+            <span style="text-align:right;font-weight:700;color: {{ r.roasColor }}">{{ r.roas }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="text-align:center;font-size:11px;font-weight:500;color:var(--text-subtle);padding:8px 0;text-wrap:pretty">Perf spend from googleads_campaign_stats + metaads_ad_stats · brand-search campaign excluded · creator budgets entered manually</div>
+    </sc-if>
+
+    <!-- CREATORS tab -->
+    <sc-if value="{{ isCreatorsTab }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+        <sc-for list="{{ creatorKpis }}" as="k" hint-placeholder-count="3">
+          <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:14px 12px;display:flex;flex-direction:column;gap:3px;min-width:0">
+            <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">{{ k.l }}</span>
+            <span style="font-size:20px;font-weight:800;letter-spacing:-0.02em;line-height:1.1">{{ k.v }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:12px 20px 8px;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 4px">
+          <span style="font-size:15px;font-weight:700;letter-spacing:-0.01em;white-space:nowrap">Top creators</span>
+          <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Button" variant="soft" size="sm" icon="plus" on-click="{{ openAddData }}" hint-size="auto,34px">Add data</x-import>
+        </div>
+        <sc-for list="{{ creators }}" as="c" hint-placeholder-count="5">
+          <button onClick="{{ c.onTap }}" style="width:100%;display:flex;align-items:center;gap:12px;min-height:64px;border-top:1px solid var(--neutral-100);text-align:left">
+            <span style="width:40px;height:40px;border-radius:50%;background:var(--action-50);color:var(--text-brand);font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none">{{ c.init }}</span>
+            <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+              <span style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.name }}</span>
+              <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ c.code }} · {{ c.platform }} · {{ c.signups }} signups</span>
+            </span>
+            <span style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none">
+              <span style="font-size:14px;font-weight:700">{{ c.revenue }}</span>
+              <span style="font-size:11px;font-weight:600;color: {{ c.roasColor }}">ROAS {{ c.roas }}</span>
+            </span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="text-align:center;font-size:11px;font-weight:500;color:var(--text-subtle);padding:8px 0;text-wrap:pretty">Names come from PostHog cohorts (referred_by_code → handle). Budget and social metrics are manual entries in Vercel KV.</div>
+    </sc-if>
+
+    <!-- SEARCH tab -->
+    <sc-if value="{{ isSearchTab }}" hint-placeholder-val="{{ false }}">
+      <div data-pill="" style="display:flex;align-items:center;gap:10px;height:48px;padding:0 14px;border-radius:14px;background:var(--neutral-0);border:1px solid var(--border-default);box-shadow:var(--shadow-xs);color:var(--text-muted)">
+        <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="search" size="{{ 18 }}" hint-size="18px,18px"></x-import>
+        <input value="{{ query }}" onChange="{{ setQuery }}" placeholder="Email, name or referral code" style="flex:1;min-width:0;height:100%;border:0;outline:0;background:transparent;font:inherit;font-size:15px;font-weight:500;color:var(--text-heading)">
+        <sc-if value="{{ hasQuery }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearQuery }}" aria-label="Clear" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--text-subtle)"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="x" size="{{ 16 }}" hint-size="16px,16px"></x-import></button></sc-if>
+      </div>
+      <sc-if value="{{ hasQuery }}" hint-placeholder-val="{{ false }}">
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:4px 20px">
+          <div style="font-size:12px;font-weight:500;color:var(--text-muted);padding:10px 0 4px">{{ resultCount }}</div>
+          <sc-for list="{{ results }}" as="u" hint-placeholder-count="3">
+            <button onClick="{{ u.onTap }}" style="width:100%;display:flex;align-items:center;gap:12px;min-height:60px;border-top:1px solid var(--neutral-100);text-align:left">
+              <span style="width:36px;height:36px;border-radius:50%;background:var(--neutral-100);color:var(--text-body);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">{{ u.init }}</span>
+              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+                <span style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.name }}</span>
+                <span style="font-size:12px;font-weight:500;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.email }}</span>
+              </span>
+              <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Badge" tone="{{ u.tone }}" hint-size="auto,24px">{{ u.plan }}</x-import>
+              <span style="color:var(--text-subtle);display:inline-flex"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevron-right" size="{{ 16 }}" hint-size="16px,16px"></x-import></span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ noQuery }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);padding:8px 4px 0">Recent lookups</span>
+          <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:0 20px">
+            <sc-for list="{{ recentLookups }}" as="u" hint-placeholder-count="4">
+              <button onClick="{{ u.onTap }}" style="width:100%;display:flex;align-items:center;gap:12px;min-height:56px;border-top:1px solid var(--neutral-100);text-align:left">
+                <span style="color:var(--text-subtle);display:inline-flex"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="history" size="{{ 16 }}" hint-size="16px,16px"></x-import></span>
+                <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+                  <span style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.email }}</span>
+                  <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ u.name }} · {{ u.plan }}</span>
+                </span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);padding:8px 4px 0">Quick filters</span>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <sc-for list="{{ quickFilters }}" as="q" hint-placeholder-count="4">
+              <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Chip" icon="{{ q.icon }}" count="{{ q.count }}" on-click="{{ q.onTap }}" hint-size="auto,32px">{{ q.label }}</x-import>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ isPlaceholderTab }}" hint-placeholder-val="{{ false }}">
+      <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;padding:32px 24px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;margin-top:24px">
+        <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Not designed in this pass</span>
+        <span style="font-size:20px;font-weight:700;letter-spacing:-0.02em">{{ tabTitle }}</span>
+        <span style="font-size:14px;color:var(--text-body);line-height:1.5;text-wrap:pretty">This screen exists on the web dashboard. Tell me which one to bring to mobile next.</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isMoreTab }}" hint-placeholder-val="{{ false }}">
+      <sc-for list="{{ moreGroups }}" as="g" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);padding:8px 4px 0">{{ g.label }}</span>
+          <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;overflow:hidden">
+            <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="3">
+              <button onClick="{{ it.onTap }}" style="width:100%;display:flex;align-items:center;justify-content:space-between;min-height:52px;padding:0 16px 0 20px;border-top:1px solid var(--neutral-100);font-size:15px;font-weight:600;color:var(--text-heading)">
+                <span>{{ it.label }}</span>
+                <span style="color:var(--text-subtle);display:inline-flex"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevron-right" size="{{ 16 }}" hint-size="16px,16px"></x-import></span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </sc-if>
+  </div>
+
+  <!-- Tab bar -->
+  <div data-tabbar="" style="position:absolute;left:0;right:0;bottom:0;background:var(--surface-glass);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-top:1px solid var(--border-subtle)">
+    <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:6px 8px 0">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+        <button onClick="{{ t.onTap }}" style="height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:10.5px;font-weight:600;transition:color 140ms;color: {{ t.color }}">
+          <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="{{ t.icon }}" size="{{ 22 }}" hint-size="22px,22px"></x-import>
+          <span>{{ t.label }}</span>
+        </button>
+      </sc-for>
+    </div>
+    <sc-if value="{{ isIos }}" hint-placeholder-val="{{ true }}"><div style="height:30px"></div></sc-if>
+    <sc-if value="{{ isAndroid }}" hint-placeholder-val="{{ false }}"><div style="height:8px"></div></sc-if>
+  </div>
+
+  <!-- Sub-screen (pushed) -->
+  <div data-sub="" style="position:absolute;inset:0;background:var(--neutral-50);display:flex;flex-direction:column;transition:transform 200ms ease-out;transform: {{ subX }};box-shadow:var(--shadow-xl)">
+    <div data-header="" style="background:var(--neutral-0);border-bottom:1px solid var(--border-subtle);flex:none">
+      <sc-if value="{{ isIos }}" hint-placeholder-val="{{ true }}"><div style="height:54px"></div></sc-if>
+      <div style="display:flex;align-items:center;gap:4px;padding:6px 12px 10px 8px">
+        <button onClick="{{ goBack }}" aria-label="Back" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--text-link)">
+          <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevron-left" size="{{ 24 }}" hint-size="24px,24px"></x-import>
+        </button>
+        <div style="display:flex;flex-direction:column;gap:1px;min-width:0;flex:1">
+          <span style="font-size:17px;font-weight:700;letter-spacing:-0.02em">{{ subTitle }}</span>
+          <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ subMeta }}</span>
+        </div>
+      </div>
+    </div>
+    <div style="flex:1;min-height:0;overflow:auto;padding:16px 16px 60px;display:flex;flex-direction:column;gap:12px">
+
+      <sc-if value="{{ subIsSources }}" hint-placeholder-val="{{ false }}">
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;padding:8px 20px">
+          <div style="display:grid;grid-template-columns:1fr auto auto;gap:0 16px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-subtle);padding:10px 0 6px">
+            <span>Source · medium</span><span style="text-align:right">Signups</span><span style="text-align:right">Conv</span>
+          </div>
+          <sc-for list="{{ allSources }}" as="s" hint-placeholder-count="6">
+            <div style="display:grid;grid-template-columns:1fr auto auto;gap:6px 16px;align-items:center;padding:12px 0;border-top:1px solid var(--neutral-100);font-size:13px">
+              <div style="display:flex;flex-direction:column;gap:1px;min-width:0">
+                <span style="font-weight:600">{{ s.name }}</span>
+                <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ s.medium }} · {{ s.bucket }}</span>
+              </div>
+              <span style="text-align:right;font-weight:700">{{ s.nFmt }}</span>
+              <span style="text-align:right;font-weight:600;color:var(--text-body)">{{ s.convPct }}</span>
+              <div style="grid-column:1 / -1"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.ProgressBar" value="{{ s.pct }}" tone="var(--action-500)" height="{{ 4 }}" hint-size="100%,4px"></x-import></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.5;padding:0 4px;text-wrap:pretty">Bucket rule: Direct, Chrome Extension, organic social and the Google brand-search campaign count as Influencer. Google (non-brand) and Meta count as Perf. Email and referral appear only in Overall.</div>
+      </sc-if>
+
+      <sc-if value="{{ subIsSignups }}" hint-placeholder-val="{{ false }}">
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;padding:0 20px">
+          <sc-for list="{{ allSignups }}" as="u" hint-placeholder-count="8">
+            <div style="display:flex;align-items:center;gap:12px;min-height:60px;border-top:1px solid var(--neutral-100)">
+              <span style="width:36px;height:36px;border-radius:50%;background:var(--neutral-100);color:var(--text-body);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">{{ u.init }}</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+                <span style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.name }}</span>
+                <span style="font-size:12px;font-weight:500;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.email }}</span>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none">
+                <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Badge" tone="{{ u.tone }}" hint-size="auto,24px">{{ u.plan }}</x-import>
+                <span style="font-size:11px;font-weight:500;color:var(--text-subtle)">{{ u.source }} · {{ u.when }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ subIsPayments }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+          <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">INR</span>
+            <span style="font-size:22px;font-weight:800;letter-spacing:-0.02em">{{ inrFmt }}</span>
+            <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ inrPayers }} payers</span>
+          </div>
+          <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">USD</span>
+            <span style="font-size:22px;font-weight:800;letter-spacing:-0.02em">{{ usdFmt }}</span>
+            <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ usdPayers }} payers</span>
+          </div>
+        </div>
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;padding:0 20px">
+          <sc-for list="{{ allPayments }}" as="p" hint-placeholder-count="8">
+            <div style="display:flex;align-items:center;gap:12px;min-height:56px;border-top:1px solid var(--neutral-100)">
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                <span style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.email }}</span>
+                <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ p.plan }} · {{ p.when }}</span>
+              </div>
+              <span style="font-size:15px;font-weight:700;color:var(--text-success);flex:none">{{ p.amount }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ subIsPro }}" hint-placeholder-val="{{ false }}">
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:flex-end;gap:6px">
+            <span style="font-size:40px;font-weight:800;letter-spacing:-0.03em;line-height:1">{{ activeProFmt }}</span>
+            <span style="font-size:13px;font-weight:500;color:var(--text-muted);padding-bottom:4px">active Pro · {{ proPct }} of {{ usersFmt }}</span>
+          </div>
+          <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.ProgressBar" value="{{ proBarPct }}" tone="var(--success-500)" height="{{ 8 }}" label="Pro share of all users" caption="{{ proPct }}" hint-size="100%,28px"></x-import>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+            <sc-for list="{{ proStats }}" as="k" hint-placeholder-count="3">
+              <div style="background:var(--neutral-50);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:4px">
+                <span style="font-size:18px;font-weight:800;letter-spacing:-0.02em">{{ k.v }}</span>
+                <span style="font-size:11px;font-weight:500;color:var(--text-muted);line-height:1.3">{{ k.l }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;padding:16px 20px 8px">
+          <div style="font-size:15px;font-weight:700;letter-spacing:-0.01em;padding-bottom:8px">Signup → Pro by period</div>
+          <sc-for list="{{ convRows }}" as="c" hint-placeholder-count="5">
+            <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:0 16px;align-items:center;min-height:40px;border-top:1px solid var(--neutral-100);font-size:13px">
+              <span style="font-weight:600">{{ c.label }}</span>
+              <span style="text-align:right;font-weight:500;color:var(--text-body)">{{ c.s }}</span>
+              <span style="text-align:right;font-weight:500;color:var(--text-body)">{{ c.p }}</span>
+              <span style="text-align:right;font-weight:700;color: {{ c.color }}">{{ c.rate }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ subIsAlerts }}" hint-placeholder-val="{{ false }}">
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;padding:0 20px">
+          <sc-for list="{{ alerts }}" as="a" hint-placeholder-count="3">
+            <div style="display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-top:1px solid var(--neutral-100)">
+              <span style="width:8px;height:8px;border-radius:50%;margin-top:6px;flex:none;background: {{ a.dot }}"></span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                <span style="font-size:14px;font-weight:700">{{ a.title }}</span>
+                <span style="font-size:13px;color:var(--text-body);line-height:1.45;text-wrap:pretty">{{ a.body }}</span>
+                <span style="font-size:11px;font-weight:500;color:var(--text-subtle)">{{ a.when }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ subIsCreator }}" hint-placeholder-val="{{ false }}">
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:20px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:center;gap:14px">
+            <span style="width:52px;height:52px;border-radius:50%;background:var(--action-50);color:var(--text-brand);font-size:17px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none">{{ cr.init }}</span>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+              <span style="font-size:18px;font-weight:800;letter-spacing:-0.02em">{{ cr.name }}</span>
+              <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ cr.platform }} · code {{ cr.code }} · cohort {{ cr.cohort }}</span>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+            <sc-for list="{{ cr.stats }}" as="k" hint-placeholder-count="6">
+              <div style="background:var(--neutral-50);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:3px;min-width:0">
+                <span style="font-size:17px;font-weight:800;letter-spacing:-0.02em;white-space:nowrap">{{ k.v }}</span>
+                <span style="font-size:11px;font-weight:500;color:var(--text-muted);line-height:1.3">{{ k.l }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.ProgressBar" value="{{ cr.convPct }}" tone="var(--success-500)" height="{{ 8 }}" label="Signup → paid" caption="{{ cr.conv }}" hint-size="100%,28px"></x-import>
+          <div style="display:flex;gap:8px">
+            <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Button" variant="accent" size="sm" icon="plus" block="{{ true }}" on-click="{{ openAddData }}" hint-size="100%,34px">Add post data</x-import>
+            <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Button" variant="secondary" size="sm" icon="link" block="{{ true }}" on-click="{{ copyLink }}" hint-size="100%,34px">Copy link</x-import>
+          </div>
+        </div>
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:12px 20px 8px">
+          <div style="font-size:15px;font-weight:700;letter-spacing:-0.01em;padding:6px 0 4px">Posts · manual entries</div>
+          <sc-for list="{{ cr.posts }}" as="p" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:12px;min-height:56px;border-top:1px solid var(--neutral-100)">
+              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                <span style="font-size:14px;font-weight:600">{{ p.date }} · {{ p.type }}</span>
+                <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ p.views }} views · {{ p.likes }} likes · {{ p.comments }} comments</span>
+              </span>
+              <span style="font-size:14px;font-weight:700;flex:none">{{ p.budget }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ subIsPerson }}" hint-placeholder-val="{{ false }}">
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:20px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:center;gap:14px">
+            <span style="width:52px;height:52px;border-radius:50%;background:var(--neutral-100);color:var(--text-body);font-size:17px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none">{{ pr.init }}</span>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+              <span style="font-size:18px;font-weight:800;letter-spacing:-0.02em">{{ pr.name }}</span>
+              <span style="font-size:13px;font-weight:500;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ pr.email }}</span>
+            </div>
+            <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Badge" tone="{{ pr.tone }}" hint-size="auto,24px">{{ pr.plan }}</x-import>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">
+            <sc-for list="{{ pr.facts }}" as="f" hint-placeholder-count="6">
+              <div style="display:flex;flex-direction:column;gap:2px;padding:10px 0;border-top:1px solid var(--neutral-100);min-width:0">
+                <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-subtle)">{{ f.l }}</span>
+                <span style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.v }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:8px">
+            <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Button" variant="secondary" size="sm" icon="copy" block="{{ true }}" on-click="{{ copyEmail }}" hint-size="100%,34px">Copy email</x-import>
+            <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Button" variant="secondary" size="sm" icon="external-link" block="{{ true }}" on-click="{{ openPosthog }}" hint-size="100%,34px">PostHog</x-import>
+          </div>
+        </div>
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:12px 20px 8px">
+          <div style="font-size:15px;font-weight:700;letter-spacing:-0.01em;padding:6px 0 4px">Payments</div>
+          <sc-for list="{{ pr.payments }}" as="p" hint-placeholder-count="2">
+            <div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid var(--neutral-100)">
+              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                <span style="font-size:14px;font-weight:600">{{ p.plan }}</span>
+                <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ p.when }} · {{ p.status }}</span>
+              </span>
+              <span style="font-size:15px;font-weight:700;color:var(--text-success);flex:none">{{ p.amount }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ pr.noPayments }}" hint-placeholder-val="{{ false }}"><div style="padding:14px 0;border-top:1px solid var(--neutral-100);font-size:13px;color:var(--text-muted)">No completed payments. {{ pr.credits }} free credits used.</div></sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ subIsPlaceholder }}" hint-placeholder-val="{{ false }}">
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;padding:32px 24px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;margin-top:24px">
+          <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Not designed in this pass</span>
+          <span style="font-size:20px;font-weight:700;letter-spacing:-0.02em">{{ subTitle }}</span>
+          <span style="font-size:14px;color:var(--text-body);line-height:1.5;text-wrap:pretty">This screen exists on the web dashboard. Tell me which one to bring to mobile next.</span>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <!-- Range bottom sheet -->
+  <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+    <button onClick="{{ closeSheet }}" aria-label="Close" data-scrim="" style="position:absolute;inset:0;background:var(--surface-scrim)"></button>
+    <div data-sheet="" style="position:absolute;left:0;right:0;bottom:0;background:var(--neutral-0);border-radius:24px 24px 0 0;box-shadow:var(--shadow-xl);padding:8px 8px 40px;display:flex;flex-direction:column">
+      <div style="width:36px;height:4px;border-radius:999px;background:var(--neutral-300);margin:4px auto 10px"></div>
+      <div style="padding:4px 16px 8px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Date range · IST</div>
+      <sc-for list="{{ ranges }}" as="r" hint-placeholder-count="7">
+        <button onClick="{{ r.onTap }}" style="display:flex;align-items:center;justify-content:space-between;height:52px;padding:0 16px;border-radius:12px;font-size:15px;font-weight:600;background: {{ r.bg }};color: {{ r.color }}">
+          <span>{{ r.label }}</span>
+          <sc-if value="{{ r.active }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="check" size="{{ 18 }}" hint-size="18px,18px"></x-import></sc-if>
+        </button>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- Add creator data sheet -->
+  <sc-if value="{{ addOpen }}" hint-placeholder-val="{{ false }}">
+    <button onClick="{{ closeAdd }}" aria-label="Close" data-scrim="" style="position:absolute;inset:0;background:var(--surface-scrim)"></button>
+    <div data-sheet="" style="position:absolute;left:0;right:0;bottom:0;background:var(--neutral-0);border-radius:24px 24px 0 0;box-shadow:var(--shadow-xl);padding:8px 16px 40px;display:flex;flex-direction:column;gap:12px">
+      <div style="width:36px;height:4px;border-radius:999px;background:var(--neutral-300);margin:4px auto 2px"></div>
+      <div style="display:flex;flex-direction:column;gap:2px;padding:0 4px">
+        <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Add post data</span>
+        <span style="font-size:18px;font-weight:800;letter-spacing:-0.02em">{{ addTitle }}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <sc-for list="{{ addFields }}" as="f" hint-placeholder-count="6">
+          <label style="display:flex;flex-direction:column;gap:4px;min-width:0">
+            <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">{{ f.l }}</span>
+            <input placeholder="{{ f.p }}" style="height:44px;border-radius:12px;border:1px solid var(--border-default);background:var(--neutral-0);padding:0 12px;font:inherit;font-size:15px;font-weight:500;color:var(--text-heading);outline:0;min-width:0">
+          </label>
+        </sc-for>
+      </div>
+      <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Button" variant="accent" block="{{ true }}" icon="check" on-click="{{ saveAdd }}" hint-size="100%,44px">Save entry</x-import>
+      <span style="font-size:12px;color:var(--text-muted);text-align:center;text-wrap:pretty">Saved to Vercel KV as a dated entry so it lines up with the date-ranged PostHog numbers.</span>
+    </div>
+  </sc-if>
+
+  <!-- Toast -->
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div data-toast="" style="position:absolute;left:24px;right:24px;bottom:110px;display:flex;justify-content:center;pointer-events:none">
+      <span style="display:inline-flex;align-items:center;gap:8px;background:var(--ink-900);color:var(--neutral-0);font-size:13px;font-weight:600;padding:10px 16px;border-radius:999px;box-shadow:var(--shadow-lg)"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="check" size="{{ 14 }}" hint-size="14px,14px"></x-import>{{ toast }}</span>
+    </div>
+  </sc-if>
+
+  <!-- Team switcher sheet -->
+  <sc-if value="{{ teamsOpen }}" hint-placeholder-val="{{ false }}">
+    <button onClick="{{ closeTeams }}" aria-label="Close" data-scrim="" style="position:absolute;inset:0;background:var(--surface-scrim)"></button>
+    <div data-sheet="" style="position:absolute;left:0;right:0;bottom:0;background:var(--neutral-0);border-radius:24px 24px 0 0;box-shadow:var(--shadow-xl);padding:8px 8px 40px;display:flex;flex-direction:column">
+      <div style="width:36px;height:4px;border-radius:999px;background:var(--neutral-300);margin:4px auto 10px"></div>
+      <div style="padding:4px 16px 8px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Switch team</div>
+      <div style="position:relative;display:flex;flex-direction:column">
+        <span data-teamthumb="" style="position:absolute;left:0;right:0;top:0;height:64px;border-radius:16px;background:var(--action-50);transition:transform 320ms cubic-bezier(.32,.72,0,1);transform: {{ teamThumbY }}"></span>
+        <sc-for list="{{ teams }}" as="t" hint-placeholder-count="4">
+          <button onClick="{{ t.onTap }}" style="position:relative;display:flex;align-items:center;gap:14px;height:64px;padding:0 16px;border-radius:16px;text-align:left">
+            <span style="width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex:none;background: {{ t.color }}">{{ t.abbr }}</span>
+            <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+              <span style="font-size:15px;font-weight:700;transition:color 220ms;color: {{ t.textColor }}">{{ t.name }}</span>
+              <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ t.meta }}</span>
+            </span>
+            <span style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 220ms,color 220ms,transform 320ms cubic-bezier(.34,1.4,.64,1);background: {{ t.checkBg }};color: {{ t.checkColor }};transform: {{ t.checkScale }}"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="check" size="{{ 14 }}" hint-size="14px,14px"></x-import></span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="padding:16px 16px 8px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Appearance</div>
+      <div data-seg="" style="position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:3px;margin:0 8px;border-radius:999px;background:var(--neutral-100)">
+        <span data-thumb="" style="position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px) / 3);border-radius:999px;background:var(--neutral-0);box-shadow:var(--shadow-sm);transition:transform 320ms cubic-bezier(.32,.72,0,1);transform: {{ modeThumbX }}"></span>
+        <sc-for list="{{ modes }}" as="m" hint-placeholder-count="3">
+          <button onClick="{{ m.onTap }}" style="position:relative;height:40px;border-radius:999px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;transition:color 220ms cubic-bezier(.2,0,.2,1),transform 140ms;color: {{ m.color }}"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="{{ m.icon }}" size="{{ 15 }}" hint-size="15px,15px"></x-import>{{ m.label }}</button>
+        </sc-for>
+      </div>
+      <div style="padding:12px 16px 0;font-size:12px;color:var(--text-muted);line-height:1.45;text-wrap:pretty">Team sets the default attribution bucket and alert rules for this device. Appearance follows the system unless you pick one.</div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:402,&quot;height&quot;:820},&quot;platform&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ios&quot;,&quot;android&quot;],&quot;default&quot;:&quot;ios&quot;,&quot;tsType&quot;:&quot;'ios' | 'android'&quot;,&quot;section&quot;:&quot;Device&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;glass&quot;,&quot;flat&quot;],&quot;default&quot;:&quot;glass&quot;,&quot;tsType&quot;:&quot;'glass' | 'flat'&quot;,&quot;section&quot;:&quot;Device&quot;},&quot;initialView&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;overall&quot;,&quot;influencer&quot;,&quot;perf&quot;],&quot;default&quot;:&quot;overall&quot;,&quot;tsType&quot;:&quot;'overall' | 'influencer' | 'perf'&quot;,&quot;section&quot;:&quot;Data&quot;},&quot;stale&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Data&quot;}}">
+class Component extends DCLogic {
+  state = { range: '7d', view: null, tab: 'overview', sub: null, sheet: false, teams: false, team: 'growth', mode: 'light', bar: null, query: '', person: null, creator: null, add: false, toast: null, loading: false, tick: 0 };
+
+  static TEAMS = [
+    { key: 'growth', name: 'Growth', abbr: 'GR', meta: 'Overall bucket · daily digest', color: 'var(--action-500)', view: 'overall' },
+    { key: 'influencer', name: 'Influencer marketing', abbr: 'IM', meta: 'Influencer bucket · creator alerts', color: 'var(--success-500)', view: 'influencer' },
+    { key: 'perf', name: 'Performance marketing', abbr: 'PM', meta: 'Perf bucket · spend and CAC alerts', color: 'var(--amber-500)', view: 'perf' },
+    { key: 'founders', name: 'Founders', abbr: 'FO', meta: 'Overall bucket · revenue milestones', color: 'var(--ink-900)', view: 'overall' },
+  ];
+
+  componentDidMount() { this._t = setInterval(() => this.setState(s => ({ tick: s.tick + 1 })), 60000); }
+  componentWillUnmount() { clearInterval(this._t); }
+
+  say(msg) { clearTimeout(this._toast); this.setState({ toast: msg }); this._toast = setTimeout(() => this.setState({ toast: null }), 2200); }
+
+  bump(patch) {
+    clearTimeout(this._l);
+    this.setState({ ...patch, loading: true, bar: null });
+    this._l = setTimeout(() => this.setState({ loading: false }), 420);
+  }
+
+  static RANGES = [
+    ['today', 'Today'], ['yest', 'Yesterday'], ['7d', 'Last 7 days'], ['14d', 'Last 14 days'],
+    ['thisMonth', 'This month'], ['lastMonth', 'Last month'], ['all', 'All time'],
+  ];
+  // signups, prev, inr, usd, payments, payers, paid-in-window, prev paid
+  static BASE = {
+    today:     { s: 212,   p: 246,  inr: 3120,   usd: 0,      pay: 5,   payers: 5,   paid: 3,   pp: 4 },
+    yest:      { s: 246,   p: 335,  inr: 9870,   usd: 48,     pay: 14,  payers: 13,  paid: 4,   pp: 6 },
+    '7d':      { s: 1933,  p: 1446, inr: 21440,  usd: 96,     pay: 31,  payers: 30,  paid: 24,  pp: 19 },
+    '14d':     { s: 3380,  p: 2890, inr: 38900,  usd: 190,    pay: 57,  payers: 55,  paid: 41,  pp: 36 },
+    thisMonth: { s: 3610,  p: 3350, inr: 41200,  usd: 212,    pay: 60,  payers: 58,  paid: 44,  pp: 39 },
+    lastMonth: { s: 6120,  p: 5649, inr: 74058,  usd: 393.74, pay: 108, payers: 103, paid: 79,  pp: 66 },
+    all:       { s: 11669, p: null, inr: 168400, usd: 1012,   pay: 262, payers: 241, paid: 190, pp: null },
+  };
+  // 7-day baseline by source; bucket per the attribution engine
+  static SRC = [
+    { name: 'Google Ads', medium: 'cpc', n: 538, conv: 9, b: 'perf' },
+    { name: 'Google · brand search', medium: 'cpc · 23951249428', n: 288, conv: 5, b: 'infl' },
+    { name: 'Direct', medium: '(none)', n: 550, conv: 9, b: 'infl' },
+    { name: 'Chrome Extension', medium: 'extension', n: 277, conv: 5, b: 'infl' },
+    { name: 'Meta Ads', medium: 'paid_social', n: 217, conv: 3, b: 'perf' },
+    { name: 'Influencer', medium: 'influencer', n: 46, conv: 1, b: 'infl' },
+    { name: 'Loops', medium: 'email', n: 11, conv: 0, b: 'other' },
+    { name: 'Referral', medium: 'referral', n: 6, conv: 0, b: 'other' },
+  ];
+  static PEOPLE = [
+    ['Akul Mehra', 'akul.mehra@gmail.com', 'Google Ads', 'Pro', '2m ago', 'perf'],
+    ['Priya Sharma', 'priya.s@outlook.com', 'Direct', 'Free', '9m ago', 'infl'],
+    ['Rahul Verma', 'rahulv.dev@gmail.com', 'Chrome Ext', 'Free', '14m ago', 'infl'],
+    ['Neha Gupta', 'neha.gupta@yahoo.com', 'Meta Ads', 'Pro', '31m ago', 'perf'],
+    ['Sandeep Rao', 'sandeep.rao21@gmail.com', 'Direct', 'Free', '42m ago', 'infl'],
+    ['Ananya Iyer', 'ananya.iyer@gmail.com', 'Influencer', 'Free', '1h ago', 'infl'],
+    ['Vikram Nair', 'vikram.n@proton.me', 'Google Ads', 'Free', '1h ago', 'perf'],
+    ['Tanvi Kulkarni', 'tanvi.k@gmail.com', 'Chrome Ext', 'Pro', '2h ago', 'infl'],
+    ['Mohit Bansal', 'mohit.b@outlook.com', 'Google Ads', 'Free', '2h ago', 'perf'],
+    ['Sara Fernandes', 'sara.f@gmail.com', 'Direct', 'Free', '3h ago', 'infl'],
+    ['Harsh Patel', 'harsh.p@gmail.com', 'Meta Ads', 'Free', '3h ago', 'perf'],
+    ['Divya Menon', 'divya.menon@gmail.com', 'Direct', 'Free', '4h ago', 'infl'],
+    ['Arjun Reddy', 'arjun.r@gmail.com', 'Google Ads', 'Free', '5h ago', 'perf'],
+    ['Kavya Shetty', 'kavya.s@yahoo.com', 'Chrome Ext', 'Free', '5h ago', 'infl'],
+  ];
+  static PAY = [
+    ['akul.mehra@gmail.com', 'Pro monthly', '+₹999', '2m ago', 'perf', 'inr'],
+    ['neha.gupta@yahoo.com', 'Pro 3-month', '+₹2,499', '31m ago', 'perf', 'inr'],
+    ['j.dlugosz@gmail.com', 'Pro monthly', '+$12', '1h ago', 'infl', 'usd'],
+    ['tanvi.k@gmail.com', 'Pro weekly', '+₹399', '2h ago', 'infl', 'inr'],
+    ['mohit.b@outlook.com', 'Pro monthly', '+₹999', '3h ago', 'perf', 'inr'],
+    ['sara.f@gmail.com', 'Pro monthly', '+$12', '5h ago', 'infl', 'usd'],
+    ['harsh.p@gmail.com', 'Pro weekly', '+₹399', '6h ago', 'perf', 'inr'],
+    ['ritika.j@gmail.com', 'Pro monthly', '+₹999', '8h ago', 'infl', 'inr'],
+    ['omar.s@gmail.com', 'Pro monthly', '+$12', '11h ago', 'infl', 'usd'],
+    ['pranav.d@gmail.com', 'Pro 3-month', '+₹2,499', '14h ago', 'infl', 'inr'],
+  ];
+  // 7-day baseline per creator: budget, views, likes, comments, shares, signups, sales, revenue (INR)
+  static CREATORS = [
+    { name: 'MoonXShruthi', code: 'YUBC4W', platform: 'Instagram', budget: 12000, views: 412000, likes: 18400, comments: 920, shares: 2100, signups: 386, sales: 9, rev: 8970 },
+    { name: 'Tamanna', code: 'TAMANNA10', platform: 'Instagram', budget: 8000, views: 268000, likes: 12100, comments: 610, shares: 1400, signups: 241, sales: 6, rev: 5994 },
+    { name: 'Akshat', code: 'AKSHAT', platform: 'YouTube', budget: 6000, views: 190000, likes: 7600, comments: 480, shares: 620, signups: 154, sales: 4, rev: 3996 },
+    { name: 'CareerWithNidhi', code: 'NIDHI', platform: 'Instagram', budget: 3000, views: 145000, likes: 6900, comments: 350, shares: 780, signups: 128, sales: 3, rev: 2997 },
+    { name: 'JobsByRohan', code: 'ROHAN20', platform: 'Instagram', budget: 2000, views: 96000, likes: 3800, comments: 190, shares: 410, signups: 71, sales: 1, rev: 999 },
+  ];
+  static CAMPAIGNS = [
+    { name: 'Google Search · Resume ATS', code: '2210483911', spend: 14200, signups: 312, sales: 6, rev: 5994 },
+    { name: 'Google Search · Job autofill', code: '2210488102', spend: 10600, signups: 226, sales: 3, rev: 2997 },
+    { name: 'Meta · Reels India', code: 'ig_reels_in', spend: 6100, signups: 141, sales: 2, rev: 1998 },
+    { name: 'Meta · Retargeting', code: 'fb_rt_all', spend: 3300, signups: 76, sales: 1, rev: 999 },
+  ];
+  static MORE = [
+    ['Overview', ['Daily', 'Insights', 'Search']],
+    ['Growth', ['Acquire', 'Activate', 'Monetization', 'Retention', 'Lifecycle', 'Emails', 'Referrals', 'Influencers', 'Pro Users']],
+    ['Product', ['Features', 'Quality']],
+    ['Reports', ['CEO Report', 'Weekly', 'Monthly']],
+    ['Operations', ['Exhausted Credits', 'Power Users', 'Expiring Soon', 'Abandoned', 'Ext. Uninstalled', 'Salahkart Users', 'Salahkart Pro']],
+  ];
+
+  series(range, total) {
+    const C = Component;
+    const jit = (i, seed) => 0.7 + 0.6 * ((Math.sin((i + 1) * 12.9898 + seed) * 43758.5453) % 1 + 1) % 1;
+    const scale = (arr, t) => { const s = arr.reduce((a, b) => a + b, 0); return arr.map(v => Math.round(v / s * t)); };
+    if (range === 'today' || range === 'yest') {
+      const w = range === 'today' ? [9, 14, 31, 42, 38, 35, 27, 16] : [12, 18, 34, 46, 41, 39, 33, 23];
+      return { v: scale(w, total), l: ['12a', '3a', '6a', '9a', '12p', '3p', '6p', '9p'] };
+    }
+    if (range === '7d') return { v: scale([179, 158, 246, 359, 383, 335, 246], total), l: ['Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed'] };
+    if (range === '14d') return { v: scale([141, 166, 205, 233, 254, 240, 208, 179, 158, 246, 359, 383, 335, 246], total), l: Array.from({ length: 14 }, (_, i) => String(3 + i)) };
+    if (range === 'thisMonth') return { v: scale(Array.from({ length: 16 }, (_, i) => jit(i, 3)), total), l: Array.from({ length: 16 }, (_, i) => (i % 3 === 0 ? String(i + 1) : '')) };
+    if (range === 'lastMonth') return { v: scale(Array.from({ length: 31 }, (_, i) => jit(i, 7)), total), l: Array.from({ length: 31 }, (_, i) => ([0, 7, 14, 21, 28].includes(i) ? String(i + 1) : '')) };
+    return { v: scale(Array.from({ length: 20 }, (_, i) => 0.25 + i * 0.09 * jit(i, 11)), total), l: Array.from({ length: 20 }, (_, i) => (i % 4 === 0 ? ['May', 'Jun', 'Jul', 'Aug', 'Sep'][i / 4] : '')) };
+  }
+
+  renderVals() {
+    const C = Component, st = this.state, p = this.props;
+    const platform = p.platform ?? 'ios';
+    const view = st.view ?? p.initialView ?? 'overall';
+    const range = st.range;
+    const fmt = n => Math.round(n).toLocaleString('en-IN');
+    const inView = b => view === 'overall' ? true : view === 'influencer' ? b === 'infl' : b === 'perf';
+    const share = view === 'overall' ? 1 : view === 'influencer' ? 0.58 : 0.36;
+    const base = C.BASE[range];
+    const f = base.s / 1933, fp = base.p == null ? null : base.p / 1933;
+    const srcs = C.SRC.filter(s => inView(s.b)).map(s => ({ ...s, n: Math.round(s.n * f), conv: Math.round(s.conv * f) }));
+    const signups = srcs.reduce((a, s) => a + s.n, 0);
+    const prev = fp == null ? null : Math.round(C.SRC.filter(s => inView(s.b)).reduce((a, s) => a + s.n, 0) * fp);
+    const delta = prev ? (signups - prev) / prev * 100 : null;
+    const ser = this.series(range, signups);
+    const max = Math.max(...ser.v, 1);
+    const rangeLabel = C.RANGES.find(r => r[0] === range)[1];
+    const inr = base.inr * share, usd = base.usd * share, pay = Math.round(base.pay * share), payers = Math.max(1, Math.round(base.payers * share));
+    const paid = Math.round(base.paid * share), pp = base.pp == null ? null : Math.round(base.pp * share);
+    const pro = view === 'overall' ? [164, 13373, 7, 41] : view === 'influencer' ? [96, 7410, 4, 23] : [61, 5180, 3, 17];
+    const set = patch => () => this.bump(patch);
+    const team = C.TEAMS.find(t => t.key === st.team) || C.TEAMS[0];
+    const nav = sub => () => this.setState({ sub });
+
+    // grouped top sources (merge Google rows in Overall)
+    let grouped = srcs;
+    if (view === 'overall') {
+      const g = srcs.filter(s => s.name.startsWith('Google')).reduce((a, s) => ({ name: 'Google Ads', n: a.n + s.n, conv: a.conv + s.conv }), { n: 0, conv: 0 });
+      grouped = [g, ...srcs.filter(s => !s.name.startsWith('Google'))];
+    }
+    grouped = grouped.sort((a, b) => b.n - a.n);
+    const gmax = grouped[0] ? grouped[0].n : 1;
+    const topSources = grouped.slice(0, 5).map(s => ({ name: s.name, nFmt: fmt(s.n), conv: s.conv, pct: s.n / gmax * 100 }));
+    const allSources = srcs.sort((a, b) => b.n - a.n).map(s => ({
+      name: s.name, medium: s.medium, nFmt: fmt(s.n), pct: s.n / (srcs[0].n || 1) * 100,
+      convPct: s.n ? (s.conv / s.n * 100).toFixed(1) + '%' : '–',
+      bucket: s.b === 'infl' ? 'Influencer' : s.b === 'perf' ? 'Perf' : 'Overall only',
+    }));
+    const people = C.PEOPLE.filter(u => inView(u[5])).map(u => ({ name: u[0], email: u[1], source: u[2], plan: u[3], when: u[4], init: u[0].split(' ').map(x => x[0]).join(''), tone: u[3] === 'Pro' ? 'success' : 'neutral' }));
+    const pays = C.PAY.filter(x => inView(x[4])).map(x => ({ email: x[0], plan: x[1], amount: x[2], when: x[3] }));
+    const convRows = C.RANGES.filter(r => r[0] !== 'all').map(([k, label]) => {
+      const b = C.BASE[k]; const s = Math.round(b.s * (signups / base.s) * (base.s / b.s) * share * (k === range ? 1 : 1)) ;
+      const sv = Math.round(b.s * share), pv = Math.round(b.paid * share), rate = sv ? pv / sv * 100 : 0;
+      return { label, s: fmt(sv), p: fmt(pv), rate: rate.toFixed(2) + '%', color: rate >= 1.2 ? 'var(--text-success)' : rate >= 0.8 ? 'var(--amber-700)' : 'var(--text-danger)' };
+    });
+    // ── Report / Creators / Search ──
+    const money = n => '₹' + fmt(n);
+    const usdInr = 84;
+    const cre = C.CREATORS.map(c => ({ ...c, budget: Math.round(c.budget * f), views: Math.round(c.views * f), likes: Math.round(c.likes * f), comments: Math.round(c.comments * f), shares: Math.round(c.shares * f), signups: Math.round(c.signups * f), sales: Math.round(c.sales * f), rev: Math.round(c.rev * f) }));
+    const cam = C.CAMPAIGNS.map(c => ({ ...c, spend: Math.round(c.spend * f), signups: Math.round(c.signups * f), sales: Math.round(c.sales * f), rev: Math.round(c.rev * f) }));
+    const sum = (a, k) => a.reduce((x, y) => x + y[k], 0);
+    const inflBudget = sum(cre, 'budget'), perfSpend = sum(cam, 'spend');
+    const budget = view === 'influencer' ? inflBudget : view === 'perf' ? perfSpend : inflBudget + perfSpend;
+    const revenue = inr + usd * usdInr;
+    const roasOf = (r, b) => b ? (r / b).toFixed(2) + '×' : '–';
+    const roasColor = (r, b) => !b ? 'var(--text-muted)' : r / b >= 1 ? 'var(--text-success)' : r / b >= 0.5 ? 'var(--amber-700)' : 'var(--text-danger)';
+    const compact = n => n >= 1e5 ? (n / 1e5).toFixed(1) + 'L' : n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + 'K' : String(n);
+    const reportKpis = [
+      { l: 'Signups', v: fmt(signups), d: delta == null ? 'all time' : (delta >= 0 ? '+' : '') + delta.toFixed(1) + '%', c: delta == null || delta >= 0 ? 'var(--text-success)' : 'var(--text-danger)' },
+      { l: 'Sales', v: fmt(paid), d: pp == null ? 'paid in window' : (paid - pp >= 0 ? '+' : '') + (paid - pp) + ' vs prior', c: pp == null || paid - pp >= 0 ? 'var(--text-success)' : 'var(--text-danger)' },
+      { l: 'Conv', v: signups ? (paid / signups * 100).toFixed(2) + '%' : '–', d: 'signup → paid', c: 'var(--text-muted)' },
+      { l: 'Revenue', v: money(revenue), d: '₹' + fmt(inr) + ' + $' + Math.round(usd), c: 'var(--text-muted)' },
+      { l: 'Spend', v: money(budget), d: view === 'overall' ? 'creators + ads' : view === 'perf' ? 'Google + Meta' : 'creator budgets', c: 'var(--text-muted)' },
+      { l: 'ROAS · CAC', v: roasOf(revenue, budget), d: paid ? money(budget / paid) + ' per sale' : 'no sales', c: roasColor(revenue, budget) },
+    ];
+    const views = sum(cre, 'views'), likes = sum(cre, 'likes'), comments = sum(cre, 'comments'), shares = sum(cre, 'shares');
+    const openCreator = c => () => this.setState({ sub: 'creator', creator: c.code });
+    const reportRows = (view === 'perf' ? cam : view === 'influencer' ? cre : [...cre, ...cam]).slice().sort((a, b) => b.rev - a.rev).map(r => ({
+      name: r.name, meta: (r.code) + ' · ' + fmt(r.signups) + ' signups', spend: money(r.spend ?? r.budget), sales: fmt(r.sales),
+      roas: roasOf(r.rev, r.spend ?? r.budget), roasColor: roasColor(r.rev, r.spend ?? r.budget),
+      onTap: r.platform ? openCreator(r) : () => this.say('Campaign detail opens on the web dashboard'),
+    }));
+    const inflRev = revenue * (view === 'overall' ? 0.58 : 1), perfRev = revenue * (view === 'overall' ? 0.36 : 1);
+    const inflSign = Math.round(1933 * f * 0.6), perfSign = Math.round(1933 * f * 0.39);
+    const inflSales = Math.round(base.paid * 0.58), perfSales = Math.round(base.paid * 0.36);
+    const compareRows = [
+      { l: 'Spend', a: money(inflBudget), b: money(perfSpend) },
+      { l: 'Signups', a: fmt(inflSign), b: fmt(perfSign) },
+      { l: 'Sales', a: fmt(inflSales), b: fmt(perfSales) },
+      { l: 'Revenue', a: money(inflRev), b: money(perfRev) },
+      { l: 'CAC', a: inflSales ? money(inflBudget / inflSales) : '–', b: perfSales ? money(perfSpend / perfSales) : '–' },
+      { l: 'ROAS', a: roasOf(inflRev, inflBudget), b: roasOf(perfRev, perfSpend) },
+    ];
+    const creatorSel = C.CREATORS.find(c => c.code === st.creator) || C.CREATORS[0];
+    const cs = cre.find(c => c.code === creatorSel.code) || cre[0];
+    const cr = {
+      init: cs.name.slice(0, 2).toUpperCase(), name: cs.name, code: cs.code, platform: cs.platform, cohort: cs.name,
+      stats: [{ v: fmt(cs.signups), l: 'Signups' }, { v: fmt(cs.sales), l: 'Sales' }, { v: money(cs.rev), l: 'Revenue' }, { v: money(cs.budget), l: 'Budget' }, { v: compact(cs.views), l: 'Views' }, { v: roasOf(cs.rev, cs.budget), l: 'ROAS' }],
+      convPct: Math.min(100, cs.signups ? cs.sales / cs.signups * 100 * 20 : 0), conv: cs.signups ? (cs.sales / cs.signups * 100).toFixed(2) + '%' : '–',
+      posts: [
+        { date: '12 Sep', type: 'Reel', views: compact(Math.round(cs.views * 0.55)), likes: compact(Math.round(cs.likes * 0.55)), comments: fmt(Math.round(cs.comments * 0.55)), budget: money(Math.round(cs.budget * 0.6)) },
+        { date: '9 Sep', type: 'Story', views: compact(Math.round(cs.views * 0.15)), likes: compact(Math.round(cs.likes * 0.1)), comments: fmt(Math.round(cs.comments * 0.1)), budget: money(Math.round(cs.budget * 0.1)) },
+        { date: '5 Sep', type: 'Reel', views: compact(Math.round(cs.views * 0.3)), likes: compact(Math.round(cs.likes * 0.35)), comments: fmt(Math.round(cs.comments * 0.35)), budget: money(Math.round(cs.budget * 0.3)) },
+      ],
+    };
+    const q = st.query.trim().toLowerCase();
+    const allPeople = C.PEOPLE.map(u => ({ name: u[0], email: u[1], source: u[2], plan: u[3], when: u[4], init: u[0].split(' ').map(x => x[0]).join(''), tone: u[3] === 'Pro' ? 'success' : 'neutral' }));
+    const hits = q ? allPeople.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.plan.toLowerCase() === q || (q.length >= 3 && C.CREATORS.some(c => c.code.toLowerCase().includes(q)) && u.source === 'Influencer')) : [];
+    const openPerson = u => () => this.setState({ sub: 'person', person: u.email });
+    const ps = allPeople.find(u => u.email === st.person) || allPeople[0];
+    const psPays = C.PAY.filter(x => x[0] === ps.email).map(x => ({ plan: x[1], amount: x[2], when: x[3], status: 'completed' }));
+    const pr = {
+      ...ps, payments: psPays, noPayments: psPays.length === 0, credits: 3,
+      facts: [{ l: 'Signed up', v: '16 Sep 2026 · ' + ps.when.replace(' ago', '') }, { l: 'Source · medium', v: ps.source + ' · ' + (ps.source === 'Direct' ? '(none)' : ps.source === 'Chrome Ext' ? 'extension' : 'cpc') }, { l: 'Bucket', v: ['Google Ads', 'Meta Ads'].includes(ps.source) ? 'Perf' : 'Influencer' }, { l: 'Status', v: ps.plan === 'Pro' ? 'active' : 'free' }, { l: 'Resumes', v: ps.plan === 'Pro' ? '4 uploaded' : '1 uploaded' }, { l: 'Last active', v: ps.when }],
+    };
+    const sub = st.sub;
+    const subTitles = {
+      creator: [cs.name, cs.platform + ' · ' + rangeLabel], person: [ps.name, 'PostHog person · ' + ps.email], sources: ['Acquisition sources', rangeLabel + ' · ' + fmt(signups) + ' signups'], signups: ['Recent signups', 'Last 21 days · newest first'], payments: ['Payments', rangeLabel + ' · ' + pay + ' completed'], pro: ['Pro subscribers', 'postgres.users · live'], alerts: ['Alerts', '3 unread'] };
+    const subT = sub ? (subTitles[sub] || [sub, 'Web dashboard screen']) : ['', ''];
+    const tabsDef = [['overview', 'Overview', 'layout-dashboard'], ['report', 'Report', 'clipboard-list'], ['creators', 'Creators', 'users'], ['search', 'Search', 'search'], ['more', 'More', 'menu']];
+    const viewsDef = [['influencer', 'Influencer'], ['perf', 'Perf'], ['overall', 'Overall']];
+    const barGap = ser.v.length > 16 ? '2px' : ser.v.length > 8 ? '4px' : '8px';
+    const alerts = [
+      { title: 'Daily digest · Tue 15 Sep', body: 'Yesterday: 335 signups (+36% vs Mon), ₹9,870 + $48 revenue, 4 new Pro. Top channel: Google Ads.', when: '9:00 AM', dot: 'var(--action-500)' },
+      { title: 'Revenue milestone', body: 'September crossed ₹40,000 in INR revenue on day 15, five days earlier than August.', when: 'Yesterday · 6:12 PM', dot: 'var(--success-500)' },
+      { title: 'PostHog budget exhausted', body: 'Hourly read budget hit while loading Overview. Cached snapshot served; retried at 10:15 AM.', when: 'Yesterday · 9:58 AM', dot: 'var(--amber-500)' },
+    ];
+    return {
+      isIos: platform === 'ios', isAndroid: platform === 'android',
+      isGlass: (p.theme ?? 'glass') === 'glass' ? 'true' : 'false',
+      stale: p.stale ?? false,
+      headerTitle: st.tab === 'overview' ? 'Overview' : tabsDef.find(t => t[0] === st.tab)[1],
+      rangeLabel, liveAgo: (st.tick % 5 + 1) + 'm',
+      views: viewsDef.map(([k, label]) => ({ label, active: view === k, onTap: set({ view: k }), color: view === k ? 'var(--text-heading)' : 'var(--text-muted)' })),
+      thumbX: 'translateX(' + (viewsDef.findIndex(v => v[0] === view) * 100) + '%)',
+      contentOpacity: st.loading ? 0.35 : 1,
+      isOverviewTab: st.tab === 'overview', isMoreTab: st.tab === 'more', isReportTab: st.tab === 'report', isCreatorsTab: st.tab === 'creators', isSearchTab: st.tab === 'search', isPlaceholderTab: false,
+      viewLabel: viewsDef.find(v => v[0] === view)[1],
+      reportKpis, reportRows, compareRows,
+      reportShowsSocial: view !== 'perf', reportShowsCompare: view === 'overall',
+      reportTableTitle: view === 'perf' ? 'By campaign' : view === 'influencer' ? 'By creator' : 'Creators and campaigns',
+      reportTableFirst: view === 'perf' ? 'Campaign' : 'Creator',
+      socialEntries: cre.length * 3,
+      socialKpis: [{ v: compact(views), l: 'Views' }, { v: compact(likes), l: 'Likes' }, { v: compact(comments), l: 'Comments' }, { v: compact(shares), l: 'Shares' }],
+      engagement: views ? ((likes + comments + shares) / views * 100).toFixed(1) + '%' : '–',
+      cpv: views ? '₹' + (inflBudget / views).toFixed(3) : '–',
+      exportReport: () => this.say('Report exported · A4 PDF ready to share'),
+      creatorKpis: [{ l: 'Creators', v: fmt(cre.length) }, { l: 'Signups', v: fmt(sum(cre, 'signups')) }, { l: 'ROAS', v: roasOf(sum(cre, 'rev'), inflBudget) }],
+      creators: cre.slice().sort((a, b) => b.rev - a.rev).map(c => ({ name: c.name, code: c.code, platform: c.platform, signups: fmt(c.signups), revenue: money(c.rev), roas: roasOf(c.rev, c.budget), roasColor: roasColor(c.rev, c.budget), init: c.name.slice(0, 2).toUpperCase(), onTap: openCreator(c) })),
+      cr, pr,
+      subIsCreator: sub === 'creator', subIsPerson: sub === 'person',
+      copyLink: () => this.say('openinapp.link/nextraise/' + cs.code + ' copied'),
+      copyEmail: () => this.say(ps.email + ' copied'),
+      openPosthog: () => this.say('Opens person in PostHog project 399417'),
+      addOpen: st.add, openAddData: () => this.setState({ add: true }), closeAdd: () => this.setState({ add: false }),
+      saveAdd: () => { this.setState({ add: false }); this.say('Entry saved for ' + cs.name); },
+      addTitle: cs.name + ' · ' + cs.code,
+      addFields: [{ l: 'Date', p: '16 Sep 2026' }, { l: 'Budget ₹', p: '8,000' }, { l: 'Views', p: '2,40,000' }, { l: 'Likes', p: '11,200' }, { l: 'Comments', p: '540' }, { l: 'Shares', p: '1,300' }],
+      hasToast: !!st.toast, toast: st.toast || '',
+      query: st.query, hasQuery: !!q, noQuery: !q,
+      setQuery: e => this.setState({ query: e.target.value }), clearQuery: () => this.setState({ query: '' }),
+      resultCount: hits.length + (hits.length === 1 ? ' match' : ' matches') + ' in 13,373 users',
+      results: hits.map(u => ({ ...u, onTap: openPerson(u) })),
+      recentLookups: allPeople.slice(0, 4).map(u => ({ ...u, onTap: openPerson(u) })),
+      quickFilters: [
+        { label: 'Pro users', icon: 'star', count: 164, onTap: () => this.setState({ query: 'pro' }) },
+        { label: 'Expiring soon', icon: 'clock', count: 12, onTap: () => this.say('Expiring soon list opens on web') },
+        { label: 'Exhausted credits', icon: 'battery-low', count: 48, onTap: () => this.say('Exhausted credits list opens on web') },
+        { label: 'Abandoned checkout', icon: 'shopping-cart', count: 27, onTap: () => this.say('Abandoned list opens on web') },
+      ],
+      tabTitle: (tabsDef.find(t => t[0] === st.tab) || [])[1] || '',
+      signupsFmt: fmt(signups),
+      deltaTone: delta == null ? 'neutral' : delta >= 0 ? 'success' : 'danger',
+      deltaText: delta == null ? 'since 1 May' : (delta >= 0 ? '+' : '') + delta.toFixed(1) + '%',
+      prevText: prev == null ? 'all time' : 'vs ' + fmt(prev) + ' prior period',
+      hasSel: st.bar != null,
+      selText: st.bar != null ? fmt(ser.v[st.bar]) + ' signups · ' + (ser.l[st.bar] || '') : '',
+      barGap,
+      bars: ser.v.map((v, i) => ({ h: Math.max(3, v / max * 100) + '%', label: ser.l[i], aria: ser.l[i] + ': ' + v, bg: st.bar === i ? 'var(--ink-900)' : st.bar == null ? 'var(--action-500)' : 'var(--action-200)', onTap: () => this.setState(s => ({ bar: s.bar === i ? null : i })) })),
+      inrFmt: '₹' + fmt(inr), usdFmt: '$' + (Math.round(usd * 100) / 100).toLocaleString('en-US'), paymentsFmt: fmt(pay),
+      inrPayers: fmt(Math.round(payers * 0.86)), usdPayers: fmt(Math.max(0, payers - Math.round(payers * 0.86))),
+      activeProFmt: fmt(pro[0]), usersFmt: fmt(pro[1]), proPct: (pro[0] / pro[1] * 100).toFixed(2) + '%', proBarPct: Math.max(2, pro[0] / pro[1] * 100 * 10),
+      proStats: [{ v: fmt(pro[0]), l: 'Active Pro' }, { v: fmt(pro[2]), l: 'Active Basic' }, { v: fmt(pro[3]), l: 'Expired Pro' }],
+      paidFmt: fmt(paid),
+      paidDeltaText: pp == null ? 'signed up and paid in window' : (paid - pp >= 0 ? '+' : '') + (paid - pp) + ' vs ' + pp + ' prior period',
+      paidDeltaColor: pp == null || paid - pp >= 0 ? 'var(--text-success)' : 'var(--text-danger)',
+      payersFmt: fmt(payers), arpuFmt: '₹' + fmt((inr + usd * 84) / payers),
+      topSources, allSources,
+      recentSignups: people.slice(0, 5), allSignups: people,
+      recentPayments: pays.slice(0, 4), allPayments: pays,
+      convRows,
+      moreGroups: C.MORE.map(([label, items]) => ({ label, items: items.map(it => ({ label: it, onTap: nav(it) })) })),
+      tabs: tabsDef.map(([k, label, icon]) => ({ label, icon, onTap: () => this.setState({ tab: k, sub: null }), color: st.tab === k ? 'var(--action-600)' : 'var(--text-muted)' })),
+      subX: sub ? 'translateX(0)' : 'translateX(100%)',
+      subTitle: subT[0], subMeta: subT[1],
+      subIsSources: sub === 'sources', subIsSignups: sub === 'signups', subIsPayments: sub === 'payments', subIsPro: sub === 'pro', subIsAlerts: sub === 'alerts',
+      subIsPlaceholder: !!sub && !subTitles[sub],
+      alerts,
+      openSources: nav('sources'), openSignups: nav('signups'), openPayments: nav('payments'), openPro: nav('pro'), openAlerts: nav('alerts'),
+      goBack: () => this.setState({ sub: null }),
+      sheetOpen: st.sheet, openSheet: () => this.setState({ sheet: true }), closeSheet: () => this.setState({ sheet: false }),
+      teamsOpen: st.teams, openTeams: () => this.setState({ teams: true }), closeTeams: () => this.setState({ teams: false }),
+      teamName: team.name, teamColor: team.color,
+      modeAttr: st.mode === 'auto' ? (typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : st.mode,
+      modeThumbX: 'translateX(' + (['light', 'dark', 'auto'].indexOf(st.mode) * 100) + '%)',
+      modes: [['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['auto', 'Auto', 'monitor-smartphone']].map(([k, label, icon]) => ({ label, icon, color: st.mode === k ? 'var(--text-heading)' : 'var(--text-muted)', onTap: () => { this.setState({ mode: k }); if (typeof p.onModeChange === 'function') p.onModeChange(k === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : k); } })),
+      teamThumbY: 'translateY(' + (C.TEAMS.findIndex(t => t.key === st.team) * 64) + 'px)',
+      teams: C.TEAMS.map(t => ({
+        name: t.name, abbr: t.abbr, meta: t.meta, color: t.color,
+        textColor: t.key === st.team ? 'var(--text-brand)' : 'var(--text-heading)',
+        checkBg: t.key === st.team ? 'var(--action-500)' : 'var(--neutral-100)',
+        checkColor: t.key === st.team ? '#fff' : 'transparent',
+        checkScale: t.key === st.team ? 'scale(1)' : 'scale(.8)',
+        onTap: () => { this.setState({ team: t.key }); if (t.view !== view) this.bump({ view: t.view }); setTimeout(() => this.setState({ teams: false }), 360); },
+      })),
+      ranges: C.RANGES.map(([k, label]) => ({ label, active: range === k, bg: range === k ? 'var(--action-50)' : 'transparent', color: range === k ? 'var(--text-brand)' : 'var(--text-heading)', onTap: () => { this.bump({ range: k }); this.setState({ sheet: false }); } })),
+    };
+  }
+}
+</script>
+</body>
+</html>
