@@ -7,3 +7,9 @@ node_modules
 .superpowers/
 .claude-flow/
 __fixture_ov.json
+
+# runtime state — never ship
+.claude-flow/
+.swarm/
+ruvector.db
+*.db
