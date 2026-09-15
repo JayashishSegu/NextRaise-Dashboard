@@ -2671,8 +2671,8 @@
       html[data-theme="light"] .sidebar .settings-btn{ transition:font-size 0s linear .1s, background .15s ease !important; }
     }
 
-    /* six KPI cards → two rows of three on wide screens */
-    @media (min-width:1101px){ html[data-theme="light"] .okpis{ grid-template-columns:repeat(3,1fr) !important; } }
+    /* seven KPI cards → 4 + 3 on wide screens */
+    @media (min-width:1101px){ html[data-theme="light"] .okpis{ grid-template-columns:repeat(4,1fr) !important; } }
   </style>
 </head>
 <body>
@@ -5869,7 +5869,8 @@
             ) ${countsBucketOuter}
           )`);
       // The remaining 8 queries are lighter — run them together (gated to 2).
-      const [signups, payments, revenue, sources, growth, dailyPay, influencers, pgSubscribers, todayPay] = await Promise.all([
+      const _swPrevStart = new Date(Date.parse(rangeStart + 'T00:00:00Z') - _ovGdr.days * 86400000).toISOString().slice(0, 10);
+      const [signups, payments, revenue, sources, growth, dailyPay, influencers, pgSubscribers, todayPay, sameWin] = await Promise.all([
         runHogQL(`
           SELECT email, name, plan, created_at FROM (
             SELECT argMaxIf(toString(person.properties.email), timestamp, person.properties.email!='') AS email,
@@ -6013,6 +6014,29 @@
             AND user_email NOT LIKE '%@creditdharma.in'
             AND lower(user_email) NOT LIKE '%test%'${bucketEmailFilter('user_email', _ovGdr.scanDays)}
           GROUP BY day ORDER BY day LIMIT 3`).catch(()=>({results:[]})),
+        // Signed up + paid within the SAME selected window (+ previous window
+        // of equal length for the delta). Event-filtered scan — cheap.
+        runHogQL(`
+          SELECT
+            uniqIf(person_id, su_cur=1 AND pay_cur=1) AS cur,
+            uniqIf(person_id, su_prev=1 AND pay_prev=1) AS prev
+          FROM (
+            SELECT person_id,
+              maxIf(1, event='signup_complete'    AND d >= toDate('${rangeStart}') AND d < toDate('${rangeEnd}')) AS su_cur,
+              maxIf(1, event='payment_completed'  AND d >= toDate('${rangeStart}') AND d < toDate('${rangeEnd}')) AS pay_cur,
+              maxIf(1, event='signup_complete'    AND d >= toDate('${_swPrevStart}') AND d < toDate('${rangeStart}')) AS su_prev,
+              maxIf(1, event='payment_completed'  AND d >= toDate('${_swPrevStart}') AND d < toDate('${rangeStart}')) AS pay_prev
+            FROM (
+              SELECT person_id, event, toDate(toTimeZone(timestamp,'Asia/Kolkata')) AS d
+              FROM events
+              WHERE event IN ('signup_complete','payment_completed')
+                AND timestamp >= toDateTime('${_swPrevStart} 00:00:00') - INTERVAL 1 DAY
+                AND person_id NOT IN COHORT 278743
+                AND NOT endsWith(coalesce(person.properties.email,''),'@nextraise.ai')
+                AND NOT endsWith(coalesce(person.properties.email,''),'@creditdharma.in')
+                AND lower(coalesce(person.properties.email,'')) NOT LIKE '%test%'${bucketPersonFilter(_ovGdr.scanDays + _ovGdr.days + 2)}
+            ) GROUP BY person_id
+          )`).catch(()=>({results:[]})),
       ]);
       const revRow = (revenue.results||[])[0] || [0,0];
       // Override Active Pro/Basic with postgres (more accurate than PostHog person props)
@@ -6038,6 +6062,7 @@
         growth:      growth.results      || [],
         dailyPay:    dailyPay.results    || [],
         todayPay:    todayPay.results   || [],   // [day, cnt, payers, inr, usd] for yest+today (IST)
+        sameWin:     (sameWin.results || [])[0] || null,   // [cur, prev] signed-up-AND-paid in window
         influencers: influencers.results || [],
         convByPeriod: CONV_PRESETS.map((p,i) => {
           // period conversion cols are appended to the counts query after the 13 base cols
@@ -6318,6 +6343,16 @@
         revUsdPayers ? `${revUsdPayers.toLocaleString('en-IN')} payers (USD)` : 'completed USD payments',
         'revenue', 'Revenue collected in dollars in this range, with the number of distinct USD payers.'),
       kpi('Total users', newProduct.toLocaleString('en-IN'), '', 'since 1 May 2026', 'search', 'All signed-up users since the relaunch. Click to search contacts.'),
+      (() => {
+        const sw = _ovData.sameWin;                    // [cur, prev] or null (old cache)
+        const cur = sw ? +sw[0]||0 : null, prev = sw ? +sw[1]||0 : 0;
+        const pct = (cur!=null && rangeSignups) ? (cur/rangeSignups*100) : null;
+        return kpi('Signed up + paid', cur==null?'—':cur.toLocaleString('en-IN'),
+          cur!=null?sDelta(cur, prev):'',
+          cur==null?'appears after the next data refresh':(pct!=null?`${pct.toFixed(1)}% of signups`:'same-window conversions'),
+          'insights',
+          'Same-window conversion cohort: users who BOTH signed up AND paid within the selected range (e.g. signed up AND paid today). Differs from Paid, which counts everyone who paid in range regardless of when they signed up.');
+      })(),
     ].join('');
 
     const aiCard=`<div class="nb-card nb-ai"><div class="nb-ai-badge">✦ Key opportunities</div>
