@@ -2671,8 +2671,6 @@
       html[data-theme="light"] .sidebar .settings-btn{ transition:font-size 0s linear .1s, background .15s ease !important; }
     }
 
-    /* seven KPI cards → 4 + 3 on wide screens */
-    @media (min-width:1101px){ html[data-theme="light"] .okpis{ grid-template-columns:repeat(4,1fr) !important; } }
   </style>
 </head>
 <body>
@@ -6336,13 +6334,6 @@
         (arpu?` · avg ₹${arpu.toLocaleString('en-IN')}/payer`:''),
         'revenue', 'Completed Pro payments in this range. INR and USD collected separately; total shown in INR at ₹'+USD_TO_INR+'/$. Avg = revenue ÷ distinct paying users in this range. Click for revenue analytics.'),
       kpi('Active Pro subscribers', activePro.toLocaleString('en-IN'), '', `${convPct.toFixed(2)}% of ${usersShort} users`, 'pro', 'Users on an active Pro subscription right now. Click for the list.'),
-      kpi('₹ Revenue (INR)', '₹' + Math.round(revInr).toLocaleString('en-IN'), '',
-        revInrPayers ? `${revInrPayers.toLocaleString('en-IN')} payers (INR)` : 'completed INR payments',
-        'revenue', 'Revenue collected in rupees in this range, with the number of distinct INR payers.'),
-      kpi('$ Revenue (USD)', '$' + (+revUsd).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}), '',
-        revUsdPayers ? `${revUsdPayers.toLocaleString('en-IN')} payers (USD)` : 'completed USD payments',
-        'revenue', 'Revenue collected in dollars in this range, with the number of distinct USD payers.'),
-      kpi('Total users', newProduct.toLocaleString('en-IN'), '', 'since 1 May 2026', 'search', 'All signed-up users since the relaunch. Click to search contacts.'),
       (() => {
         const sw = _ovData.sameWin;                    // [cur, prev] or null (old cache)
         const cur = sw ? +sw[0]||0 : null, prev = sw ? +sw[1]||0 : 0;
