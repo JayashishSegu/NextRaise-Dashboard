@@ -2671,6 +2671,173 @@
       html[data-theme="light"] .sidebar .settings-btn{ transition:font-size 0s linear .1s, background .15s ease !important; }
     }
 
+
+    /* ══════════════════════════════════════════════════════════════════
+       MOBILE APP DESIGN (2026-09-16) — the Claude Design handoff
+       (design/MobileOverview.dc.html) implemented as the real phone UI.
+       Scoped to <=600px; desktop untouched. Tokens are the handoff's
+       design system: action blue #2952FF, cool neutrals, Plus Jakarta
+       Sans, 16px cards, shadow-sm, 36px pills.
+       ══════════════════════════════════════════════════════════════════ */
+    @media (max-width:600px){
+      html[data-theme="light"]{
+        --nd-0:#FFFFFF; --nd-50:#F5F7FF; --nd-100:#EEF1F8; --nd-200:#E3E7F0;
+        --nd-400:#A2A6B3; --nd-500:#70778B; --nd-700:#3F4A66; --nd-900:#0F1C3D;
+        --nd-act-50:#EEF2FF; --nd-act-100:#DEE5FF; --nd-act-500:#2952FF; --nd-act-600:#1B3FE0;
+        --nd-ok-50:#EDFAF3; --nd-ok-500:#19B672; --nd-ok-700:#0D7147;
+        --nd-red-100:#FDE7E7; --nd-red-500:#E5484D; --nd-red-700:#AE2A2E;
+        --nd-amber-100:#FEF1D9; --nd-amber-700:#B4740E;
+        --nd-border:#E9EDF6; --nd-shadow:0 1px 3px rgba(15,20,25,.06),0 1px 2px rgba(15,20,25,.04);
+      }
+      html[data-theme="light"] body, html[data-theme="light"] .app-body{ background:var(--nd-50) !important; }
+      html[data-theme="light"] body{ font-family:'Plus Jakarta Sans',system-ui,sans-serif !important; font-variant-numeric:tabular-nums; }
+
+      /* ── App bar ── */
+      html[data-theme="light"] .mobile-topbar{
+        background:var(--nd-0) !important; border-bottom:1px solid var(--nd-border) !important;
+        backdrop-filter:none !important; box-shadow:none !important;
+        height:auto !important; min-height:0 !important; padding:0 !important; display:block !important; }
+      html[data-theme="light"] .mobile-topbar > .mob-hamburger,
+      html[data-theme="light"] .mobile-topbar > .mob-page-title,
+      html[data-theme="light"] .mobile-topbar > .mob-logo{ display:none !important; }
+      html[data-theme="light"] .nd-head{ display:block; padding-top:env(safe-area-inset-top); }
+      html[data-theme="light"] .nd-head-row{ display:flex; align-items:center; justify-content:space-between; padding:8px 8px 0 16px; }
+      html[data-theme="light"] .nd-brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+      html[data-theme="light"] .nd-mark{ width:28px; height:28px; border-radius:8px; flex:none; }
+      html[data-theme="light"] .nd-ttl{ display:flex; flex-direction:column; min-width:0; }
+      html[data-theme="light"] .nd-ttl b{ font-size:17px; font-weight:700; letter-spacing:-.02em; line-height:1.2; color:var(--nd-900); }
+      html[data-theme="light"] .nd-ttl i{ display:inline-flex; align-items:center; gap:4px; font-style:normal;
+        font-size:12px; font-weight:600; color:var(--nd-500); line-height:1.2; }
+      html[data-theme="light"] .nd-ttl i::before{ content:""; width:7px; height:7px; border-radius:50%; background:var(--nd-act-500); }
+      html[data-theme="light"] .nd-hbtns{ display:flex; align-items:center; gap:0; flex:none; }
+      html[data-theme="light"] .nd-ico{ width:44px; height:44px; display:flex; align-items:center; justify-content:center;
+        position:relative; color:var(--nd-700); background:none; border:none; cursor:pointer; padding:0; }
+      html[data-theme="light"] .nd-ico svg{ width:22px; height:22px; }
+      html[data-theme="light"] .nd-ico:active{ transform:scale(.92); }
+      html[data-theme="light"] .nd-av{ width:32px; height:32px; border-radius:50%; background:var(--nd-act-50); color:var(--nd-act-600);
+        font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:inset 0 0 0 1px var(--nd-border); }
+
+      html[data-theme="light"] .nd-sub{ display:flex; align-items:center; justify-content:space-between; padding:6px 16px 0; gap:10px; }
+      html[data-theme="light"] .nd-sub .gdr-btn{
+        height:36px !important; margin:0 !important; border-radius:999px !important; border:1px solid var(--nd-200) !important;
+        background:var(--nd-0) !important; box-shadow:0 1px 2px rgba(15,20,25,.05) !important;
+        font-size:13px !important; font-weight:600 !important; color:var(--nd-900) !important; padding:0 12px !important; }
+      html[data-theme="light"] .nd-live{ display:inline-flex; align-items:center; gap:6px; height:24px; padding:0 10px;
+        border-radius:999px; background:var(--nd-ok-50); color:var(--nd-ok-700); font-size:12px; font-weight:600; white-space:nowrap; }
+      html[data-theme="light"] .nd-live::before{ content:""; width:6px; height:6px; border-radius:50%; background:var(--nd-ok-500); }
+      html[data-theme="light"] .nd-live.is-stale{ background:var(--nd-amber-100); color:var(--nd-amber-700); }
+      html[data-theme="light"] .nd-live.is-stale::before{ background:var(--nd-amber-700); }
+
+      html[data-theme="light"] .nd-head .bucket-seg{
+        margin:12px 16px 12px !important; position:relative; display:grid !important; grid-template-columns:repeat(3,minmax(0,1fr));
+        padding:3px !important; border-radius:999px !important; background:var(--nd-100) !important; border:none !important; }
+      html[data-theme="light"] .nd-head .bucket-seg::before{ content:""; position:absolute; top:3px; bottom:3px; left:3px;
+        width:calc((100% - 6px) / 3); border-radius:999px; background:var(--nd-0);
+        box-shadow:0 1px 3px rgba(15,20,25,.06),0 1px 2px rgba(15,20,25,.04);
+        transition:transform 320ms cubic-bezier(.32,.72,0,1); transform:translateX(var(--seg-x,0)); }
+      html[data-theme="light"] .nd-head .bucket-seg .bkt{ position:relative; height:36px !important; border-radius:999px !important;
+        font-size:13px !important; font-weight:600 !important; background:none !important; box-shadow:none !important;
+        color:var(--nd-500) !important; transition:color 220ms cubic-bezier(.2,0,.2,1); }
+      html[data-theme="light"] .nd-head .bucket-seg .bkt.is-on{ color:var(--nd-900) !important; }
+      html[data-theme="light"] .nd-head .bucket-seg .bkt:active{ transform:scale(.96); }
+
+      /* ── Overview canvas ── */
+      html[data-theme="light"] #page-overview .ov-head{ display:none !important; }
+      html[data-theme="light"] #overviewArea{ padding:16px 16px 104px; display:flex; flex-direction:column; gap:12px; }
+      @keyframes ndRise{ from{ opacity:0; transform:translateY(14px) scale(.985) } to{ opacity:1; transform:none } }
+      html[data-theme="light"] .nd-card{ background:var(--nd-0); border:1px solid var(--nd-border); border-radius:16px;
+        box-shadow:var(--nd-shadow); animation:ndRise 520ms cubic-bezier(.2,0,.2,1) both; }
+      html[data-theme="light"] #overviewArea > *:nth-child(2){ animation-delay:60ms }
+      html[data-theme="light"] #overviewArea > *:nth-child(3){ animation-delay:120ms }
+      html[data-theme="light"] #overviewArea > *:nth-child(4){ animation-delay:180ms }
+      html[data-theme="light"] #overviewArea > *:nth-child(5){ animation-delay:240ms }
+      html[data-theme="light"] .nd-lbl{ font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--nd-500); }
+
+      html[data-theme="light"] .nd-hero{ padding:20px; }
+      html[data-theme="light"] .nd-hero-row{ display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-top:6px; }
+      html[data-theme="light"] .nd-big{ font-size:40px; font-weight:800; letter-spacing:-.03em; line-height:1; color:var(--nd-900); }
+      html[data-theme="light"] .nd-delta{ display:flex; flex-direction:column; align-items:flex-end; gap:4px; padding-bottom:2px; }
+      html[data-theme="light"] .nd-badge{ display:inline-flex; align-items:center; height:24px; padding:0 9px; border-radius:999px;
+        font-size:12px; font-weight:700; white-space:nowrap; }
+      html[data-theme="light"] .nd-badge.up{ background:var(--nd-ok-50); color:var(--nd-ok-700); }
+      html[data-theme="light"] .nd-badge.down{ background:var(--nd-red-100); color:var(--nd-red-700); }
+      html[data-theme="light"] .nd-badge.flat{ background:var(--nd-100); color:var(--nd-500); }
+      html[data-theme="light"] .nd-prev{ font-size:11px; font-weight:500; color:var(--nd-400); }
+      html[data-theme="light"] .nd-chart{ margin-top:18px; }
+      html[data-theme="light"] .nd-bars{ height:120px; display:flex; align-items:flex-end; gap:6px; padding-top:22px; }
+      html[data-theme="light"] .nd-bars > span{ flex:1; min-width:0; height:100%; display:flex; align-items:flex-end; }
+      html[data-theme="light"] .nd-bars i{ display:block; width:100%; border-radius:4px 4px 2px 2px; background:var(--nd-act-500);
+        transition:height 520ms cubic-bezier(.2,0,.2,1); }
+      html[data-theme="light"] .nd-xlbl{ display:flex; gap:6px; margin-top:6px; }
+      html[data-theme="light"] .nd-xlbl span{ flex:1; min-width:0; text-align:center; font-size:10px; font-weight:500;
+        color:var(--nd-400); white-space:nowrap; overflow:hidden; }
+
+      html[data-theme="light"] .nd-kpis{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+      html[data-theme="light"] .nd-kpi{ padding:16px; display:flex; flex-direction:column; gap:6px; text-align:left;
+        cursor:pointer; transition:transform 140ms; font-family:inherit; }
+      html[data-theme="light"] .nd-kpi:active{ transform:scale(.97); }
+      html[data-theme="light"] .nd-kpi b{ font-size:22px; font-weight:800; letter-spacing:-.02em; line-height:1.1; color:var(--nd-900); }
+      html[data-theme="light"] .nd-kpi s{ text-decoration:none; font-size:12px; font-weight:500; color:var(--nd-500); }
+      html[data-theme="light"] .nd-kpi s.up{ color:var(--nd-ok-700); } html[data-theme="light"] .nd-kpi s.down{ color:var(--nd-red-700); }
+
+      html[data-theme="light"] .nd-list{ padding:12px 20px 8px; display:flex; flex-direction:column; }
+      html[data-theme="light"] .nd-list-h{ display:flex; align-items:center; justify-content:space-between; padding:6px 0 4px; }
+      html[data-theme="light"] .nd-list-h b{ font-size:15px; font-weight:700; letter-spacing:-.01em; color:var(--nd-900); }
+      html[data-theme="light"] .nd-see{ height:32px; padding:0 4px; font-size:13px; font-weight:600; color:var(--nd-act-500);
+        background:none; border:none; display:inline-flex; align-items:center; gap:2px; cursor:pointer; font-family:inherit; }
+      html[data-theme="light"] .nd-row{ display:flex; align-items:center; gap:12px; min-height:56px; border-top:1px solid var(--nd-100); }
+      html[data-theme="light"] .nd-ini{ width:36px; height:36px; border-radius:50%; background:var(--nd-100); color:var(--nd-700);
+        font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; flex:none; }
+      html[data-theme="light"] .nd-rmid{ flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+      html[data-theme="light"] .nd-rmid b{ font-size:14px; font-weight:600; color:var(--nd-900);
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      html[data-theme="light"] .nd-rmid s{ text-decoration:none; font-size:12px; font-weight:500; color:var(--nd-500);
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      html[data-theme="light"] .nd-rend{ display:flex; flex-direction:column; align-items:flex-end; gap:3px; flex:none; }
+      html[data-theme="light"] .nd-rend b{ font-size:12px; font-weight:600; color:var(--nd-700); }
+      html[data-theme="light"] .nd-rend b.amt{ font-size:14px; font-weight:700; color:var(--nd-ok-700); }
+      html[data-theme="light"] .nd-rend s{ text-decoration:none; font-size:11px; font-weight:500; color:var(--nd-400); }
+      html[data-theme="light"] .nd-empty{ font-size:13px; color:var(--nd-400); padding:14px 0; }
+
+      html[data-theme="light"] .nd-src{ padding:20px; display:flex; flex-direction:column; gap:14px; }
+      html[data-theme="light"] .nd-srow{ display:flex; flex-direction:column; gap:6px; }
+      html[data-theme="light"] .nd-stop{ display:flex; justify-content:space-between; align-items:baseline; font-size:13px; }
+      html[data-theme="light"] .nd-stop b{ font-weight:600; color:var(--nd-900); }
+      html[data-theme="light"] .nd-stop span{ font-weight:700; color:var(--nd-900); }
+      html[data-theme="light"] .nd-stop span s{ text-decoration:none; font-weight:500; color:var(--nd-400); }
+      html[data-theme="light"] .nd-prog{ height:6px; border-radius:999px; background:var(--nd-100); overflow:hidden; }
+      html[data-theme="light"] .nd-prog i{ display:block; height:100%; border-radius:999px; background:var(--nd-act-500);
+        transition:width 520ms cubic-bezier(.2,0,.2,1); }
+
+      /* ── Floating tab bar ── */
+      html[data-theme="light"] .mob-bottom-nav{
+        left:16px !important; right:16px !important; bottom:calc(14px + env(safe-area-inset-bottom)) !important;
+        width:auto !important; border-radius:999px !important; border:1px solid var(--nd-border) !important;
+        background:rgba(255,255,255,.86) !important; backdrop-filter:blur(28px) saturate(1.7) !important;
+        -webkit-backdrop-filter:blur(28px) saturate(1.7) !important;
+        box-shadow:0 12px 36px rgba(15,28,61,.14) !important; padding:4px 6px !important; overflow:hidden; }
+      html[data-theme="light"] .mob-nav-item{ min-height:50px !important; gap:4px; font-size:10.5px !important;
+        font-weight:600 !important; color:var(--nd-500) !important;
+        transition:color 200ms, transform 200ms cubic-bezier(.34,1.4,.64,1); }
+      html[data-theme="light"] .mob-nav-item.active{ color:var(--nd-act-500) !important; }
+      html[data-theme="light"] .mob-nav-item.active::before{ display:none !important; }
+      html[data-theme="light"] .mob-nav-item:active{ transform:scale(.9); }
+      html[data-theme="light"] .mob-nav-badge{ background:var(--nd-act-500) !important; color:#fff !important; }
+
+      html[data-theme="light"] .mob-contact-cta{ display:none !important; }
+
+      /* every other screen inherits the card language */
+      html[data-theme="light"] :is(.ov-card,.ocard,.nb-card,.okpi,.rev-kpi,.infl-card,.panel,.table-wrap,.result-card){
+        background:var(--nd-0) !important; border:1px solid var(--nd-border) !important;
+        border-radius:16px !important; box-shadow:var(--nd-shadow) !important; }
+      html[data-theme="light"] .page{ padding-bottom:104px !important; }
+
+      @media (prefers-reduced-motion:reduce){
+        html[data-theme="light"] .nd-card{ animation:none !important; }
+        html[data-theme="light"] .nd-head .bucket-seg::before{ transition:none; }
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -4337,6 +4504,7 @@
     // Mobile topbar title
     const titleEl = document.getElementById('mobPageTitle');
     if (titleEl) titleEl.textContent = TAB_TITLES[name] || name;
+    try { ndBuildHeader(); ndSyncHeader(name); } catch(_) {}
     // Bottom nav active state
     document.querySelectorAll('.mob-nav-item').forEach(b => b.classList.remove('active'));
     const mbnId = MBN_TAB[name] || 'mbn-more';
@@ -5475,6 +5643,7 @@
     _syncBucketSeg();
   }
   function setBucketView(v) {
+    setTimeout(() => { try { ndSyncSeg(); } catch(_) {} }, 0);
     if (!['influencer','perf','overall'].includes(v)) return;   // allowlist: 'infl'/'perf' SQL labels derive from these
     if (BUCKET_VIEW === v) return;
     BUCKET_VIEW = v;
@@ -6149,8 +6318,184 @@
     try { await loadOverview(force); } finally { if (btn) btn.disabled = false; setBusy(false); }
   }
 
+  // ══ MOBILE APP UI (2026-09-16) ═══════════════════════════════════════
+  // Renders the Claude Design handoff's Overview screen (design/) from the
+  // SAME live _ovData the desktop uses. Active only <=600px.
+  const ndIsMobile = () => { try { return matchMedia('(max-width:600px)').matches; } catch(_) { return false; } };
+  const _ndTab = () => { const a = document.querySelector('[id^="page-"].active'); return a ? a.id.replace(/^page-/, '') : 'overview'; };
+
+  function ndBuildHeader() {
+    if (!ndIsMobile()) return;
+    const bar = document.querySelector('.mobile-topbar');
+    if (!bar || bar.dataset.nd === '1') return;
+    const title = (typeof TAB_TITLES !== 'undefined' && TAB_TITLES[_ndTab()]) || 'Overview';
+    const head = document.createElement('div');
+    head.className = 'nd-head';
+    head.innerHTML =
+      '<div class="nd-head-row">' +
+        '<div class="nd-brand">' +
+          '<svg class="nd-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#0065F4"/>' +
+          '<path d="M9 22V10h3.2l7.1 7.4V10H23v12h-3.2l-7.1-7.4V22H9z" fill="#fff"/></svg>' +
+          '<span class="nd-ttl"><b id="ndPageTitle">' + title + '</b><i>Growth</i></span>' +
+        '</div>' +
+        '<div class="nd-hbtns">' +
+          '<button class="nd-ico" onclick="toggleSidebar()" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>' +
+          '<button class="nd-ico" onclick="switchTab(\'search\')" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></button>' +
+          '<button class="nd-ico" onclick="openSettings()" aria-label="Settings"><span class="nd-av">JS</span></button>' +
+        '</div>' +
+      '</div>';
+    bar.insertBefore(head, bar.firstChild);
+    bar.dataset.nd = '1';
+  }
+  function ndSyncHeader(name) {
+    const t = document.getElementById('ndPageTitle');
+    if (t && typeof TAB_TITLES !== 'undefined') t.textContent = TAB_TITLES[name] || name;
+  }
+  function ndSyncSeg() {
+    document.querySelectorAll('.nd-head .bucket-seg').forEach(seg => {
+      const btns = Array.prototype.slice.call(seg.querySelectorAll('.bkt'));
+      let i = btns.findIndex(b => b.classList.contains('is-on') || b.classList.contains('on'));
+      if (i < 0) i = 0;
+      seg.style.setProperty('--seg-x', 'calc(' + i + ' * 100%)');
+    });
+  }
+  // Move the range pill + attribution toggle into the app bar (once).
+  function ndMountControls() {
+    const head = document.querySelector('.mobile-topbar .nd-head');
+    if (!head || head.querySelector('.nd-sub')) return;
+    const sub = document.createElement('div');
+    sub.className = 'nd-sub';
+    const btn = document.getElementById('gdrTabBtn-overview');
+    if (btn) { btn.style.marginTop = '0'; sub.appendChild(btn); }
+    const live = document.createElement('span');
+    live.className = 'nd-live'; live.id = 'ndLive';
+    sub.appendChild(live);
+    head.appendChild(sub);
+    const seg = document.getElementById('bucketSeg');
+    if (seg) { seg.style.marginTop = '0'; head.appendChild(seg); }
+  }
+
+  function renderOverviewMobile() {
+    const area = document.getElementById('overviewArea');
+    if (!area || !_ovData) return;
+    const esc = s => h(s == null ? '' : s);
+    const c = _ovData.counts || [];
+    const newProduct = +c[0] || 0, newToday = +c[2] || 0, newWeek = +c[3] || 0,
+          activePro = +c[7] || 0, newYesterday = +c[9] || 0, newWeekPrev = +c[10] || 0;
+    const revInr = +_ovData.revInr || 0, revUsd = +_ovData.revUsd || 0;
+    const totalRevInr = Math.round(revInr + revUsd * USD_TO_INR);
+    const revPayers = (+_ovData.revPayers || 0) || activePro;
+    const arpu = revPayers ? Math.round(totalRevInr / revPayers) : 0;
+    const rangeLabel = tabGdrPreset('overview').label, key = tabGdrKey('overview');
+    const growth = (_ovData.growth || []).map(r => ({ d: r[0], v: +r[1] || 0 }));
+    const rangeSignups = growth.reduce((a, b) => a + b.v, 0) ||
+      (key === 'today' ? newToday : key === 'yest' ? newYesterday : key === '7d' ? newWeek : newProduct);
+    const payCount = (_ovData.dailyPay || []).reduce((a, r) => a + (+r[1] || 0), 0);
+
+    let dPct = null, prevN = null;
+    if (key === 'today' && newYesterday) { dPct = (newToday - newYesterday) / newYesterday * 100; prevN = newYesterday; }
+    else if (key === '7d' && newWeekPrev) { dPct = (newWeek - newWeekPrev) / newWeekPrev * 100; prevN = newWeekPrev; }
+    const dCls = dPct == null ? 'flat' : dPct >= 0 ? 'up' : 'down';
+    const dTxt = dPct == null ? rangeLabel : (dPct >= 0 ? '+' : '') + dPct.toFixed(1) + '%';
+
+    const bars = growth.slice(-7);
+    const bMax = Math.max(1, ...bars.map(b => b.v));
+    const barsHtml = bars.map(b =>
+      '<span><i style="height:' + Math.max(4, Math.round(b.v / bMax * 100)) + '%" title="' +
+      esc(b.d) + ' · ' + b.v.toLocaleString('en-IN') + ' signups"></i></span>').join('');
+    const xLbl = bars.map(b => {
+      const d = new Date(b.d);
+      return '<span>' + (isNaN(d.getTime()) ? String(b.d).slice(5) : d.toLocaleDateString('en-IN', { weekday: 'short' })) + '</span>';
+    }).join('');
+
+    const sw = _ovData.sameWin, swCur = sw ? +sw[0] || 0 : null, swPrev = sw ? +sw[1] || 0 : 0;
+    const swDelta = (swCur != null && swPrev) ? (swCur - swPrev) / swPrev * 100 : null;
+
+    const chMap = {}, chConv = {};
+    for (const row of (_ovData.sources || [])) {
+      const ch = channelOf(row[0], row[1]);
+      chMap[ch] = (chMap[ch] || 0) + (+row[2] || 0);
+      chConv[ch] = (chConv[ch] || 0) + (+row[3] || 0);
+    }
+    const chList = Object.keys(chMap).map(k => [k, chMap[k]]).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const chMax = Math.max(1, ...chList.map(x => x[1]));
+
+    const ini = s => { const t = String(s || '?').trim(); const p = t.split(/\s+/);
+      return ((p[0] || '?')[0] || '?').toUpperCase() + ((p[1] || '')[0] || '').toUpperCase(); };
+    const ago = ts => { const t = new Date(String(ts || '').replace(' ', 'T') + 'Z');
+      if (isNaN(t.getTime())) return '';
+      const m = Math.max(0, Math.round((Date.now() - t.getTime()) / 60000));
+      return m < 1 ? 'now' : m < 60 ? m + 'm ago' : m < 1440 ? Math.round(m / 60) + 'h ago' : Math.round(m / 1440) + 'd ago'; };
+
+    const signupRows = (_ovData.signups || []).slice(0, 4).map(r => {
+      const email = r[0] || '', name = r[1] || '', plan = r[2] || 'free';
+      return '<div class="nd-row"><span class="nd-ini">' + esc(ini(name || email)) + '</span>' +
+        '<span class="nd-rmid"><b>' + esc(name || email.split('@')[0]) + '</b><s>' + esc(email) + '</s></span>' +
+        '<span class="nd-rend"><b>' + esc(planLabel(plan)) + '</b><s>' + ago(r[3]) + '</s></span></div>';
+    }).join('') || '<div class="nd-empty">No signups in this range</div>';
+
+    const payRows = (_ovData.payments || []).slice(0, 4).map(r => {
+      const email = r[0] || '', name = r[1] || '', amt = +r[4] || 0, cur = r[5];
+      const amtTxt = cur === 'USD' ? '+$' + Math.round(amt) : '+₹' + Math.round(amt).toLocaleString('en-IN');
+      return '<div class="nd-row"><span class="nd-ini">' + esc(ini(name || email)) + '</span>' +
+        '<span class="nd-rmid"><b>' + esc(name || email.split('@')[0]) + '</b><s>' + esc(email) + '</s></span>' +
+        '<span class="nd-rend"><b class="amt">' + amtTxt + '</b><s>' + ago(r[3]) + '</s></span></div>';
+    }).join('') || '<div class="nd-empty">No payments in this range</div>';
+
+    area.innerHTML =
+      '<div class="nd-card nd-hero">' +
+        '<div class="nd-lbl">New signups · ' + esc(rangeLabel) + '</div>' +
+        '<div class="nd-hero-row"><div class="nd-big stat-num">' + rangeSignups.toLocaleString('en-IN') + '</div>' +
+          '<div class="nd-delta"><span class="nd-badge ' + dCls + '">' + esc(dTxt) + '</span>' +
+          (prevN != null ? '<span class="nd-prev">vs ' + prevN.toLocaleString('en-IN') + ' prior</span>' : '') + '</div></div>' +
+        '<div class="nd-chart"><div class="nd-bars">' + barsHtml + '</div><div class="nd-xlbl">' + xLbl + '</div></div>' +
+      '</div>' +
+      '<div class="nd-kpis">' +
+        '<button class="nd-card nd-kpi" onclick="switchTab(\'revenue\')"><span class="nd-lbl">Revenue</span>' +
+          '<b>₹' + totalRevInr.toLocaleString('en-IN') + '</b><s>' +
+          (revUsd > 0 ? 'incl. $' + Math.round(revUsd).toLocaleString('en-US') + ' · ' : '') +
+          (payCount ? payCount.toLocaleString('en-IN') + ' payments' : 'completed') + '</s></button>' +
+        '<button class="nd-card nd-kpi" onclick="switchTab(\'pro\')"><span class="nd-lbl">Active Pro</span>' +
+          '<b>' + activePro.toLocaleString('en-IN') + '</b><s>' +
+          (newProduct ? (activePro / newProduct * 100).toFixed(2) : '0') + '% of ' +
+          (newProduct >= 1000 ? (newProduct / 1000).toFixed(1) + 'K' : newProduct) + ' users</s></button>' +
+        '<button class="nd-card nd-kpi" onclick="switchTab(\'insights\')"><span class="nd-lbl">Signed up &amp; paid</span>' +
+          '<b>' + (swCur == null ? '—' : swCur.toLocaleString('en-IN')) + '</b>' +
+          '<s class="' + (swDelta == null ? '' : swDelta >= 0 ? 'up' : 'down') + '">' +
+          (swCur == null ? 'after next refresh'
+            : swDelta != null ? (swDelta >= 0 ? '▲ ' : '▼ ') + Math.abs(swDelta).toFixed(0) + '% vs prior'
+            : (rangeSignups ? (swCur / rangeSignups * 100).toFixed(1) + '% of signups' : 'same window')) + '</s></button>' +
+        '<button class="nd-card nd-kpi" onclick="switchTab(\'revenue\')"><span class="nd-lbl">Payers · ARPU</span>' +
+          '<b>' + revPayers.toLocaleString('en-IN') + '</b><s>₹' + arpu.toLocaleString('en-IN') + ' per payer</s></button>' +
+      '</div>' +
+      '<div class="nd-card nd-src">' +
+        '<div class="nd-list-h" style="padding:0"><b>Acquisition</b>' +
+        '<button class="nd-see" onclick="switchTab(\'acquire\')">See all ›</button></div>' +
+        (chList.map(x => '<div class="nd-srow"><div class="nd-stop"><b>' + esc(x[0]) + '</b><span>' +
+          x[1].toLocaleString('en-IN') + ' <s>· ' + (chConv[x[0]] || 0).toLocaleString('en-IN') + ' paid</s></span></div>' +
+          '<div class="nd-prog"><i style="width:' + Math.round(x[1] / chMax * 100) + '%"></i></div></div>').join('')
+          || '<div class="nd-empty">No channel data in this range</div>') +
+      '</div>' +
+      '<div class="nd-card nd-list"><div class="nd-list-h"><b>Recent signups</b>' +
+        '<button class="nd-see" onclick="switchTab(\'search\')">See all ›</button></div>' + signupRows + '</div>' +
+      '<div class="nd-card nd-list"><div class="nd-list-h"><b>Recent payments</b>' +
+        '<button class="nd-see" onclick="switchTab(\'revenue\')">See all ›</button></div>' + payRows + '</div>';
+
+    ndMountControls();
+    const live = document.getElementById('ndLive');
+    if (live) {
+      const paused = (typeof budgetPauseUntil === 'function') && budgetPauseUntil();
+      const age = Math.max(0, Math.round((Date.now() - (_ovDataTs || Date.now())) / 60000));
+      live.className = 'nd-live' + (paused || age > 10 ? ' is-stale' : '');
+      live.textContent = paused ? 'Paused' : (age < 2 ? 'Live · now' : 'Live · ' + age + 'm');
+    }
+    ndSyncSeg();
+  }
+
   function renderOverview() {
     if (!_ovData) return;
+    // Phones get the app design (design/ handoff) off the same live data.
+    if (ndIsMobile()) { ndBuildHeader(); try { renderOverviewMobile(); return; } catch(e) { console.warn('mobile render fell back', e); } }
     const c = _ovData.counts;
     const newProduct = +c[0]||0, newToday = +c[2]||0, newWeek = +c[3]||0, newMonth = +c[4]||0,
           activePro = +c[7]||0, activeBasic = +c[8]||0,
