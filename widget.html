@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NextRaise — Widgets</title>
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<meta name="theme-color" content="#060813">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink-deep:#060813; --act-500:#2952FF; --ok-200:#A6E7C6; --ok-500:#19B672; --amber:#F59E0C;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100dvh; font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+    font-variant-numeric:tabular-nums; color:#fff; background-color:var(--ink-deep);
+    background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+    background-size:56px 56px; padding:28px 24px calc(28px + env(safe-area-inset-bottom));
+    display:flex; flex-direction:column; gap:20px; align-items:center; overflow-x:hidden;
+  }
+  body::before, body::after{ content:""; position:fixed; border-radius:50%; pointer-events:none; }
+  body::before{ width:340px; height:340px; left:-120px; top:-60px;
+    background:radial-gradient(circle,rgba(41,82,255,.55),rgba(41,82,255,0) 70%); animation:drift 14s ease-in-out infinite; }
+  body::after{ width:300px; height:300px; right:-120px; bottom:-40px;
+    background:radial-gradient(circle,rgba(25,182,114,.35),rgba(25,182,114,0) 70%); animation:drift 18s ease-in-out infinite reverse; }
+  @keyframes drift{ 0%{ transform:translate(0,0) } 50%{ transform:translate(18px,-22px) } 100%{ transform:translate(0,0) } }
+  @keyframes rise{ from{ opacity:0; transform:translateY(14px) scale(.985) } to{ opacity:1; transform:none } }
+  .wrap{ position:relative; width:100%; max-width:402px; display:flex; flex-direction:column; gap:16px; }
+  .row{ display:flex; gap:16px; align-items:flex-start; }
+  .w{
+    position:relative; border-radius:24px; background:rgba(255,255,255,.14);
+    border:1px solid rgba(255,255,255,.28);
+    box-shadow:0 12px 36px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.35);
+    backdrop-filter:blur(28px) saturate(1.7); -webkit-backdrop-filter:blur(28px) saturate(1.7);
+    padding:16px; display:flex; flex-direction:column; justify-content:space-between;
+    animation:rise 560ms cubic-bezier(.22,.61,.36,1) both;
+  }
+  .w.small{ width:158px; height:158px; }
+  .w.med{ width:100%; height:158px; }
+  .w:nth-child(2){ animation-delay:80ms }
+  .cap{ display:flex; align-items:center; justify-content:space-between; }
+  .cap span{ font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:rgba(255,255,255,.68); }
+  .cap img, .cap svg{ width:16px; height:16px; border-radius:4px; }
+  .num{ font-size:36px; font-weight:800; letter-spacing:-.03em; line-height:1; }
+  .num.sm{ font-size:26px; }
+  .sub{ font-size:12px; font-weight:600; color:var(--ok-200); margin-top:4px; }
+  .sub.down{ color:#FFC9C9; } .sub.flat{ color:rgba(255,255,255,.6); }
+  .mini{ display:flex; align-items:flex-end; gap:3px; height:28px; }
+  .mini i{ flex:1; border-radius:2px; background:rgba(255,255,255,.35); }
+  .mini i.on{ background:#fff; }
+  .med .grid{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+  .med .cell b{ display:block; font-size:20px; font-weight:800; letter-spacing:-.02em; }
+  .med .cell s{ text-decoration:none; display:block; font-size:10.5px; font-weight:700; letter-spacing:.07em;
+    text-transform:uppercase; color:rgba(255,255,255,.6); margin-top:3px; }
+  .note{ position:relative; text-align:center; font-size:12px; color:rgba(255,255,255,.55); line-height:1.5; }
+  .note a{ color:#9DB4FF; }
+  h1{ position:relative; font-size:15px; font-weight:700; margin:0; color:rgba(255,255,255,.9); }
+  @media (prefers-reduced-motion:reduce){ body::before,body::after,.w{ animation:none !important; } }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>NextRaise widgets</h1>
+    <div class="row">
+      <!-- Small: signups today -->
+      <div class="w small">
+        <div class="cap"><span>Signups today</span>
+          <svg viewBox="0 0 200 200" aria-hidden="true"><rect width="200" height="200" rx="61" fill="#0065F4"/><path d="M135.74 93.2c0 18.2-.4 33.1-.8 33.1-.5 0-1.4-2.4-2.1-5.2-3.3-14.6-16-31.8-30.5-41.3-7.3-4.8-19-9.3-26.9-10.3-2.5-.3-5.9-.8-7.6-1.1l-3.3-.5-.2 16.1-.3 16.1-16 .3-16.1.2v39.5h32.6v-39.8l4.7.7c6 .8 15.5 5.4 21.2 10.5 5.7 4.9 11.1 15.4 12 23.1l.7 5.5h64.1l-.2-39.8-.3-39.7-15.5-.3-15.6-.3v33.2Z" fill="#fff"/></svg>
+        </div>
+        <div>
+          <div class="num" id="wSignups">—</div>
+          <div class="sub" id="wSignupsDelta">loading…</div>
+        </div>
+        <div class="mini" id="wMini"></div>
+      </div>
+      <!-- Small: revenue -->
+      <div class="w small">
+        <div class="cap"><span>Revenue</span></div>
+        <div>
+          <div class="num sm" id="wRev">—</div>
+          <div class="sub flat" id="wRevSub">loading…</div>
+        </div>
+        <div class="mini" id="wMiniRev"></div>
+      </div>
+    </div>
+    <!-- Medium: three-up -->
+    <div class="w med">
+      <div class="cap"><span id="wRangeLbl">Last 7 days</span><span id="wLive" style="letter-spacing:0;text-transform:none;font-weight:600">·</span></div>
+      <div class="grid">
+        <div class="cell"><b id="wActivePro">—</b><s>Active Pro</s></div>
+        <div class="cell"><b id="wPaid">—</b><s>Signed up &amp; paid</s></div>
+        <div class="cell"><b id="wArpu">—</b><s>ARPU</s></div>
+      </div>
+    </div>
+    <p class="note">Live from the dashboard's cached overview.<br>
+      Add to your home screen: open this page in Safari or Chrome → Share → Add to Home Screen.<br>
+      <a href="/">Open the full dashboard →</a></p>
+  </div>
+
+<script>
+(function(){
+  var USD = 95.51;
+  var fmt = function(n){ return (n||0).toLocaleString('en-IN'); };
+  var money = function(n){ return n >= 100000 ? '₹' + (n/100000).toFixed(2) + 'L' : '₹' + fmt(Math.round(n)); };
+  function bars(el, vals){
+    if (!el) return;
+    var max = Math.max.apply(null, vals.concat([1]));
+    el.innerHTML = vals.map(function(v, i){
+      return '<i class="' + (i === vals.length - 1 ? 'on' : '') + '" style="height:' +
+        Math.max(8, Math.round(v / max * 100)) + '%"></i>'; }).join('');
+  }
+  function paint(d){
+    var c = d.counts || [];
+    var newToday = +c[2] || 0, newYest = +c[9] || 0, activePro = +c[7] || 0, newProduct = +c[0] || 0;
+    var revInr = +d.revInr || 0, revUsd = +d.revUsd || 0;
+    var total = Math.round(revInr + revUsd * USD);
+    var payers = (+d.revPayers || 0) || activePro;
+    var growth = (d.growth || []).map(function(r){ return +r[1] || 0; });
+
+    document.getElementById('wSignups').textContent = fmt(newToday);
+    var delta = newYest ? (newToday - newYest) / newYest * 100 : null;
+    var dEl = document.getElementById('wSignupsDelta');
+    dEl.textContent = delta == null ? 'today so far'
+      : (delta >= 0 ? '+' : '') + delta.toFixed(0) + '% vs yesterday';
+    dEl.className = 'sub' + (delta == null ? ' flat' : delta >= 0 ? '' : ' down');
+
+    document.getElementById('wRev').textContent = money(total);
+    document.getElementById('wRevSub').textContent = fmt(payers) + ' payers';
+    document.getElementById('wActivePro').textContent = fmt(activePro);
+    var sw = d.sameWin;
+    document.getElementById('wPaid').textContent = sw ? fmt(+sw[0] || 0) : '—';
+    document.getElementById('wArpu').textContent = payers ? '₹' + fmt(Math.round(total / payers)) : '—';
+    bars(document.getElementById('wMini'), growth.slice(-7));
+    bars(document.getElementById('wMiniRev'), (d.dailyPay || []).slice(-7).map(function(r){ return +r[1] || 0; }));
+    if (newProduct) document.getElementById('wRangeLbl').textContent = 'Last 7 days';
+  }
+  fetch('/api/overview?range=7d&view=overall')
+    .then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function(j){
+      if (!j || !j.data) throw 0;
+      paint(j.data);
+      var age = Math.max(0, Math.round((Date.now() - (j.ts || Date.now())) / 60000));
+      document.getElementById('wLive').textContent = age < 2 ? 'Live · now' : 'Updated ' + age + 'm ago';
+    })
+    .catch(function(){
+      document.getElementById('wSignupsDelta').textContent = 'data unavailable';
+      document.getElementById('wRevSub').textContent = 'open the dashboard';
+      document.getElementById('wLive').textContent = 'offline';
+    });
+})();
+</script>
+</body>
+</html>

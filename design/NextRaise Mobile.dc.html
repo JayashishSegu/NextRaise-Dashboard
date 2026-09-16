@@ -37,6 +37,28 @@
   </style>
 </helmet>
 
+<section class="dv-turn" id="t3">
+  <div class="dv-thd"><a class="dv-tid" href="#t3">3</a><span class="dv-tname">Desktop and laptop console · same data, state and Liquid Glass theme as <a class="dv-oid" href="#2a">2a</a></span></div>
+  <div style="max-width:720px;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:12px;padding:16px 24px;margin:0 0 28px;font-size:13px;line-height:1.55;color:var(--text-body);text-wrap:pretty">
+    The web console re-laid for wide screens: grouped sidebar (Overview and Growth screens) (team switcher on top, appearance and Settings at the bottom), a topbar that pins the Influencer · Perf · Overall toggle and the date range, and a 12-column bento for Overview. Drill-downs open as a right-hand drawer instead of a pushed screen; the range picker and team switcher are popovers; Add post data is a centred modal. Report, Creators and Search are full pages. Everything is live: same logic class as the phone, so numbers agree across devices.
+  </div>
+  <div class="dv-opts">
+    <div class="dv-opt" id="3a">
+      <div class="dv-olabel"><a class="dv-oid" href="#3a">3a</a>Desktop · 1440 × 900</div>
+      <x-import component-from-global-scope="ChromeWindow" from="./browser-window.jsx" width="{{ 1440 }}" height="{{ 900 }}" url="nextraise-dashboard.vercel.app/?view=overall&amp;range=7d" tabs="{{ chromeTabs }}" hint-size="1440px,900px">
+        <dc-import name="DesktopOverview" theme="glass" stale="{{ stale }}" initial-view="{{ initialView }}" hint-size="100%,100%" style="display:block;height:100%"></dc-import>
+      </x-import>
+    </div>
+    <div class="dv-opt" id="3b">
+      <div class="dv-olabel"><a class="dv-oid" href="#3b">3b</a>Laptop · 1280 × 800</div>
+      <x-import component-from-global-scope="ChromeWindow" from="./browser-window.jsx" width="{{ 1280 }}" height="{{ 800 }}" url="nextraise-dashboard.vercel.app/?view=influencer&amp;range=7d" tabs="{{ chromeTabs }}" hint-size="1280px,800px">
+        <dc-import name="DesktopOverview" theme="glass" stale="{{ stale }}" initial-view="influencer" hint-size="100%,100%" style="display:block;height:100%"></dc-import>
+      </x-import>
+    </div>
+  </div>
+  <p class="dv-next">Try next: "collapse the sidebar to icons on <a class="dv-oid" href="#3b">3b</a>" · "dark mode screenshot of <a class="dv-oid" href="#3a">3a</a>" · "restyle Daily and Monetization pages"</p>
+</section>
+
 <section class="dv-turn" id="t2">
   <div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Approved · Liquid Glass Overview (iOS + Android) · frosted surfaces, drifting brand tints, spring motion</span></div>
   <div style="max-width:720px;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:12px;padding:16px 24px;margin:0 0 28px;font-size:13px;line-height:1.55;color:var(--text-body);text-wrap:pretty">
@@ -151,8 +173,8 @@
 
   <div style="max-width:720px;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:12px;padding:20px 24px;margin:0 0 28px;font-size:13px;line-height:1.55;color:var(--text-body);text-wrap:pretty">
     <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Context and assumptions</div>
-    <p style="margin:0 0 8px">Source: the NextRaise-Dashboard repo (PostHog HogQL console, 24 screens, Influencer · Perf · Overall attribution toggle, CEO Report). This pass brings only <strong>Overview</strong> to the phone, for the whole team, light theme. Numbers are the baseline recorded in <code>docs/PLAN.md</code> and <code>lib/overview.js</code> (7d signups 1,933 vs 1,446; daily 179/158/246/359/383/335/246; active Pro 164 of 13,373; sources Google 826 · Direct 550 · Chrome 277 · Meta 217 · Influencer 46). Other ranges and buckets are scaled from that baseline.</p>
-    <p style="margin:0 0 8px">Structure: the date range and the attribution toggle are pinned in the header, because every number below depends on them. Cards drill down (Acquisition → source × medium with bucket; Revenue → payments by currency; Active Pro → subscribers and conversion by period). The other 23 web screens are reachable from <em>More</em> as placeholders so the navigation is complete without inventing screens.</p>
+    <p style="margin:0 0 8px">Source: the NextRaise-Dashboard repo (PostHog HogQL console, Influencer · Perf · Overall attribution toggle, CEO Report). This pass brings only <strong>Overview</strong> to the phone, for the whole team, light theme. Numbers are the baseline recorded in <code>docs/PLAN.md</code> and <code>lib/overview.js</code> (7d signups 1,933 vs 1,446; daily 179/158/246/359/383/335/246; active Pro 164 of 13,373; sources Google 826 · Direct 550 · Chrome 277 · Meta 217 · Influencer 46). Other ranges and buckets are scaled from that baseline.</p>
+    <p style="margin:0 0 8px">Structure: the date range and the attribution toggle are pinned in the header, because every number below depends on them. Cards drill down (Acquisition → source × medium with bucket; Revenue → payments by currency; Active Pro → subscribers and conversion by period). The remaining Overview and Growth web screens are reachable from <em>More</em> as placeholders; Operations, Reports, Product, Emails and Lifecycle were dropped from the nav on request.</p>
     <p style="margin:0">Prototype is live in both frames: change range, switch bucket, tap bars, open drill-downs, tap the bell. Tweaks: <em>stale</em> shows the PostHog budget-exhausted banner from the API contract.</p>
   </div>
 
@@ -165,6 +187,7 @@ class Component extends DCLogic {
     const v = [179, 158, 246, 359, 383, 335, 246], max = 383;
     return {
       stale: this.props.stale ?? false,
+      chromeTabs: [{ title: 'NextRaise Analytics' }],
       iosDark: this.state.ios === 'dark', androidDark: this.state.android === 'dark',
       setIosMode: m => this.setState({ ios: m }), setAndroidMode: m => this.setState({ android: m }),
       initialView: this.props.initialView ?? 'overall',

@@ -82,404 +82,470 @@
     [data-mode="dark"] [data-chart]{border-bottom:1px solid rgba(255,255,255,.10)}
     [data-mode="dark"] [data-live]{background:rgba(25,182,114,.14) !important;border-color:rgba(25,182,114,.3) !important}
     [data-mode="dark"] img[alt="NextRaise"]{box-shadow:0 0 0 1px rgba(255,255,255,.12)}
+
+    [data-desk] [data-nav]{transition:background 140ms cubic-bezier(.2,0,.2,1),color 140ms}
+    [data-desk] [data-nav]:hover{background:var(--neutral-100)}
+    [data-desk] [data-row]:hover{background:var(--neutral-50)}
+    [data-desk] [data-card]:hover{box-shadow:var(--shadow-md)}
+    [data-desk] button[data-card]:hover{transform:translateY(-2px)}
+    [data-desk] [data-pop]{animation:nrRise 220ms cubic-bezier(.22,.61,.36,1) both}
+    [data-desk][data-glass="true"]::before{width:720px;height:720px;left:-200px;top:-160px}
+    [data-desk][data-glass="true"]::after{width:640px;height:640px;right:-180px;bottom:-200px}
+    [data-desk][data-glass="true"] [data-side]{background:rgba(255,255,255,.42);border-right:1px solid rgba(255,255,255,.85);backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6)}
+    [data-desk][data-glass="true"][data-mode="dark"] [data-side]{background:rgba(9,13,24,.5);border-right:1px solid rgba(255,255,255,.08)}
+    [data-desk][data-glass="true"] [data-nav]:hover{background:rgba(255,255,255,.55)}
+    [data-desk][data-glass="true"][data-mode="dark"] [data-nav]:hover{background:rgba(255,255,255,.07)}
+    [data-desk][data-glass="true"] [data-nav][data-on="true"]{background:rgba(255,255,255,.8);box-shadow:0 4px 14px rgba(15,28,61,.08),inset 0 1px 0 #fff}
+    [data-desk][data-glass="true"][data-mode="dark"] [data-nav][data-on="true"]{background:rgba(255,255,255,.10);box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+    [data-desk][data-glass="true"] [data-pop]{background:rgba(255,255,255,.82) !important;border:1px solid rgba(255,255,255,.95);backdrop-filter:blur(28px) saturate(1.7);-webkit-backdrop-filter:blur(28px) saturate(1.7);box-shadow:0 16px 48px rgba(15,28,61,.16),inset 0 1px 0 #fff}
+    [data-desk][data-glass="true"][data-mode="dark"] [data-pop]{background:rgba(19,26,43,.86) !important;border:1px solid rgba(255,255,255,.12);box-shadow:0 16px 48px rgba(0,0,0,.6)}
+    [data-desk][data-glass="true"] [data-sub]{background:rgba(245,247,255,.78) !important;border-left:1px solid rgba(255,255,255,.9);backdrop-filter:blur(32px) saturate(1.7);-webkit-backdrop-filter:blur(32px) saturate(1.7)}
+    [data-desk][data-glass="true"][data-mode="dark"] [data-sub]{background:rgba(9,13,24,.82) !important;border-left:1px solid rgba(255,255,255,.10)}
+    [data-desk][data-glass="true"] [data-scroll]>*:nth-child(7){animation-delay:360ms}[data-desk][data-glass="true"] [data-scroll]>*:nth-child(8){animation-delay:420ms}
   </style>
 </helmet>
-<div data-glass="{{ isGlass }}" data-mode="{{ modeAttr }}" style="position:relative;height:100%;min-height:600px;display:flex;flex-direction:column;background:var(--neutral-50);font-family:var(--font-sans);color:var(--text-heading);overflow:hidden;font-variant-numeric:tabular-nums">
+<div data-desk="" data-glass="{{ isGlass }}" data-mode="{{ modeAttr }}" style="position:relative;height:100%;min-height:720px;display:grid;grid-template-columns:248px minmax(0,1fr);background:var(--neutral-50);font-family:var(--font-sans);color:var(--text-heading);overflow:hidden;font-variant-numeric:tabular-nums">
 
-  <!-- Header -->
-  <div data-header="" style="background:var(--neutral-0);border-bottom:1px solid var(--border-subtle);flex:none">
-    <sc-if value="{{ isIos }}" hint-placeholder-val="{{ true }}"><div style="height:54px"></div></sc-if>
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px 0 20px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <img src="assets/logo-mark.svg" alt="NextRaise" style="width:28px;height:28px;border-radius:8px">
-        <button onClick="{{ openTeams }}" data-team="" style="display:flex;flex-direction:column;align-items:flex-start;gap:0;min-height:44px;justify-content:center">
-          <span style="font-size:17px;font-weight:700;letter-spacing:-0.02em;line-height:1.2">{{ headerTitle }}</span>
-          <span style="display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:600;color:var(--text-muted);line-height:1.2"><span style="width:7px;height:7px;border-radius:50%;background: {{ teamColor }}"></span>{{ teamName }}<x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevrons-up-down" size="{{ 12 }}" hint-size="12px,12px"></x-import></span>
-        </button>
-      </div>
-      <div style="display:flex;align-items:center;gap:2px">
-        <button onClick="{{ doRefresh }}" aria-label="Refresh data" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--text-body)">
-          <span data-spin="{{ refreshing }}" style="display:inline-flex"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="refresh-cw" size="{{ 20 }}" hint-size="20px,20px"></x-import></span>
-        </button>
-        <button style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;position:relative;color:var(--text-body)" onClick="{{ openAlerts }}">
-          <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="bell" size="{{ 22 }}" hint-size="22px,22px"></x-import>
-          <span style="position:absolute;top:10px;right:11px;width:8px;height:8px;border-radius:50%;background:var(--red-500);border:2px solid var(--neutral-0)"></span>
-        </button>
-        <button style="width:44px;height:44px;display:flex;align-items:center;justify-content:center">
-          <span style="width:32px;height:32px;border-radius:50%;background:var(--action-50);color:var(--action-600);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:var(--ring-inset)">JS</span>
-        </button>
-      </div>
+  <!-- Sidebar -->
+  <aside data-side="" style="position:relative;z-index:2;display:flex;flex-direction:column;min-height:0;background:var(--neutral-0);border-right:1px solid var(--border-subtle)">
+    <div style="display:flex;align-items:center;gap:10px;padding:20px 20px 12px">
+      <img src="assets/logo-mark.svg" alt="NextRaise" style="width:30px;height:30px;border-radius:9px">
+      <span style="font-size:17px;font-weight:800;letter-spacing:-0.02em">NextRaise<span style="color:var(--text-muted);font-weight:600">.ai</span></span>
+      <span style="margin-left:auto;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-subtle)">Analytics</span>
     </div>
-    <!-- Range + live -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 20px 0">
-      <button onClick="{{ openSheet }}" data-pill="" style="height:36px;display:inline-flex;align-items:center;gap:8px;padding:0 12px 0 12px;border-radius:999px;border:1px solid var(--border-default);background:var(--neutral-0);box-shadow:var(--shadow-xs);font-size:13px;font-weight:600;color:var(--text-heading);white-space:nowrap">
-        <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="calendar" size="{{ 14 }}" hint-size="14px,14px"></x-import>
+    <button onClick="{{ openTeams }}" data-team="" data-nav="" style="margin:0 12px 8px;display:flex;align-items:center;gap:10px;height:44px;padding:0 10px;border-radius:12px;text-align:left">
+      <span style="width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex:none;background: {{ teamColor }}">{{ teamAbbr }}</span>
+      <span style="flex:1;min-width:0;display:flex;flex-direction:column">
+        <span style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ teamName }}</span>
+        <span style="font-size:11px;font-weight:500;color:var(--text-muted)">Team · {{ viewLabel }} bucket</span>
+      </span>
+      <span style="color:var(--text-subtle);display:inline-flex"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevrons-up-down" size="{{ 14 }}" hint-size="14px,14px"></x-import></span>
+    </button>
+    <div style="flex:1;min-height:0;overflow:auto;padding:4px 12px 12px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ navPrimary }}" as="t" hint-placeholder-count="4">
+          <button onClick="{{ t.onTap }}" data-nav="" data-on="{{ t.on }}" style="display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;border-radius:12px;font-size:14px;font-weight:600;text-align:left;color: {{ t.color }}">
+            <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="{{ t.icon }}" size="{{ 18 }}" hint-size="18px,18px"></x-import>
+            <span style="flex:1">{{ t.label }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <sc-for list="{{ navGroups }}" as="g" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);padding:6px 10px 4px">{{ g.label }}</span>
+          <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="3">
+            <button onClick="{{ it.onTap }}" data-nav="" data-on="{{ it.on }}" style="display:flex;align-items:center;height:36px;padding:0 10px;border-radius:10px;font-size:13.5px;font-weight:500;text-align:left;color: {{ it.color }}">{{ it.label }}</button>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+    <div style="padding:12px;border-top:1px solid var(--border-subtle);display:flex;flex-direction:column;gap:10px">
+      <div data-seg="" style="position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:3px;border-radius:999px;background:var(--neutral-100)">
+        <span data-thumb="" style="position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px) / 3);border-radius:999px;background:var(--neutral-0);box-shadow:var(--shadow-sm);transition:transform 320ms cubic-bezier(.32,.72,0,1);transform: {{ modeThumbX }}"></span>
+        <sc-for list="{{ modes }}" as="m" hint-placeholder-count="3">
+          <button onClick="{{ m.onTap }}" title="{{ m.label }}" style="position:relative;height:34px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:600;transition:color 220ms;color: {{ m.color }}"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="{{ m.icon }}" size="{{ 14 }}" hint-size="14px,14px"></x-import>{{ m.label }}</button>
+        </sc-for>
+      </div>
+      <button data-nav="" onClick="{{ openSettings }}" style="display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;border-radius:12px;font-size:13.5px;font-weight:600;color:var(--text-body);text-align:left">
+        <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="settings" size="{{ 18 }}" hint-size="18px,18px"></x-import>
+        <span style="flex:1">Settings</span>
+        <span style="font-size:11px;font-weight:600;color:var(--text-subtle)">PostHog key set</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main style="position:relative;display:flex;flex-direction:column;min-height:0;min-width:0">
+    <div data-header="" style="position:relative;z-index:3;display:flex;align-items:center;gap:14px;padding:14px 24px;background:var(--neutral-0);border-bottom:1px solid var(--border-subtle);flex:none">
+      <div style="display:flex;flex-direction:column;gap:1px;min-width:0;margin-right:auto">
+        <span style="font-size:20px;font-weight:800;letter-spacing:-0.02em;line-height:1.1">{{ headerTitle }}</span>
+        <span style="font-size:12px;font-weight:500;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">PostHog 399417 · Asia/Kolkata · internal and test accounts excluded</span>
+      </div>
+      <div data-seg="" style="position:relative;width:clamp(240px,24vw,330px);flex:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:3px;border-radius:999px;background:var(--neutral-100)">
+        <span data-thumb="" style="position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px) / 3);border-radius:999px;background:var(--neutral-0);box-shadow:var(--shadow-sm);transition:transform 320ms cubic-bezier(.32,.72,0,1);transform: {{ thumbX }}"></span>
+        <sc-for list="{{ views }}" as="v" hint-placeholder-count="3">
+          <button onClick="{{ v.onTap }}" aria-pressed="{{ v.active }}" style="position:relative;height:34px;border-radius:999px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;transition:color 220ms cubic-bezier(.2,0,.2,1),transform 140ms;color: {{ v.color }}">{{ v.label }}</button>
+        </sc-for>
+      </div>
+      <button onClick="{{ openSheet }}" data-pill="" style="height:40px;flex:none;display:inline-flex;align-items:center;gap:8px;padding:0 14px;border-radius:999px;border:1px solid var(--border-default);background:var(--neutral-0);box-shadow:var(--shadow-xs);font-size:13px;font-weight:600;color:var(--text-heading);white-space:nowrap">
+        <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="calendar" size="{{ 15 }}" hint-size="15px,15px"></x-import>
         <span>{{ rangeLabel }}</span>
         <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevron-down" size="{{ 14 }}" hint-size="14px,14px"></x-import>
       </button>
-      <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Badge" tone="live" dot="{{ true }}" data-live="" hint-size="auto,24px"><span style="white-space:nowrap">Live · {{ liveAgo }}</span></x-import>
+      <span style="flex:none;display:inline-flex"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Badge" tone="live" dot="{{ true }}" data-live="" hint-size="auto,24px"><span style="white-space:nowrap">Live · {{ liveAgo }}</span></x-import></span>
+      <button onClick="{{ doRefresh }}" data-nav="" aria-label="Refresh data" title="Refresh data" style="width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--text-body);border-radius:12px">
+        <span data-spin="{{ refreshing }}" style="display:inline-flex"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="refresh-cw" size="{{ 19 }}" hint-size="19px,19px"></x-import></span>
+      </button>
+      <button style="width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;position:relative;color:var(--text-body);border-radius:12px" data-nav="" onClick="{{ openAlerts }}">
+        <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="bell" size="{{ 20 }}" hint-size="20px,20px"></x-import>
+        <span style="position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--red-500);border:2px solid var(--neutral-0)"></span>
+      </button>
+      <span style="width:36px;height:36px;flex:none;border-radius:50%;background:var(--action-50);color:var(--action-600);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:var(--ring-inset)">JS</span>
     </div>
-    <!-- Global attribution toggle -->
-    <div style="margin:12px 20px 12px;position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:3px;border-radius:999px;background:var(--neutral-100)" data-seg="">
-      <span data-thumb="" style="position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px) / 3);border-radius:999px;background:var(--neutral-0);box-shadow:var(--shadow-sm);transition:transform 320ms cubic-bezier(.32,.72,0,1);transform: {{ thumbX }}"></span>
-      <sc-for list="{{ views }}" as="v" hint-placeholder-count="3">
-        <button onClick="{{ v.onTap }}" aria-pressed="{{ v.active }}" style="position:relative;height:36px;border-radius:999px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;transition:color 220ms cubic-bezier(.2,0,.2,1),transform 140ms;color: {{ v.color }}">{{ v.label }}</button>
-      </sc-for>
-    </div>
-  </div>
 
-  <!-- Stale banner -->
-  <sc-if value="{{ stale }}" hint-placeholder-val="{{ false }}">
-    <div style="flex:none;display:flex;align-items:flex-start;gap:10px;padding:10px 20px;background:var(--amber-100);color:var(--amber-700);font-size:12px;font-weight:600;line-height:1.4;border-bottom:1px solid var(--border-subtle)">
-      <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="alert-triangle" size="{{ 16 }}" hint-size="16px,16px"></x-import>
-      <span style="flex:1">PostHog hourly read budget exhausted. Showing the snapshot from 14 min ago; retrying at 10:15.</span>
-    </div>
-  </sc-if>
-
-  <!-- Scroll area -->
-  <div data-scroll="" style="flex:1;min-height:0;overflow:auto;padding:16px 16px 96px;display:flex;flex-direction:column;gap:12px;transition:opacity 140ms;opacity: {{ contentOpacity }}">
-
-    <sc-if value="{{ isOverviewTab }}" hint-placeholder-val="{{ true }}">
-
-      <!-- Hero: signups -->
-      <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:20px">
-        <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">New signups · {{ rangeLabel }}</div>
-        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:6px">
-          <div style="font-size:40px;font-weight:800;letter-spacing:-0.03em;line-height:1">{{ signupsFmt }}</div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;padding-bottom:2px">
-            <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Badge" tone="{{ deltaTone }}" hint-size="auto,24px">{{ deltaText }}</x-import>
-            <span style="font-size:11px;font-weight:500;color:var(--text-subtle)">{{ prevText }}</span>
-          </div>
-        </div>
-        <!-- bar chart -->
-        <div style="margin-top:18px;position:relative">
-          <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
-            <div style="position:absolute;top:-4px;left:0;right:0;display:flex;justify-content:center;pointer-events:none">
-              <span style="background:var(--ink-900);color:var(--neutral-0);font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px">{{ selText }}</span>
-            </div>
-          </sc-if>
-          <div data-chart="" style="height:120px;display:flex;align-items:flex-end;gap:{{ barGap }};padding-top:22px">
-            <sc-for list="{{ bars }}" as="b" hint-placeholder-count="7">
-              <button onClick="{{ b.onTap }}" aria-label="{{ b.aria }}" style="flex:1;min-width:0;height:100%;display:flex;align-items:flex-end">
-                <span data-bar="" style="display:block;width:100%;border-radius:4px 4px 2px 2px;transition:height 520ms cubic-bezier(.2,0,.2,1),background 140ms;height: {{ b.h }};background: {{ b.bg }}"></span>
-              </button>
-            </sc-for>
-          </div>
-          <div style="display:flex;gap:{{ barGap }};margin-top:6px">
-            <sc-for list="{{ bars }}" as="b" hint-placeholder-count="7">
-              <span style="flex:1;min-width:0;text-align:center;font-size:10px;font-weight:500;color:var(--text-subtle);white-space:nowrap;overflow:hidden">{{ b.label }}</span>
-            </sc-for>
-          </div>
-        </div>
+    <sc-if value="{{ stale }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:none;display:flex;align-items:center;gap:10px;padding:10px 24px;background:var(--amber-100);color:var(--amber-700);font-size:12.5px;font-weight:600;border-bottom:1px solid var(--border-subtle)">
+        <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="alert-triangle" size="{{ 16 }}" hint-size="16px,16px"></x-import>
+        <span>PostHog hourly read budget exhausted. Showing the snapshot from 14 min ago; retrying at 10:15.</span>
       </div>
-
-      <!-- KPI grid -->
-      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
-        <button onClick="{{ openPayments }}" data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:16px;display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Revenue</span>
-          <span style="font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1.1">{{ inrFmt }}</span>
-          <span style="font-size:12px;font-weight:500;color:var(--text-muted)">+ {{ usdFmt }} · {{ paymentsFmt }} payments</span>
-        </button>
-        <button onClick="{{ openPro }}" data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:16px;display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Active Pro</span>
-          <span style="font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1.1">{{ activeProFmt }}</span>
-          <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ proPct }} of {{ usersFmt }} users</span>
-        </button>
-        <button onClick="{{ openPro }}" data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:16px;display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Signed up &amp; paid</span>
-          <span style="font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1.1">{{ paidFmt }}</span>
-          <span style="font-size:12px;font-weight:500;color: {{ paidDeltaColor }}">{{ paidDeltaText }}</span>
-        </button>
-        <button onClick="{{ openPayments }}" data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:16px;display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Payers · ARPU</span>
-          <span style="font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1.1">{{ payersFmt }}</span>
-          <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ arpuFmt }} per payer</span>
-        </button>
-      </div>
-
-      <!-- Acquisition -->
-      <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:20px;display:flex;flex-direction:column;gap:14px">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:15px;font-weight:700;letter-spacing:-0.01em">Acquisition</span>
-          <button onClick="{{ openSources }}" style="height:32px;padding:0 4px;font-size:13px;font-weight:600;color:var(--text-link);display:inline-flex;align-items:center;gap:2px">See all <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevron-right" size="{{ 14 }}" hint-size="14px,14px"></x-import></button>
-        </div>
-        <sc-for list="{{ topSources }}" as="s" hint-placeholder-count="5">
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:13px">
-              <span style="font-weight:600;color:var(--text-heading)">{{ s.name }}</span>
-              <span style="font-weight:700;color:var(--text-heading)">{{ s.nFmt }} <span style="font-weight:500;color:var(--text-subtle)">· {{ s.conv }} paid</span></span>
-            </div>
-            <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.ProgressBar" value="{{ s.pct }}" tone="var(--action-500)" height="{{ 6 }}" hint-size="100%,6px"></x-import>
-          </div>
-        </sc-for>
-      </div>
-
-      <!-- Recent signups -->
-      <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:12px 20px 8px;display:flex;flex-direction:column">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 4px">
-          <span style="font-size:15px;font-weight:700;letter-spacing:-0.01em">Recent signups</span>
-          <button onClick="{{ openSignups }}" style="height:32px;padding:0 4px;font-size:13px;font-weight:600;color:var(--text-link);display:inline-flex;align-items:center;gap:2px">See all <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevron-right" size="{{ 14 }}" hint-size="14px,14px"></x-import></button>
-        </div>
-        <sc-for list="{{ recentSignups }}" as="u" hint-placeholder-count="4">
-          <div style="display:flex;align-items:center;gap:12px;min-height:56px;border-top:1px solid var(--neutral-100)">
-            <span style="width:36px;height:36px;border-radius:50%;background:var(--neutral-100);color:var(--text-body);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">{{ u.init }}</span>
-            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
-              <span style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.name }}</span>
-              <span style="font-size:12px;font-weight:500;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.email }}</span>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none">
-              <span style="font-size:12px;font-weight:600;color:var(--text-body)">{{ u.source }}</span>
-              <span style="font-size:11px;font-weight:500;color:var(--text-subtle)">{{ u.when }}</span>
-            </div>
-          </div>
-        </sc-for>
-      </div>
-
-      <!-- Recent payments -->
-      <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:12px 20px 8px;display:flex;flex-direction:column">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 4px">
-          <span style="font-size:15px;font-weight:700;letter-spacing:-0.01em">Recent payments</span>
-          <button onClick="{{ openPayments }}" style="height:32px;padding:0 4px;font-size:13px;font-weight:600;color:var(--text-link);display:inline-flex;align-items:center;gap:2px">See all <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevron-right" size="{{ 14 }}" hint-size="14px,14px"></x-import></button>
-        </div>
-        <sc-for list="{{ recentPayments }}" as="p" hint-placeholder-count="4">
-          <div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid var(--neutral-100)">
-            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
-              <span style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.email }}</span>
-              <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ p.plan }} · {{ p.when }}</span>
-            </div>
-            <span style="font-size:15px;font-weight:700;color:var(--text-success);flex:none">{{ p.amount }}</span>
-          </div>
-        </sc-for>
-      </div>
-
-      <!-- Conversion by period -->
-      <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:16px 20px 8px">
-        <div style="font-size:15px;font-weight:700;letter-spacing:-0.01em;padding-bottom:8px">Signup → Pro by period</div>
-        <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:0 16px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-subtle);padding:6px 0">
-          <span>Period</span><span style="text-align:right">Signups</span><span style="text-align:right">Pro</span><span style="text-align:right">Rate</span>
-        </div>
-        <sc-for list="{{ convRows }}" as="c" hint-placeholder-count="5">
-          <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:0 16px;align-items:center;min-height:40px;border-top:1px solid var(--neutral-100);font-size:13px">
-            <span style="font-weight:600">{{ c.label }}</span>
-            <span style="text-align:right;font-weight:500;color:var(--text-body)">{{ c.s }}</span>
-            <span style="text-align:right;font-weight:500;color:var(--text-body)">{{ c.p }}</span>
-            <span style="text-align:right;font-weight:700;color: {{ c.color }}">{{ c.rate }}</span>
-          </div>
-        </sc-for>
-      </div>
-
-      <div style="text-align:center;font-size:11px;font-weight:500;color:var(--text-subtle);padding:8px 0">PostHog project 399417 · Asia/Kolkata · internal and test accounts excluded</div>
     </sc-if>
 
-    <!-- REPORT tab -->
-    <sc-if value="{{ isReportTab }}" hint-placeholder-val="{{ false }}">
-      <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:20px;display:flex;flex-direction:column;gap:16px">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
-          <div style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1">
-            <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);white-space:nowrap">CEO Report · {{ viewLabel }}</span>
-            <span style="font-size:20px;font-weight:800;letter-spacing:-0.02em;line-height:1.1;white-space:nowrap">{{ rangeLabel }}</span>
+    <div data-scroll="" style="flex:1;min-height:0;overflow:auto;padding:24px;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-auto-rows:min-content;gap:16px;align-content:start;transition:opacity 140ms;opacity: {{ contentOpacity }}">
+
+      <sc-if value="{{ isOverviewTab }}" hint-placeholder-val="{{ true }}">
+        <!-- Hero -->
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);grid-column:span 8;padding:24px;display:flex;flex-direction:column;gap:18px">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">New signups · {{ rangeLabel }} · {{ viewLabel }}</span>
+              <div style="display:flex;align-items:baseline;gap:14px">
+                <span style="font-size:48px;font-weight:800;letter-spacing:-0.03em;line-height:1">{{ signupsFmt }}</span>
+                <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Badge" tone="{{ deltaTone }}" hint-size="auto,24px">{{ deltaText }}</x-import>
+                <span style="font-size:12px;font-weight:500;color:var(--text-subtle)">{{ prevText }}</span>
+              </div>
+            </div>
+            <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}"><span style="background:var(--ink-900);color:var(--neutral-0);font-size:12px;font-weight:600;padding:6px 12px;border-radius:999px;white-space:nowrap">{{ selText }}</span></sc-if>
           </div>
-          <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Button" variant="accent" size="sm" icon="share-2" on-click="{{ exportReport }}" hint-size="auto,34px">Export</x-import>
+          <div style="position:relative">
+            <div data-chart="" style="height:220px;display:flex;align-items:flex-end;gap:{{ barGap }};border-bottom:1px solid var(--neutral-100)">
+              <sc-for list="{{ bars }}" as="b" hint-placeholder-count="7">
+                <button onClick="{{ b.onTap }}" aria-label="{{ b.aria }}" style="flex:1;min-width:0;height:100%;display:flex;align-items:flex-end">
+                  <span data-bar="" style="display:block;width:100%;border-radius:6px 6px 2px 2px;transition:height 520ms cubic-bezier(.2,0,.2,1),background 140ms;height: {{ b.h }};background: {{ b.bg }}"></span>
+                </button>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:{{ barGap }};margin-top:8px">
+              <sc-for list="{{ bars }}" as="b" hint-placeholder-count="7">
+                <span style="flex:1;min-width:0;text-align:center;font-size:11px;font-weight:500;color:var(--text-subtle);white-space:nowrap;overflow:hidden">{{ b.label }}</span>
+              </sc-for>
+            </div>
+          </div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
-          <sc-for list="{{ reportKpis }}" as="k" hint-placeholder-count="6">
-            <div style="background:var(--neutral-50);border-radius:12px;padding:12px 12px 10px;display:flex;flex-direction:column;gap:3px;min-width:0">
-              <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ k.l }}</span>
-              <span style="font-size:18px;font-weight:800;letter-spacing:-0.02em;line-height:1.1;white-space:nowrap">{{ k.v }}</span>
-              <span style="font-size:11px;font-weight:500;line-height:1.3;color: {{ k.c }}">{{ k.d }}</span>
+        <!-- KPI 2x2 -->
+        <div style="grid-column:span 4;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px">
+
+          <button onClick="{{ openPayments }}" data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:18px 20px;display:flex;flex-direction:column;gap:6px;text-align:left;min-width:0;transition:transform 200ms cubic-bezier(.2,0,.2,1),box-shadow 200ms">
+            <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Revenue</span>
+            <span style="font-size:clamp(18px,1.6vw,26px);font-weight:800;letter-spacing:-0.02em;line-height:1.1;white-space:nowrap">{{ inrFmt }}</span>
+            <span style="font-size:12px;font-weight:500;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">+ {{ usdFmt }} · {{ paymentsFmt }} payments</span>
+          </button>
+
+          <button onClick="{{ openPro }}" data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:18px 20px;display:flex;flex-direction:column;gap:6px;text-align:left;min-width:0;transition:transform 200ms cubic-bezier(.2,0,.2,1),box-shadow 200ms">
+            <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Active Pro</span>
+            <span style="font-size:clamp(18px,1.6vw,26px);font-weight:800;letter-spacing:-0.02em;line-height:1.1;white-space:nowrap">{{ activeProFmt }}</span>
+            <span style="font-size:12px;font-weight:500;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">{{ proPct }} of {{ usersFmt }} users</span>
+          </button>
+
+          <button onClick="{{ openPro }}" data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:18px 20px;display:flex;flex-direction:column;gap:6px;text-align:left;min-width:0;transition:transform 200ms cubic-bezier(.2,0,.2,1),box-shadow 200ms">
+            <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Signed up &amp; paid</span>
+            <span style="font-size:clamp(18px,1.6vw,26px);font-weight:800;letter-spacing:-0.02em;line-height:1.1;white-space:nowrap">{{ paidFmt }}</span>
+            <span style="font-size:12px;font-weight:500;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">{{ paidDeltaText }}</span>
+          </button>
+
+          <button onClick="{{ openPayments }}" data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:18px 20px;display:flex;flex-direction:column;gap:6px;text-align:left;min-width:0;transition:transform 200ms cubic-bezier(.2,0,.2,1),box-shadow 200ms">
+            <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Payers · ARPU</span>
+            <span style="font-size:clamp(18px,1.6vw,26px);font-weight:800;letter-spacing:-0.02em;line-height:1.1;white-space:nowrap">{{ payersFmt }}</span>
+            <span style="font-size:12px;font-weight:500;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">{{ arpuFmt }} per payer</span>
+          </button>
+        </div>
+        <!-- Acquisition -->
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);grid-column:span 4;padding:20px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:15px;font-weight:700;letter-spacing:-0.01em">Acquisition</span>
+            <button onClick="{{ openSources }}" style="height:32px;padding:0 4px;font-size:13px;font-weight:600;color:var(--text-link);display:inline-flex;align-items:center;gap:2px">See all <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevron-right" size="{{ 14 }}" hint-size="14px,14px"></x-import></button>
+          </div>
+          <sc-for list="{{ topSources }}" as="s" hint-placeholder-count="5">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:13px">
+                <span style="font-weight:600">{{ s.name }}</span>
+                <span style="font-weight:700">{{ s.nFmt }} <span style="font-weight:500;color:var(--text-subtle)">· {{ s.conv }} paid</span></span>
+              </div>
+              <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.ProgressBar" value="{{ s.pct }}" tone="var(--action-500)" height="{{ 6 }}" hint-size="100%,6px"></x-import>
             </div>
           </sc-for>
         </div>
-      </div>
-
-      <sc-if value="{{ reportShowsSocial }}" hint-placeholder-val="{{ false }}">
-        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:16px 20px;display:flex;flex-direction:column;gap:12px">
-          <div style="display:flex;justify-content:space-between;align-items:baseline">
-            <span style="font-size:15px;font-weight:700;letter-spacing:-0.01em">Creator content</span>
-            <span style="font-size:12px;font-weight:500;color:var(--text-muted)">manual entries · {{ socialEntries }} posts</span>
+        <!-- Recent signups -->
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);grid-column:span 4;padding:12px 20px 8px;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 4px">
+            <span style="font-size:15px;font-weight:700;letter-spacing:-0.01em;white-space:nowrap">Recent signups</span>
+            <button onClick="{{ openSignups }}" style="height:32px;padding:0 4px;font-size:13px;font-weight:600;color:var(--text-link);display:inline-flex;align-items:center;gap:2px">See all <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevron-right" size="{{ 14 }}" hint-size="14px,14px"></x-import></button>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
-            <sc-for list="{{ socialKpis }}" as="k" hint-placeholder-count="4">
-              <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
-                <span style="font-size:17px;font-weight:800;letter-spacing:-0.02em">{{ k.v }}</span>
-                <span style="font-size:11px;font-weight:500;color:var(--text-muted)">{{ k.l }}</span>
+          <sc-for list="{{ recentSignups }}" as="u" hint-placeholder-count="5">
+            <button onClick="{{ u.onTap }}" data-row="" style="width:100%;display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid var(--neutral-100);text-align:left;border-radius:8px">
+              <span style="width:32px;height:32px;border-radius:50%;background:var(--neutral-100);color:var(--text-body);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">{{ u.init }}</span>
+              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+                <span style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.name }}</span>
+                <span style="font-size:12px;font-weight:500;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.email }}</span>
+              </span>
+              <span style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:none">
+                <span style="font-size:12px;font-weight:600;color:var(--text-body);white-space:nowrap">{{ u.source }}</span>
+                <span style="font-size:11px;font-weight:500;color:var(--text-subtle);white-space:nowrap">{{ u.when }}</span>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+        <!-- Recent payments -->
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);grid-column:span 4;padding:12px 20px 8px;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 4px">
+            <span style="font-size:15px;font-weight:700;letter-spacing:-0.01em;white-space:nowrap">Recent payments</span>
+            <button onClick="{{ openPayments }}" style="height:32px;padding:0 4px;font-size:13px;font-weight:600;color:var(--text-link);display:inline-flex;align-items:center;gap:2px">See all <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevron-right" size="{{ 14 }}" hint-size="14px,14px"></x-import></button>
+          </div>
+          <sc-for list="{{ recentPaymentsDesk }}" as="p" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid var(--neutral-100)">
+              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                <span style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.email }}</span>
+                <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ p.plan }} · {{ p.when }}</span>
+              </span>
+              <span style="font-size:14px;font-weight:700;color:var(--text-success);flex:none;white-space:nowrap">{{ p.amount }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <!-- Conversion by period -->
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);grid-column:span 7;padding:16px 20px 8px">
+          <div style="font-size:15px;font-weight:700;letter-spacing:-0.01em;padding-bottom:8px">Signup → Pro by period</div>
+          <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:0 24px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);color:var(--text-subtle);padding:6px 0">
+            <span>Period</span><span style="text-align:right">Signups</span><span style="text-align:right">Pro</span><span style="text-align:right">Rate</span>
+          </div>
+          <sc-for list="{{ convRows }}" as="c" hint-placeholder-count="6">
+            <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:0 24px;align-items:center;min-height:40px;border-top:1px solid var(--neutral-100);font-size:13px">
+              <span style="font-weight:600">{{ c.label }}</span>
+              <span style="text-align:right;font-weight:500;color:var(--text-body)">{{ c.s }}</span>
+              <span style="text-align:right;font-weight:500;color:var(--text-body)">{{ c.p }}</span>
+              <span style="text-align:right;font-weight:700;color: {{ c.color }}">{{ c.rate }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <!-- Pro subscribers -->
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);grid-column:span 5;padding:20px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:flex-end;gap:8px">
+            <span style="font-size:40px;font-weight:800;letter-spacing:-0.03em;line-height:1">{{ activeProFmt }}</span>
+            <span style="font-size:13px;font-weight:500;color:var(--text-muted);padding-bottom:4px">active Pro · {{ proPct }} of {{ usersFmt }}</span>
+          </div>
+          <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.ProgressBar" value="{{ proBarPct }}" tone="var(--success-500)" height="{{ 8 }}" label="Pro share of all users" caption="{{ proPct }}" hint-size="100%,28px"></x-import>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+            <sc-for list="{{ proStats }}" as="k" hint-placeholder-count="3">
+              <div style="background:var(--neutral-50);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:4px">
+                <span style="font-size:18px;font-weight:800;letter-spacing:-0.02em">{{ k.v }}</span>
+                <span style="font-size:11px;font-weight:500;color:var(--text-muted);line-height:1.3">{{ k.l }}</span>
               </div>
             </sc-for>
           </div>
-          <div style="display:flex;gap:16px;font-size:12px;font-weight:500;color:var(--text-body);border-top:1px solid var(--neutral-100);padding-top:10px">
-            <span>Engagement <strong style="color:var(--text-heading)">{{ engagement }}</strong></span>
-            <span>Cost per view <strong style="color:var(--text-heading)">{{ cpv }}</strong></span>
-          </div>
         </div>
       </sc-if>
 
-      <sc-if value="{{ reportShowsCompare }}" hint-placeholder-val="{{ false }}">
-        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:16px 20px 8px">
-          <div style="font-size:15px;font-weight:700;letter-spacing:-0.01em;padding-bottom:8px">Influencer vs Perf</div>
-          <div style="display:grid;grid-template-columns:1fr auto auto;gap:0 20px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-subtle);padding:6px 0">
-            <span></span><span style="text-align:right;color:var(--success-600)">Influencer</span><span style="text-align:right;color:var(--amber-700)">Perf</span>
-          </div>
-          <sc-for list="{{ compareRows }}" as="c" hint-placeholder-count="6">
-            <div style="display:grid;grid-template-columns:1fr auto auto;gap:0 20px;align-items:center;min-height:40px;border-top:1px solid var(--neutral-100);font-size:13px">
-              <span style="font-weight:600">{{ c.l }}</span>
-              <span style="text-align:right;font-weight:700">{{ c.a }}</span>
-              <span style="text-align:right;font-weight:700">{{ c.b }}</span>
+      <!-- REPORT -->
+      <sc-if value="{{ isReportTab }}" hint-placeholder-val="{{ false }}">
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);grid-column:span 12;padding:20px 24px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">CEO Report · {{ viewLabel }}</span>
+              <span style="font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1.1">{{ rangeLabel }}</span>
             </div>
-          </sc-for>
-        </div>
-      </sc-if>
-
-      <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:16px 20px 8px">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:8px">
-          <span style="font-size:15px;font-weight:700;letter-spacing:-0.01em">{{ reportTableTitle }}</span>
-          <span style="font-size:12px;font-weight:500;color:var(--text-muted)">sorted by revenue</span>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:0 14px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-subtle);padding:6px 0">
-          <span>{{ reportTableFirst }}</span><span style="text-align:right">Spend</span><span style="text-align:right">Sales</span><span style="text-align:right">ROAS</span>
-        </div>
-        <sc-for list="{{ reportRows }}" as="r" hint-placeholder-count="5">
-          <button onClick="{{ r.onTap }}" style="width:100%;display:grid;grid-template-columns:1fr auto auto auto;gap:0 14px;align-items:center;min-height:52px;border-top:1px solid var(--neutral-100);font-size:13px;text-align:left">
-            <span style="display:flex;flex-direction:column;gap:1px;min-width:0">
-              <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
-              <span style="font-size:11px;font-weight:500;color:var(--text-muted)">{{ r.meta }}</span>
-            </span>
-            <span style="text-align:right;font-weight:500;color:var(--text-body)">{{ r.spend }}</span>
-            <span style="text-align:right;font-weight:600">{{ r.sales }}</span>
-            <span style="text-align:right;font-weight:700;color: {{ r.roasColor }}">{{ r.roas }}</span>
-          </button>
-        </sc-for>
-      </div>
-      <div style="text-align:center;font-size:11px;font-weight:500;color:var(--text-subtle);padding:8px 0;text-wrap:pretty">Perf spend from googleads_campaign_stats + metaads_ad_stats · brand-search campaign excluded · creator budgets entered manually</div>
-    </sc-if>
-
-    <!-- CREATORS tab -->
-    <sc-if value="{{ isCreatorsTab }}" hint-placeholder-val="{{ false }}">
-      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
-        <sc-for list="{{ creatorKpis }}" as="k" hint-placeholder-count="3">
-          <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:14px 12px;display:flex;flex-direction:column;gap:3px;min-width:0">
-            <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">{{ k.l }}</span>
-            <span style="font-size:20px;font-weight:800;letter-spacing:-0.02em;line-height:1.1">{{ k.v }}</span>
+            <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Button" variant="accent" size="sm" icon="share-2" on-click="{{ exportReport }}" hint-size="auto,34px">Export PDF</x-import>
           </div>
-        </sc-for>
-      </div>
-      <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:12px 20px 8px;display:flex;flex-direction:column">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 4px">
-          <span style="font-size:15px;font-weight:700;letter-spacing:-0.01em;white-space:nowrap">Top creators</span>
-          <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Button" variant="soft" size="sm" icon="plus" on-click="{{ openAddData }}" hint-size="auto,34px">Add data</x-import>
+          <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px">
+            <sc-for list="{{ reportKpis }}" as="k" hint-placeholder-count="6">
+              <div style="background:var(--neutral-50);border-radius:12px;padding:14px 14px 12px;display:flex;flex-direction:column;gap:3px;min-width:0">
+                <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);white-space:nowrap">{{ k.l }}</span>
+                <span style="font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1.1;white-space:nowrap">{{ k.v }}</span>
+                <span style="font-size:11px;font-weight:500;line-height:1.3;color: {{ k.c }}">{{ k.d }}</span>
+              </div>
+            </sc-for>
+          </div>
         </div>
-        <sc-for list="{{ creators }}" as="c" hint-placeholder-count="5">
-          <button onClick="{{ c.onTap }}" style="width:100%;display:flex;align-items:center;gap:12px;min-height:64px;border-top:1px solid var(--neutral-100);text-align:left">
-            <span style="width:40px;height:40px;border-radius:50%;background:var(--action-50);color:var(--text-brand);font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none">{{ c.init }}</span>
-            <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
-              <span style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.name }}</span>
-              <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ c.code }} · {{ c.platform }} · {{ c.signups }} signups</span>
-            </span>
-            <span style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none">
-              <span style="font-size:14px;font-weight:700">{{ c.revenue }}</span>
-              <span style="font-size:11px;font-weight:600;color: {{ c.roasColor }}">ROAS {{ c.roas }}</span>
-            </span>
-          </button>
-        </sc-for>
-      </div>
-      <div style="text-align:center;font-size:11px;font-weight:500;color:var(--text-subtle);padding:8px 0;text-wrap:pretty">Names come from PostHog cohorts (referred_by_code → handle). Budget and social metrics are manual entries in Vercel KV.</div>
-    </sc-if>
-
-    <!-- SEARCH tab -->
-    <sc-if value="{{ isSearchTab }}" hint-placeholder-val="{{ false }}">
-      <div data-pill="" style="display:flex;align-items:center;gap:10px;height:48px;padding:0 14px;border-radius:14px;background:var(--neutral-0);border:1px solid var(--border-default);box-shadow:var(--shadow-xs);color:var(--text-muted)">
-        <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="search" size="{{ 18 }}" hint-size="18px,18px"></x-import>
-        <input value="{{ query }}" onChange="{{ setQuery }}" placeholder="Email, name or referral code" style="flex:1;min-width:0;height:100%;border:0;outline:0;background:transparent;font:inherit;font-size:15px;font-weight:500;color:var(--text-heading)">
-        <sc-if value="{{ hasQuery }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearQuery }}" aria-label="Clear" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--text-subtle)"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="x" size="{{ 16 }}" hint-size="16px,16px"></x-import></button></sc-if>
-      </div>
-      <sc-if value="{{ hasQuery }}" hint-placeholder-val="{{ false }}">
-        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:4px 20px">
-          <div style="font-size:12px;font-weight:500;color:var(--text-muted);padding:10px 0 4px">{{ resultCount }}</div>
-          <sc-for list="{{ results }}" as="u" hint-placeholder-count="3">
-            <button onClick="{{ u.onTap }}" style="width:100%;display:flex;align-items:center;gap:12px;min-height:60px;border-top:1px solid var(--neutral-100);text-align:left">
-              <span style="width:36px;height:36px;border-radius:50%;background:var(--neutral-100);color:var(--text-body);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">{{ u.init }}</span>
-              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
-                <span style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.name }}</span>
-                <span style="font-size:12px;font-weight:500;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.email }}</span>
+        <sc-if value="{{ reportShowsSocial }}" hint-placeholder-val="{{ false }}">
+          <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);grid-column:span 5;padding:16px 20px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline">
+              <span style="font-size:15px;font-weight:700;letter-spacing:-0.01em">Creator content</span>
+              <span style="font-size:12px;font-weight:500;color:var(--text-muted)">manual · {{ socialEntries }} posts</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+              <sc-for list="{{ socialKpis }}" as="k" hint-placeholder-count="4">
+                <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+                  <span style="font-size:20px;font-weight:800;letter-spacing:-0.02em">{{ k.v }}</span>
+                  <span style="font-size:11px;font-weight:500;color:var(--text-muted)">{{ k.l }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:16px;font-size:12px;font-weight:500;color:var(--text-body);border-top:1px solid var(--neutral-100);padding-top:10px">
+              <span>Engagement <strong style="color:var(--text-heading)">{{ engagement }}</strong></span>
+              <span>Cost per view <strong style="color:var(--text-heading)">{{ cpv }}</strong></span>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ reportShowsCompare }}" hint-placeholder-val="{{ false }}">
+          <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);grid-column:span 7;padding:16px 20px 8px">
+            <div style="font-size:15px;font-weight:700;letter-spacing:-0.01em;padding-bottom:8px">Influencer vs Perf</div>
+            <div style="display:grid;grid-template-columns:1fr auto auto;gap:0 28px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);color:var(--text-subtle);padding:6px 0">
+              <span></span><span style="text-align:right;color:var(--success-600)">Influencer</span><span style="text-align:right;color:var(--amber-700)">Perf</span>
+            </div>
+            <sc-for list="{{ compareRows }}" as="c" hint-placeholder-count="6">
+              <div style="display:grid;grid-template-columns:1fr auto auto;gap:0 28px;align-items:center;min-height:38px;border-top:1px solid var(--neutral-100);font-size:13px">
+                <span style="font-weight:600">{{ c.l }}</span>
+                <span style="text-align:right;font-weight:700">{{ c.a }}</span>
+                <span style="text-align:right;font-weight:700">{{ c.b }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);grid-column:span 12;padding:16px 24px 8px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:8px">
+            <span style="font-size:15px;font-weight:700;letter-spacing:-0.01em">{{ reportTableTitle }}</span>
+            <span style="font-size:12px;font-weight:500;color:var(--text-muted)">sorted by revenue</span>
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:0 16px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);color:var(--text-subtle);padding:6px 0">
+            <span>{{ reportTableFirst }}</span><span style="text-align:right">Signups</span><span style="text-align:right">Spend</span><span style="text-align:right">Sales</span><span style="text-align:right">ROAS</span>
+          </div>
+          <sc-for list="{{ reportRowsDesk }}" as="r" hint-placeholder-count="6">
+            <button onClick="{{ r.onTap }}" data-row="" style="width:100%;display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:0 16px;align-items:center;min-height:48px;border-top:1px solid var(--neutral-100);font-size:13px;text-align:left;border-radius:8px">
+              <span style="display:flex;flex-direction:column;gap:1px;min-width:0">
+                <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+                <span style="font-size:11px;font-weight:500;color:var(--text-muted)">{{ r.code }}</span>
               </span>
-              <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Badge" tone="{{ u.tone }}" hint-size="auto,24px">{{ u.plan }}</x-import>
-              <span style="color:var(--text-subtle);display:inline-flex"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevron-right" size="{{ 16 }}" hint-size="16px,16px"></x-import></span>
+              <span style="text-align:right;font-weight:500;color:var(--text-body)">{{ r.signups }}</span>
+              <span style="text-align:right;font-weight:500;color:var(--text-body)">{{ r.spend }}</span>
+              <span style="text-align:right;font-weight:600">{{ r.sales }}</span>
+              <span style="text-align:right;font-weight:700;color: {{ r.roasColor }}">{{ r.roas }}</span>
             </button>
           </sc-for>
         </div>
       </sc-if>
-      <sc-if value="{{ noQuery }}" hint-placeholder-val="{{ true }}">
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);padding:8px 4px 0">Recent lookups</span>
-          <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:0 20px">
-            <sc-for list="{{ recentLookups }}" as="u" hint-placeholder-count="4">
-              <button onClick="{{ u.onTap }}" style="width:100%;display:flex;align-items:center;gap:12px;min-height:56px;border-top:1px solid var(--neutral-100);text-align:left">
-                <span style="color:var(--text-subtle);display:inline-flex"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="history" size="{{ 16 }}" hint-size="16px,16px"></x-import></span>
-                <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
-                  <span style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.email }}</span>
-                  <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ u.name }} · {{ u.plan }}</span>
+
+      <!-- CREATORS -->
+      <sc-if value="{{ isCreatorsTab }}" hint-placeholder-val="{{ false }}">
+        <sc-for list="{{ creatorKpis }}" as="k" hint-placeholder-count="3">
+          <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);grid-column:span 4;padding:18px 20px;display:flex;flex-direction:column;gap:4px">
+            <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">{{ k.l }}</span>
+            <span style="font-size:28px;font-weight:800;letter-spacing:-0.02em;line-height:1.1">{{ k.v }}</span>
+          </div>
+        </sc-for>
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);grid-column:span 12;padding:12px 24px 8px;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 4px">
+            <span style="font-size:15px;font-weight:700;letter-spacing:-0.01em">Creators · {{ rangeLabel }}</span>
+            <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Button" variant="soft" size="sm" icon="plus" on-click="{{ openAddData }}" hint-size="auto,34px">Add post data</x-import>
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:0 16px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);color:var(--text-subtle);padding:6px 0">
+            <span>Creator</span><span style="text-align:right">Views</span><span style="text-align:right">Signups</span><span style="text-align:right">Budget</span><span style="text-align:right">Revenue</span><span style="text-align:right">ROAS</span>
+          </div>
+          <sc-for list="{{ creatorsDesk }}" as="c" hint-placeholder-count="5">
+            <button onClick="{{ c.onTap }}" data-row="" style="width:100%;display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:0 16px;align-items:center;min-height:56px;border-top:1px solid var(--neutral-100);text-align:left;font-size:13px;border-radius:8px">
+              <span style="display:flex;align-items:center;gap:12px;min-width:0">
+                <span style="width:36px;height:36px;border-radius:50%;background:var(--action-50);color:var(--text-brand);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none">{{ c.init }}</span>
+                <span style="display:flex;flex-direction:column;gap:1px;min-width:0">
+                  <span style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.name }}</span>
+                  <span style="font-size:11px;font-weight:500;color:var(--text-muted)">{{ c.code }} · {{ c.platform }}</span>
                 </span>
-              </button>
-            </sc-for>
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);padding:8px 4px 0">Quick filters</span>
-          <div style="display:flex;flex-wrap:wrap;gap:8px">
-            <sc-for list="{{ quickFilters }}" as="q" hint-placeholder-count="4">
-              <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Chip" icon="{{ q.icon }}" count="{{ q.count }}" on-click="{{ q.onTap }}" hint-size="auto,32px">{{ q.label }}</x-import>
-            </sc-for>
-          </div>
+              </span>
+              <span style="text-align:right;font-weight:500;color:var(--text-body)">{{ c.views }}</span>
+              <span style="text-align:right;font-weight:500;color:var(--text-body)">{{ c.signups }}</span>
+              <span style="text-align:right;font-weight:500;color:var(--text-body)">{{ c.budget }}</span>
+              <span style="text-align:right;font-weight:700">{{ c.revenue }}</span>
+              <span style="text-align:right;font-weight:700;color: {{ c.roasColor }}">{{ c.roas }}</span>
+            </button>
+          </sc-for>
         </div>
       </sc-if>
-    </sc-if>
 
+      <!-- SEARCH -->
+      <sc-if value="{{ isSearchTab }}" hint-placeholder-val="{{ false }}">
+        <div style="grid-column:span 12;display:flex;flex-direction:column;gap:16px;max-width:760px">
+          <div data-pill="" style="display:flex;align-items:center;gap:12px;height:52px;padding:0 16px;border-radius:14px;background:var(--neutral-0);border:1px solid var(--border-default);box-shadow:var(--shadow-xs);color:var(--text-muted)">
+            <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="search" size="{{ 18 }}" hint-size="18px,18px"></x-import>
+            <input value="{{ query }}" onChange="{{ setQuery }}" placeholder="Email, name or referral code" style="flex:1;min-width:0;height:100%;border:0;outline:0;background:transparent;font:inherit;font-size:15px;font-weight:500;color:var(--text-heading)">
+            <sc-if value="{{ hasQuery }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearQuery }}" aria-label="Clear" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--text-subtle)"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="x" size="{{ 16 }}" hint-size="16px,16px"></x-import></button></sc-if>
+          </div>
+          <sc-if value="{{ hasQuery }}" hint-placeholder-val="{{ false }}">
+            <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:4px 20px">
+              <div style="font-size:12px;font-weight:500;color:var(--text-muted);padding:10px 0 4px">{{ resultCount }}</div>
+              <sc-for list="{{ results }}" as="u" hint-placeholder-count="3">
+                <button onClick="{{ u.onTap }}" data-row="" style="width:100%;display:flex;align-items:center;gap:12px;min-height:56px;border-top:1px solid var(--neutral-100);text-align:left;border-radius:8px">
+                  <span style="width:36px;height:36px;border-radius:50%;background:var(--neutral-100);color:var(--text-body);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">{{ u.init }}</span>
+                  <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+                    <span style="font-size:14px;font-weight:600">{{ u.name }}</span>
+                    <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ u.email }}</span>
+                  </span>
+                  <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Badge" tone="{{ u.tone }}" hint-size="auto,24px">{{ u.plan }}</x-import>
+                  <span style="color:var(--text-subtle);display:inline-flex"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevron-right" size="{{ 16 }}" hint-size="16px,16px"></x-import></span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noQuery }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <sc-for list="{{ quickFilters }}" as="q" hint-placeholder-count="4">
+                <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Chip" icon="{{ q.icon }}" count="{{ q.count }}" on-click="{{ q.onTap }}" hint-size="auto,32px">{{ q.label }}</x-import>
+              </sc-for>
+            </div>
+            <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:0 20px">
+              <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);padding:14px 0 6px">Recent lookups</div>
+              <sc-for list="{{ recentLookups }}" as="u" hint-placeholder-count="4">
+                <button onClick="{{ u.onTap }}" data-row="" style="width:100%;display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid var(--neutral-100);text-align:left;border-radius:8px">
+                  <span style="color:var(--text-subtle);display:inline-flex"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="history" size="{{ 16 }}" hint-size="16px,16px"></x-import></span>
+                  <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+                    <span style="font-size:14px;font-weight:600">{{ u.email }}</span>
+                    <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ u.name }} · {{ u.plan }}</span>
+                  </span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
 
+      <!-- Placeholder page -->
+      <sc-if value="{{ isPageTab }}" hint-placeholder-val="{{ false }}">
+        <div style="grid-column:span 12;display:flex;flex-direction:column;gap:16px;max-width:1040px">
 
-    <sc-if value="{{ isMoreTab }}" hint-placeholder-val="{{ false }}">
-      <sc-for list="{{ moreGroups }}" as="g" hint-placeholder-count="4">
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);padding:8px 4px 0">{{ g.label }}</span>
-          <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;overflow:hidden">
-            <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="3">
-              <button onClick="{{ it.onTap }}" style="width:100%;display:flex;align-items:center;justify-content:space-between;min-height:52px;padding:0 16px 0 20px;border-top:1px solid var(--neutral-100);font-size:15px;font-weight:600;color:var(--text-heading)">
-                <span>{{ it.label }}</span>
-                <span style="color:var(--text-subtle);display:inline-flex"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevron-right" size="{{ 16 }}" hint-size="16px,16px"></x-import></span>
-              </button>
+      <sc-if value="{{ hasPage }}" hint-placeholder-val="{{ false }}">
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.5;padding:0 4px;text-wrap:pretty">{{ pageBlurb }}</div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+          <sc-for list="{{ pageKpis }}" as="k" hint-placeholder-count="3">
+            <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:14px 16px;display:flex;flex-direction:column;gap:3px;min-width:0">
+              <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ k.l }}</span>
+              <span style="font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1.1;white-space:nowrap">{{ k.v }}</span>
+              <span style="font-size:11px;font-weight:500;color:var(--text-muted);line-height:1.3">{{ k.d }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <sc-for list="{{ pageSections }}" as="s" hint-placeholder-count="1">
+          <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:14px 24px 8px">
+            <div style="font-size:15px;font-weight:700;letter-spacing:-0.01em;padding-bottom:6px">{{ s.title }}</div>
+            <div style="display:flex;align-items:center;gap:12px;padding:6px 0">
+              <span style="flex:1;min-width:0"></span>
+              <sc-for list="{{ s.cols }}" as="c" hint-placeholder-count="3">
+                <span style="width:76px;text-align:right;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-subtle);white-space:nowrap">{{ c.v }}</span>
+              </sc-for>
+            </div>
+            <sc-for list="{{ s.rows }}" as="r" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;gap:12px;min-height:44px;border-top:1px solid var(--neutral-100)">
+                <span style="flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.label }}</span>
+                <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="3">
+                  <span style="width:76px;text-align:right;font-size:13px;font-weight:600;white-space:nowrap;color: {{ c.color }}">{{ c.v }}</span>
+                </sc-for>
+              </div>
             </sc-for>
           </div>
+        </sc-for>
+      </sc-if>
         </div>
-      </sc-for>
-    </sc-if>
-  </div>
-
-  <!-- Tab bar -->
-  <div data-tabbar="" style="position:absolute;left:0;right:0;bottom:0;background:var(--surface-glass);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-top:1px solid var(--border-subtle)">
-    <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:6px 8px 0">
-      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
-        <button onClick="{{ t.onTap }}" style="height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:10.5px;font-weight:600;transition:color 140ms;color: {{ t.color }}">
-          <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="{{ t.icon }}" size="{{ 22 }}" hint-size="22px,22px"></x-import>
-          <span>{{ t.label }}</span>
-        </button>
-      </sc-for>
+      </sc-if>
     </div>
-    <sc-if value="{{ isIos }}" hint-placeholder-val="{{ true }}"><div style="height:30px"></div></sc-if>
-    <sc-if value="{{ isAndroid }}" hint-placeholder-val="{{ false }}"><div style="height:8px"></div></sc-if>
-  </div>
 
-  <!-- Sub-screen (pushed) -->
-  <div data-sub="" style="position:absolute;inset:0;background:var(--neutral-50);display:flex;flex-direction:column;transition:transform 200ms ease-out;transform: {{ subX }};box-shadow:var(--shadow-xl)">
-    <div data-header="" style="background:var(--neutral-0);border-bottom:1px solid var(--border-subtle);flex:none">
-      <sc-if value="{{ isIos }}" hint-placeholder-val="{{ true }}"><div style="height:54px"></div></sc-if>
-      <div style="display:flex;align-items:center;gap:4px;padding:6px 12px 10px 8px">
-        <button onClick="{{ goBack }}" aria-label="Back" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--text-link)">
-          <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="chevron-left" size="{{ 24 }}" hint-size="24px,24px"></x-import>
+    <!-- Drawer scrim -->
+    <sc-if value="{{ hasSub }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ goBack }}" aria-label="Close" data-scrim="" style="position:absolute;inset:0;z-index:4;background:var(--surface-scrim)"></button>
+    </sc-if>
+    <!-- Drawer -->
+    <div data-sub="" style="position:absolute;top:0;bottom:0;right:0;width:460px;z-index:5;background:var(--neutral-50);display:flex;flex-direction:column;transition:transform 200ms ease-out;transform: {{ subX }};box-shadow:var(--shadow-xl);border-left:1px solid var(--border-subtle)">
+      <div style="display:flex;align-items:center;gap:8px;padding:16px 16px 12px 12px;border-bottom:1px solid var(--border-subtle);flex:none">
+        <button onClick="{{ goBack }}" aria-label="Close" data-nav="" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:var(--text-body);border-radius:12px">
+          <x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="x" size="{{ 20 }}" hint-size="20px,20px"></x-import>
         </button>
         <div style="display:flex;flex-direction:column;gap:1px;min-width:0;flex:1">
           <span style="font-size:17px;font-weight:700;letter-spacing:-0.02em">{{ subTitle }}</span>
           <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ subMeta }}</span>
         </div>
       </div>
-    </div>
     <div style="flex:1;min-height:0;overflow:auto;padding:16px 16px 60px;display:flex;flex-direction:column;gap:12px">
 
       <sc-if value="{{ subIsSources }}" hint-placeholder-val="{{ false }}">
@@ -540,7 +606,7 @@
                 <span style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.email }}</span>
                 <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ p.plan }} · {{ p.when }}</span>
               </div>
-              <span style="font-size:15px;font-weight:700;color:var(--text-success);flex:none">{{ p.amount }}</span>
+              <span style="font-size:15px;font-weight:700;color:var(--text-success);flex:none;white-space:nowrap">{{ p.amount }}</span>
             </div>
           </sc-for>
         </div>
@@ -658,73 +724,69 @@
                 <span style="font-size:14px;font-weight:600">{{ p.plan }}</span>
                 <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ p.when }} · {{ p.status }}</span>
               </span>
-              <span style="font-size:15px;font-weight:700;color:var(--text-success);flex:none">{{ p.amount }}</span>
+              <span style="font-size:15px;font-weight:700;color:var(--text-success);flex:none;white-space:nowrap">{{ p.amount }}</span>
             </div>
           </sc-for>
           <sc-if value="{{ pr.noPayments }}" hint-placeholder-val="{{ false }}"><div style="padding:14px 0;border-top:1px solid var(--neutral-100);font-size:13px;color:var(--text-muted)">No completed payments. {{ pr.credits }} free credits used.</div></sc-if>
         </div>
       </sc-if>
 
-      <sc-if value="{{ hasPage }}" hint-placeholder-val="{{ false }}">
-        <div style="font-size:13px;color:var(--text-muted);line-height:1.5;padding:0 4px;text-wrap:pretty">{{ pageBlurb }}</div>
-        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
-          <sc-for list="{{ pageKpis }}" as="k" hint-placeholder-count="3">
-            <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:14px 16px;display:flex;flex-direction:column;gap:3px;min-width:0">
-              <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ k.l }}</span>
-              <span style="font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1.1;white-space:nowrap">{{ k.v }}</span>
-              <span style="font-size:11px;font-weight:500;color:var(--text-muted);line-height:1.3">{{ k.d }}</span>
-            </div>
-          </sc-for>
+      <sc-if value="{{ subIsPlaceholder }}" hint-placeholder-val="{{ false }}">
+        <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;padding:32px 24px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;margin-top:24px">
+          <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Not designed in this pass</span>
+          <span style="font-size:20px;font-weight:700;letter-spacing:-0.02em">{{ subTitle }}</span>
+          <span style="font-size:14px;color:var(--text-body);line-height:1.5;text-wrap:pretty">This screen exists on the web dashboard. Tell me which one to bring to mobile next.</span>
         </div>
-        <sc-for list="{{ pageSections }}" as="s" hint-placeholder-count="1">
-          <div data-card="" style="background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-sm);padding:14px 20px 8px">
-            <div style="font-size:15px;font-weight:700;letter-spacing:-0.01em;padding-bottom:6px">{{ s.title }}</div>
-            <div style="display:flex;align-items:center;gap:12px;padding:6px 0">
-              <span style="flex:1;min-width:0"></span>
-              <sc-for list="{{ s.cols }}" as="c" hint-placeholder-count="3">
-                <span style="width:76px;text-align:right;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-subtle);white-space:nowrap">{{ c.v }}</span>
-              </sc-for>
-            </div>
-            <sc-for list="{{ s.rows }}" as="r" hint-placeholder-count="6">
-              <div style="display:flex;align-items:center;gap:12px;min-height:44px;border-top:1px solid var(--neutral-100)">
-                <span style="flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.label }}</span>
-                <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="3">
-                  <span style="width:76px;text-align:right;font-size:13px;font-weight:600;white-space:nowrap;color: {{ c.color }}">{{ c.v }}</span>
-                </sc-for>
-              </div>
-            </sc-for>
-          </div>
-        </sc-for>
       </sc-if>
+    </div>
 
     </div>
-  </div>
 
-  <!-- Range bottom sheet -->
-  <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
-    <button onClick="{{ closeSheet }}" aria-label="Close" data-scrim="" style="position:absolute;inset:0;background:var(--surface-scrim)"></button>
-    <div data-sheet="" style="position:absolute;left:0;right:0;bottom:0;background:var(--neutral-0);border-radius:24px 24px 0 0;box-shadow:var(--shadow-xl);padding:8px 8px 40px;display:flex;flex-direction:column">
-      <div style="width:36px;height:4px;border-radius:999px;background:var(--neutral-300);margin:4px auto 10px"></div>
-      <div style="padding:4px 16px 8px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Date range · IST</div>
-      <sc-for list="{{ ranges }}" as="r" hint-placeholder-count="7">
-        <button onClick="{{ r.onTap }}" style="display:flex;align-items:center;justify-content:space-between;height:52px;padding:0 16px;border-radius:12px;font-size:15px;font-weight:600;background: {{ r.bg }};color: {{ r.color }}">
-          <span>{{ r.label }}</span>
-          <sc-if value="{{ r.active }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="check" size="{{ 18 }}" hint-size="18px,18px"></x-import></sc-if>
-        </button>
-      </sc-for>
+    <!-- Range popover -->
+    <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ closeSheet }}" aria-label="Close" style="position:absolute;inset:0;z-index:6;background:transparent"></button>
+      <div data-pop="" style="position:absolute;top:66px;right:150px;z-index:7;width:240px;background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-lg);padding:6px;display:flex;flex-direction:column">
+        <div style="padding:8px 12px 6px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Date range · IST</div>
+        <sc-for list="{{ ranges }}" as="r" hint-placeholder-count="7">
+          <button onClick="{{ r.onTap }}" data-nav="" style="display:flex;align-items:center;justify-content:space-between;height:40px;padding:0 12px;border-radius:10px;font-size:14px;font-weight:600;background: {{ r.bg }};color: {{ r.color }}">
+            <span>{{ r.label }}</span>
+            <sc-if value="{{ r.active }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="check" size="{{ 16 }}" hint-size="16px,16px"></x-import></sc-if>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+  </main>
+
+  <!-- Team popover -->
+  <sc-if value="{{ teamsOpen }}" hint-placeholder-val="{{ false }}">
+    <button onClick="{{ closeTeams }}" aria-label="Close" style="position:absolute;inset:0;z-index:6;background:transparent"></button>
+    <div data-pop="" style="position:absolute;top:112px;left:12px;z-index:7;width:300px;background:var(--neutral-0);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-lg);padding:6px;display:flex;flex-direction:column">
+      <div style="padding:8px 12px 6px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Switch team</div>
+      <div style="position:relative;display:flex;flex-direction:column">
+        <span data-teamthumb="" style="position:absolute;left:0;right:0;top:0;height:56px;border-radius:12px;background:var(--action-50);transition:transform 320ms cubic-bezier(.32,.72,0,1);transform: {{ teamThumbYDesk }}"></span>
+        <sc-for list="{{ teams }}" as="t" hint-placeholder-count="4">
+          <button onClick="{{ t.onTap }}" style="position:relative;display:flex;align-items:center;gap:12px;height:56px;padding:0 12px;border-radius:12px;text-align:left">
+            <span style="width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex:none;background: {{ t.color }}">{{ t.abbr }}</span>
+            <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+              <span style="font-size:14px;font-weight:700;transition:color 220ms;color: {{ t.textColor }}">{{ t.name }}</span>
+              <span style="font-size:11px;font-weight:500;color:var(--text-muted)">{{ t.meta }}</span>
+            </span>
+            <span style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 220ms,color 220ms,transform 320ms cubic-bezier(.34,1.4,.64,1);background: {{ t.checkBg }};color: {{ t.checkColor }};transform: {{ t.checkScale }}"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="check" size="{{ 12 }}" hint-size="12px,12px"></x-import></span>
+          </button>
+        </sc-for>
+      </div>
     </div>
   </sc-if>
 
   <!-- Add creator data sheet -->
   <sc-if value="{{ addOpen }}" hint-placeholder-val="{{ false }}">
     <button onClick="{{ closeAdd }}" aria-label="Close" data-scrim="" style="position:absolute;inset:0;background:var(--surface-scrim)"></button>
-    <div data-sheet="" style="position:absolute;left:0;right:0;bottom:0;background:var(--neutral-0);border-radius:24px 24px 0 0;box-shadow:var(--shadow-xl);padding:8px 16px 40px;display:flex;flex-direction:column;gap:12px">
-      <div style="width:36px;height:4px;border-radius:999px;background:var(--neutral-300);margin:4px auto 2px"></div>
-      <div style="display:flex;flex-direction:column;gap:2px;padding:0 4px">
+    <div data-sheet="" data-modal="" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:520px;background:var(--neutral-0);border-radius:24px;box-shadow:var(--shadow-xl);padding:20px 24px 24px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;flex-direction:column;gap:2px;padding:0 4px">
         <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Add post data</span>
         <span style="font-size:18px;font-weight:800;letter-spacing:-0.02em">{{ addTitle }}</span>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
         <sc-for list="{{ addFields }}" as="f" hint-placeholder-count="6">
           <label style="display:flex;flex-direction:column;gap:4px;min-width:0">
             <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">{{ f.l }}</span>
@@ -739,45 +801,16 @@
 
   <!-- Toast -->
   <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
-    <div data-toast="" style="position:absolute;left:24px;right:24px;bottom:110px;display:flex;justify-content:center;pointer-events:none">
+    <div data-toast="" style="position:absolute;left:24px;right:24px;bottom:28px;display:flex;justify-content:center;pointer-events:none">
       <span style="display:inline-flex;align-items:center;gap:8px;background:var(--ink-900);color:var(--neutral-0);font-size:13px;font-weight:600;padding:10px 16px;border-radius:999px;box-shadow:var(--shadow-lg)"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="check" size="{{ 14 }}" hint-size="14px,14px"></x-import>{{ toast }}</span>
     </div>
   </sc-if>
 
-  <!-- Team switcher sheet -->
-  <sc-if value="{{ teamsOpen }}" hint-placeholder-val="{{ false }}">
-    <button onClick="{{ closeTeams }}" aria-label="Close" data-scrim="" style="position:absolute;inset:0;background:var(--surface-scrim)"></button>
-    <div data-sheet="" style="position:absolute;left:0;right:0;bottom:0;background:var(--neutral-0);border-radius:24px 24px 0 0;box-shadow:var(--shadow-xl);padding:8px 8px 40px;display:flex;flex-direction:column">
-      <div style="width:36px;height:4px;border-radius:999px;background:var(--neutral-300);margin:4px auto 10px"></div>
-      <div style="padding:4px 16px 8px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Switch team</div>
-      <div style="position:relative;display:flex;flex-direction:column">
-        <span data-teamthumb="" style="position:absolute;left:0;right:0;top:0;height:64px;border-radius:16px;background:var(--action-50);transition:transform 320ms cubic-bezier(.32,.72,0,1);transform: {{ teamThumbY }}"></span>
-        <sc-for list="{{ teams }}" as="t" hint-placeholder-count="4">
-          <button onClick="{{ t.onTap }}" style="position:relative;display:flex;align-items:center;gap:14px;height:64px;padding:0 16px;border-radius:16px;text-align:left">
-            <span style="width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex:none;background: {{ t.color }}">{{ t.abbr }}</span>
-            <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
-              <span style="font-size:15px;font-weight:700;transition:color 220ms;color: {{ t.textColor }}">{{ t.name }}</span>
-              <span style="font-size:12px;font-weight:500;color:var(--text-muted)">{{ t.meta }}</span>
-            </span>
-            <span style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 220ms,color 220ms,transform 320ms cubic-bezier(.34,1.4,.64,1);background: {{ t.checkBg }};color: {{ t.checkColor }};transform: {{ t.checkScale }}"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="check" size="{{ 14 }}" hint-size="14px,14px"></x-import></span>
-          </button>
-        </sc-for>
-      </div>
-      <div style="padding:16px 16px 8px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Appearance</div>
-      <div data-seg="" style="position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:3px;margin:0 8px;border-radius:999px;background:var(--neutral-100)">
-        <span data-thumb="" style="position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px) / 3);border-radius:999px;background:var(--neutral-0);box-shadow:var(--shadow-sm);transition:transform 320ms cubic-bezier(.32,.72,0,1);transform: {{ modeThumbX }}"></span>
-        <sc-for list="{{ modes }}" as="m" hint-placeholder-count="3">
-          <button onClick="{{ m.onTap }}" style="position:relative;height:40px;border-radius:999px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;transition:color 220ms cubic-bezier(.2,0,.2,1),transform 140ms;color: {{ m.color }}"><x-import component-from-global-scope="NextRaiseDesignSystem_94a86a.Icon" name="{{ m.icon }}" size="{{ 15 }}" hint-size="15px,15px"></x-import>{{ m.label }}</button>
-        </sc-for>
-      </div>
-      <div style="padding:12px 16px 0;font-size:12px;color:var(--text-muted);line-height:1.45;text-wrap:pretty">Team sets the default attribution bucket and alert rules for this device. Appearance follows the system unless you pick one.</div>
-    </div>
-  </sc-if>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:402,&quot;height&quot;:820},&quot;platform&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ios&quot;,&quot;android&quot;],&quot;default&quot;:&quot;ios&quot;,&quot;tsType&quot;:&quot;'ios' | 'android'&quot;,&quot;section&quot;:&quot;Device&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;glass&quot;,&quot;flat&quot;],&quot;default&quot;:&quot;glass&quot;,&quot;tsType&quot;:&quot;'glass' | 'flat'&quot;,&quot;section&quot;:&quot;Device&quot;},&quot;initialView&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;overall&quot;,&quot;influencer&quot;,&quot;perf&quot;],&quot;default&quot;:&quot;overall&quot;,&quot;tsType&quot;:&quot;'overall' | 'influencer' | 'perf'&quot;,&quot;section&quot;:&quot;Data&quot;},&quot;stale&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Data&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;glass&quot;,&quot;flat&quot;],&quot;default&quot;:&quot;glass&quot;,&quot;tsType&quot;:&quot;'glass' | 'flat'&quot;,&quot;section&quot;:&quot;Device&quot;},&quot;initialView&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;overall&quot;,&quot;influencer&quot;,&quot;perf&quot;],&quot;default&quot;:&quot;overall&quot;,&quot;tsType&quot;:&quot;'overall' | 'influencer' | 'perf'&quot;,&quot;section&quot;:&quot;Data&quot;},&quot;stale&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Data&quot;}}">
 class Component extends DCLogic {
-  state = { range: '7d', view: null, tab: 'overview', sub: null, sheet: false, teams: false, team: 'growth', mode: 'light', refreshing: false, bar: null, query: '', person: null, creator: null, add: false, toast: null, loading: false, tick: 0 };
+  state = { range: '7d', view: null, tab: 'overview', sub: null, sheet: false, teams: false, team: 'growth', mode: 'light', refreshing: false, page: null, bar: null, query: '', person: null, creator: null, add: false, toast: null, loading: false, tick: 0 };
 
   static TEAMS = [
     { key: 'growth', name: 'Growth', abbr: 'GR', meta: 'Overall bucket · daily digest', color: 'var(--action-500)', view: 'overall' },
@@ -1069,10 +1102,20 @@ class Component extends DCLogic {
       { title: 'PostHog budget exhausted', body: 'Hourly read budget hit while loading Overview. Cached snapshot served; retried at 10:15 AM.', when: 'Yesterday · 9:58 AM', dot: 'var(--amber-500)' },
     ];
     return {
-      isIos: platform === 'ios', isAndroid: platform === 'android',
+      isIos: false, isAndroid: false,
+      hasSub: !!sub,
+      isPageTab: st.tab === 'page', pageTitle: st.page || '',
+      teamAbbr: team.abbr,
+      teamThumbYDesk: 'translateY(' + (C.TEAMS.findIndex(t => t.key === st.team) * 56) + 'px)',
+      navPrimary: tabsDef.filter(t => t[0] !== 'more').map(([k, label, icon]) => ({ label, icon, on: st.tab === k ? 'true' : 'false', color: st.tab === k ? 'var(--text-brand)' : 'var(--text-body)', onTap: () => this.setState({ tab: k, sub: null, page: null }) })),
+      navGroups: C.MORE.map(([label, items]) => ({ label, items: items.filter(it => !['Search', 'Influencers'].includes(it)).map(it => ({ label: it, on: st.tab === 'page' && st.page === it ? 'true' : 'false', color: st.tab === 'page' && st.page === it ? 'var(--text-brand)' : 'var(--text-body)', onTap: () => this.setState({ tab: 'page', page: it, sub: null }) })) })),
+      recentPaymentsDesk: pays.slice(0, 5),
+      reportRowsDesk: (view === 'perf' ? cam : view === 'influencer' ? cre : [...cre, ...cam]).slice().sort((a, b) => b.rev - a.rev).map(r => ({ name: r.name, code: r.code, signups: fmt(r.signups), spend: money(r.spend ?? r.budget), sales: fmt(r.sales), roas: roasOf(r.rev, r.spend ?? r.budget), roasColor: roasColor(r.rev, r.spend ?? r.budget), onTap: r.platform ? openCreator(r) : () => this.say('Campaign detail opens in Google Ads') })),
+      creatorsDesk: cre.slice().sort((a, b) => b.rev - a.rev).map(c => ({ name: c.name, code: c.code, platform: c.platform, views: compact(c.views), signups: fmt(c.signups), budget: money(c.budget), revenue: money(c.rev), roas: roasOf(c.rev, c.budget), roasColor: roasColor(c.rev, c.budget), init: c.name.slice(0, 2).toUpperCase(), onTap: openCreator(c) })),
+      openSettings: () => this.say('Settings: PostHog personal API key, KV status, export defaults'),
       isGlass: (p.theme ?? 'glass') === 'glass' ? 'true' : 'false',
       stale: p.stale ?? false,
-      headerTitle: st.tab === 'overview' ? 'Overview' : tabsDef.find(t => t[0] === st.tab)[1],
+      headerTitle: st.tab === 'overview' ? 'Overview' : st.tab === 'page' ? (st.page || '') : st.tab === 'report' ? 'CEO Report' : tabsDef.find(t => t[0] === st.tab)[1],
       rangeLabel, liveAgo: st.refreshing ? 'now' : (st.tick % 5 + 1) + 'm',
       refreshing: st.refreshing ? 'true' : 'false',
       doRefresh: () => this.refresh(),
@@ -1133,7 +1176,7 @@ class Component extends DCLogic {
       paidDeltaColor: pp == null || paid - pp >= 0 ? 'var(--text-success)' : 'var(--text-danger)',
       payersFmt: fmt(payers), arpuFmt: '₹' + fmt((inr + usd * 84) / payers),
       topSources, allSources,
-      recentSignups: people.slice(0, 5), allSignups: people,
+      recentSignups: people.slice(0, 5).map(u => ({ ...u, onTap: openPerson(u) })), allSignups: people,
       recentPayments: pays.slice(0, 4), allPayments: pays,
       convRows,
       moreGroups: C.MORE.map(([label, items]) => ({ label, items: items.map(it => ({ label: it, onTap: nav(it) })) })),

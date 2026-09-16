@@ -2672,6 +2672,265 @@
     }
 
 
+
+    /* ══════════════════════════════════════════════════════════════════
+       NEXTRAISE CONSOLE (2026-09-16) — the approved desktop design
+       (design/DesktopOverview.dc.html) implemented 1:1: 248px sidebar,
+       header bar, 12-column bento. Applies >=961px. Mobile (<=600px)
+       keeps its own app design layer below.
+       ══════════════════════════════════════════════════════════════════ */
+    @media (min-width:961px){
+      html[data-theme="light"]{
+        --nd-0:#FFFFFF; --nd-50:#F5F7FF; --nd-100:#EEF1F8; --nd-200:#E3E7F0;
+        --nd-400:#A2A6B3; --nd-500:#70778B; --nd-700:#3F4A66; --nd-900:#0F1C3D;
+        --nd-act-50:#EEF2FF; --nd-act-100:#DEE5FF; --nd-act-500:#2952FF; --nd-act-600:#1B3FE0;
+        --nd-ok-50:#EDFAF3; --nd-ok-500:#19B672; --nd-ok-700:#12945B;
+        --nd-red-100:#FDE7E7; --nd-red-500:#E5484D; --nd-red-700:#AE2A2E;
+        --nd-amber-100:#FEF1D9; --nd-amber-700:#B4740E;
+        --nd-edge:#E6EAF3;
+        --nd-sh:0 1px 3px rgba(15,20,25,.06),0 1px 2px rgba(15,20,25,.04);
+      }
+      html[data-theme="light"] body{
+        background:var(--nd-50) !important; background-image:none !important;
+        font-family:'Plus Jakarta Sans',system-ui,sans-serif !important; font-variant-numeric:tabular-nums; }
+      html[data-theme="light"] body::before, html[data-theme="light"] body::after{ display:none !important; content:none !important; }
+
+      /* shell: 248px sidebar + main */
+      html[data-theme="light"] .app-layout{
+        display:grid !important; grid-template-columns:248px minmax(0,1fr) !important;
+        margin:0 !important; height:100dvh !important; overflow:hidden;
+        background:transparent !important; border:none !important; border-radius:0 !important; box-shadow:none !important; }
+      html[data-theme="light"] .sidebar{
+        position:relative !important; width:auto !important; flex:none !important;
+        display:flex; flex-direction:column; min-height:0; overflow:hidden;
+        background:var(--nd-0) !important; border:none !important;
+        border-right:1px solid var(--nd-edge) !important; border-radius:0 !important;
+        box-shadow:none !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+      html[data-theme="light"] .app-body{
+        margin:0 !important; height:100dvh !important; min-width:0;
+        display:flex; flex-direction:column; overflow:hidden !important;
+        background:var(--nd-50) !important; border:none !important; border-radius:0 !important; box-shadow:none !important; }
+
+      /* sidebar: brand row */
+      html[data-theme="light"] .sidebar-brand{
+        display:flex !important; align-items:center; gap:10px; padding:20px 20px 12px !important;
+        flex:none; background:none !important; justify-content:flex-start !important; }
+      html[data-theme="light"] .sidebar-brand .brand-logo{ width:30px !important; height:30px !important; border-radius:9px !important; box-shadow:none !important; }
+      html[data-theme="light"] .brand-text{ opacity:1 !important; width:auto !important; margin:0 !important;
+        font-size:17px !important; font-weight:800 !important; letter-spacing:-.02em !important; color:var(--nd-900) !important; }
+      html[data-theme="light"] .brand-text .brand-sub, html[data-theme="light"] .brand-sub{ display:none !important; }
+      html[data-theme="light"] .nd-brandmark{ margin-left:auto; font-size:10px; font-weight:700; letter-spacing:.08em;
+        text-transform:uppercase; color:var(--nd-400); }
+
+      /* sidebar: team card */
+      html[data-theme="light"] .nd-team{
+        margin:0 12px 8px; display:flex; align-items:center; gap:10px; height:44px; padding:0 10px;
+        border-radius:12px; border:none; background:none; cursor:pointer; text-align:left; width:calc(100% - 24px);
+        font-family:inherit; transition:background .14s ease; }
+      html[data-theme="light"] .nd-team:hover{ background:var(--nd-100); }
+      html[data-theme="light"] .nd-team .av{ width:26px; height:26px; border-radius:8px; display:flex; align-items:center;
+        justify-content:center; font-size:10px; font-weight:800; color:#fff; flex:none; background:var(--nd-act-500); }
+      html[data-theme="light"] .nd-team .tx{ flex:1; min-width:0; display:flex; flex-direction:column; }
+      html[data-theme="light"] .nd-team .tx b{ font-size:13px; font-weight:700; color:var(--nd-900); }
+      html[data-theme="light"] .nd-team .tx s{ text-decoration:none; font-size:11px; font-weight:500; color:var(--nd-500); }
+
+      /* neutralise the legacy collapsible icon-rail rules at this breakpoint */
+      html[data-theme="light"] .sidebar:hover{ width:auto !important; background:var(--nd-0) !important; box-shadow:none !important; }
+      html[data-theme="light"] .app-body{ margin-left:0 !important; }
+      html[data-theme="light"] .sidebar-brand{ gap:10px !important; }
+      html[data-theme="light"] .tab{ width:auto !important; margin:0 !important; justify-content:flex-start !important; }
+      html[data-theme="light"] .nav-label{ height:auto !important; opacity:1 !important; overflow:visible !important; }
+      html[data-theme="light"] .nav-sep{ display:none !important; }
+      html[data-theme="light"] .nb-profile, html[data-theme="light"] .cmdk-trigger{ display:none !important; }
+      html[data-theme="light"] .tab .tab-badge{ display:inline-block !important; }
+
+      /* sidebar: nav */
+      html[data-theme="light"] .sidebar-nav{
+        flex:1 1 0% !important; min-height:0; overflow:auto; padding:4px 12px 12px !important;
+        display:flex; flex-direction:column; gap:14px;
+        scrollbar-width:thin; scrollbar-color:var(--nd-200) transparent; }
+      html[data-theme="light"] .sidebar-nav::-webkit-scrollbar{ width:4px; }
+      html[data-theme="light"] .sidebar-nav::-webkit-scrollbar-thumb{ background:var(--nd-200); border-radius:2px; }
+      html[data-theme="light"] .nav-group{ display:flex; flex-direction:column; gap:2px; }
+      html[data-theme="light"] .nav-label{
+        display:block !important; font-size:11px !important; font-weight:700 !important; letter-spacing:.08em !important;
+        text-transform:uppercase !important; color:var(--nd-500) !important; padding:6px 10px 4px !important; margin:0 !important; }
+      html[data-theme="light"] .nav-sep{ display:none !important; }
+      html[data-theme="light"] .tab{
+        display:flex !important; align-items:center; gap:10px; height:36px; padding:0 10px !important; margin:0 !important;
+        border-radius:10px !important; font-size:13.5px !important; font-weight:500 !important;
+        color:var(--nd-700) !important; border:none !important; background:none !important;
+        white-space:nowrap; transition:background .14s ease, color .14s ease !important; transform:none !important; }
+      html[data-theme="light"] .tab::before{ display:none !important; }
+      html[data-theme="light"] .tab:hover{ background:var(--nd-100) !important; color:var(--nd-900) !important; transform:none !important; }
+      html[data-theme="light"] .tab.active, html[data-theme="light"] .tab[class*="tab-"].active{
+        background:var(--nd-act-50) !important; color:var(--nd-act-600) !important; font-weight:600 !important;
+        border:none !important; box-shadow:none !important; }
+      html[data-theme="light"] .tab .ic-sm{ width:17px; height:17px; flex:none; color:inherit !important; opacity:1; }
+      html[data-theme="light"] .nav-group.nd-primary .tab{ height:40px; border-radius:12px !important; font-size:14px !important; font-weight:600 !important; }
+      html[data-theme="light"] .tab-badge{ margin-left:auto; font-size:10.5px; font-weight:600; padding:1px 7px;
+        border-radius:999px; background:var(--nd-100) !important; color:var(--nd-500) !important; border:none !important; }
+
+      /* sidebar footer */
+      html[data-theme="light"] .sidebar-footer{
+        flex:none; padding:12px !important; border-top:1px solid var(--nd-edge) !important;
+        display:flex; flex-direction:column; gap:10px; background:none !important; }
+      html[data-theme="light"] .settings-btn{
+        display:flex !important; align-items:center; gap:10px; height:40px; padding:0 10px !important;
+        border-radius:12px !important; font-size:13.5px !important; font-weight:600 !important;
+        color:var(--nd-700) !important; background:none !important; border:none !important; width:100%; font-family:inherit; }
+      html[data-theme="light"] .settings-btn:hover{ background:var(--nd-100) !important; }
+      html[data-theme="light"] .settings-btn{ width:auto !important; justify-content:flex-start !important; font-size:13.5px !important; }
+      html[data-theme="light"] .settings-btn > span{ display:inline !important; flex:1; text-align:left; }
+      html[data-theme="light"] .settings-btn .ic-sm{ width:17px; height:17px; }
+      html[data-theme="light"] .nd-keystate{ font-size:11px; font-weight:600; color:var(--nd-400); }
+
+      /* ── Header bar ── */
+      html[data-theme="light"] .nd-topbar{
+        position:relative; z-index:3; display:flex; align-items:center; gap:14px; padding:14px 24px;
+        background:var(--nd-0); border-bottom:1px solid var(--nd-edge); flex:none; }
+      html[data-theme="light"] .nd-tb-t{ display:flex; flex-direction:column; gap:1px; min-width:0; margin-right:auto; }
+      html[data-theme="light"] .nd-tb-t b{ font-size:20px; font-weight:800; letter-spacing:-.02em; line-height:1.1; color:var(--nd-900); }
+      html[data-theme="light"] .nd-tb-t s{ text-decoration:none; font-size:12px; font-weight:500; color:var(--nd-500);
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      html[data-theme="light"] .nd-topbar .bucket-seg{
+        position:relative; width:clamp(240px,24vw,330px); flex:none; margin:0 !important;
+        display:grid !important; grid-template-columns:repeat(3,minmax(0,1fr));
+        padding:3px !important; border-radius:999px !important; background:var(--nd-100) !important; border:none !important; }
+      html[data-theme="light"] .nd-topbar .bucket-seg::before{ content:""; position:absolute; top:3px; bottom:3px; left:3px;
+        width:calc((100% - 6px) / 3); border-radius:999px; background:var(--nd-0); box-shadow:var(--nd-sh);
+        transition:transform 320ms cubic-bezier(.32,.72,0,1); transform:translateX(var(--seg-x,0)); }
+      html[data-theme="light"] .nd-topbar .bucket-seg .bkt{ position:relative; height:34px !important; border-radius:999px !important;
+        font-size:13px !important; font-weight:600 !important; background:none !important; box-shadow:none !important;
+        border:none !important; color:var(--nd-500) !important; transition:color 220ms; }
+      html[data-theme="light"] .nd-topbar .bucket-seg .bkt.is-on{ color:var(--nd-900) !important; }
+      html[data-theme="light"] .nd-topbar .gdr-btn{
+        height:40px !important; margin:0 !important; flex:none; border-radius:999px !important;
+        border:1px solid var(--nd-200) !important; background:var(--nd-0) !important; box-shadow:var(--nd-sh) !important;
+        font-size:13.5px !important; font-weight:600 !important; color:var(--nd-900) !important; padding:0 14px !important; gap:8px; }
+      html[data-theme="light"] .nd-live{ display:inline-flex; align-items:center; gap:6px; height:26px; padding:0 11px; flex:none;
+        border-radius:999px; background:var(--nd-ok-50); color:var(--nd-ok-700); font-size:12.5px; font-weight:600; white-space:nowrap; }
+      html[data-theme="light"] .nd-live::before{ content:""; width:6px; height:6px; border-radius:50%; background:var(--nd-ok-500); }
+      html[data-theme="light"] .nd-live.is-stale{ background:var(--nd-amber-100); color:var(--nd-amber-700); }
+      html[data-theme="light"] .nd-live.is-stale::before{ background:var(--nd-amber-700); }
+      html[data-theme="light"] .nd-tb-ico{ width:40px; height:40px; flex:none; display:flex; align-items:center; justify-content:center;
+        position:relative; border-radius:999px; border:1px solid var(--nd-200); background:var(--nd-0);
+        color:var(--nd-700); cursor:pointer; transition:border-color .15s ease, color .15s ease; }
+      html[data-theme="light"] .nd-tb-ico:hover{ border-color:var(--nd-400); color:var(--nd-900); }
+      html[data-theme="light"] .nd-tb-ico svg{ width:18px; height:18px; stroke-width:1.9; }
+      html[data-theme="light"] .nd-tb-ico.dot::after{ content:""; position:absolute; top:7px; right:8px; width:8px; height:8px;
+        border-radius:50%; background:var(--nd-red-500); border:2px solid var(--nd-0); }
+      html[data-theme="light"] .nd-tb-av{ width:34px; height:34px; flex:none; border-radius:50%; background:var(--nd-act-50);
+        color:var(--nd-act-600); font-size:12.5px; font-weight:700; display:flex; align-items:center; justify-content:center;
+        border:none; cursor:pointer; font-family:inherit; }
+
+      /* ── Content: 12-column bento ── */
+      html[data-theme="light"] .app-body > .page{ flex:1; min-height:0; overflow:auto; padding:0 !important; max-width:none !important; }
+      html[data-theme="light"] #page-overview .ov-head{ display:none !important; }
+      html[data-theme="light"] #overviewArea{
+        display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); grid-auto-rows:min-content;
+        gap:16px; align-content:start; padding:24px; }
+      @keyframes ndcRise{ from{ opacity:0; transform:translateY(10px) } to{ opacity:1; transform:none } }
+      html[data-theme="light"] .ndc{
+        background:var(--nd-0); border:1px solid var(--nd-edge); border-radius:16px; box-shadow:var(--nd-sh);
+        animation:ndcRise 420ms cubic-bezier(.2,0,.2,1) both; }
+      html[data-theme="light"] #overviewArea > *:nth-child(2){ animation-delay:50ms }
+      html[data-theme="light"] #overviewArea > *:nth-child(3){ animation-delay:100ms }
+      html[data-theme="light"] #overviewArea > *:nth-child(4){ animation-delay:150ms }
+      html[data-theme="light"] #overviewArea > *:nth-child(5){ animation-delay:200ms }
+      html[data-theme="light"] .nd-s8{ grid-column:span 8; } html[data-theme="light"] .nd-s4{ grid-column:span 4; }
+      html[data-theme="light"] .nd-lbl{ font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--nd-500); }
+
+      html[data-theme="light"] .ndc-hero{ padding:24px; display:flex; flex-direction:column; gap:18px; }
+      html[data-theme="light"] .ndc-hero-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+      html[data-theme="light"] .ndc-hnum{ display:flex; align-items:baseline; gap:14px; }
+      html[data-theme="light"] .ndc-big{ font-size:48px; font-weight:800; letter-spacing:-.03em; line-height:1; color:var(--nd-900); }
+      html[data-theme="light"] .nd-badge{ display:inline-flex; align-items:center; height:24px; padding:0 10px; border-radius:999px;
+        font-size:12.5px; font-weight:700; white-space:nowrap; }
+      html[data-theme="light"] .nd-badge.up{ background:var(--nd-ok-50); color:var(--nd-ok-700); }
+      html[data-theme="light"] .nd-badge.down{ background:var(--nd-red-100); color:var(--nd-red-700); }
+      html[data-theme="light"] .nd-badge.flat{ background:var(--nd-100); color:var(--nd-500); }
+      html[data-theme="light"] .nd-prev{ font-size:12px; font-weight:500; color:var(--nd-400); }
+      html[data-theme="light"] .ndc-bars{ height:220px; display:flex; align-items:flex-end; gap:8px; border-bottom:1px solid var(--nd-100); }
+      html[data-theme="light"] .ndc-bars > span{ flex:1; min-width:0; height:100%; display:flex; align-items:flex-end; }
+      html[data-theme="light"] .ndc-bars i{ display:block; width:100%; border-radius:6px 6px 2px 2px; background:var(--nd-act-500);
+        transition:height 520ms cubic-bezier(.2,0,.2,1); }
+      html[data-theme="light"] .ndc-xlbl{ display:flex; gap:8px; margin-top:8px; }
+      html[data-theme="light"] .ndc-xlbl span{ flex:1; min-width:0; text-align:center; font-size:11px; font-weight:500; color:var(--nd-400); }
+
+      html[data-theme="light"] .ndc-kpis{ grid-column:span 4; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+      html[data-theme="light"] .ndc-kpi{ padding:18px 20px; display:flex; flex-direction:column; gap:6px; text-align:left;
+        min-width:0; cursor:pointer; font-family:inherit;
+        transition:transform 200ms cubic-bezier(.2,0,.2,1), box-shadow 200ms, border-color 200ms; }
+      html[data-theme="light"] .ndc-kpi:hover{ transform:translateY(-2px); box-shadow:0 8px 24px -12px rgba(15,28,61,.22); border-color:var(--nd-200); }
+      html[data-theme="light"] .ndc-kpi b{ font-size:clamp(18px,1.6vw,26px); font-weight:800; letter-spacing:-.02em; line-height:1.1;
+        white-space:nowrap; color:var(--nd-900); }
+      html[data-theme="light"] .ndc-kpi s{ text-decoration:none; font-size:12px; font-weight:500; color:var(--nd-500);
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+      html[data-theme="light"] .ndc-kpi s.up{ color:var(--nd-ok-700); } html[data-theme="light"] .ndc-kpi s.down{ color:var(--nd-red-700); }
+
+      html[data-theme="light"] .ndc-panel{ padding:20px; display:flex; flex-direction:column; gap:14px; }
+      html[data-theme="light"] .ndc-ph{ display:flex; align-items:center; justify-content:space-between; }
+      html[data-theme="light"] .ndc-ph b{ font-size:15px; font-weight:700; letter-spacing:-.01em; color:var(--nd-900); }
+      html[data-theme="light"] .nd-see{ height:32px; padding:0 4px; font-size:13px; font-weight:600; color:var(--nd-act-500);
+        background:none; border:none; display:inline-flex; align-items:center; gap:2px; cursor:pointer; font-family:inherit; }
+      html[data-theme="light"] .ndc-srow{ display:flex; flex-direction:column; gap:6px; }
+      html[data-theme="light"] .ndc-stop{ display:flex; justify-content:space-between; align-items:baseline; font-size:13px; }
+      html[data-theme="light"] .ndc-stop b{ font-weight:600; color:var(--nd-900); }
+      html[data-theme="light"] .ndc-stop span{ font-weight:700; color:var(--nd-900); }
+      html[data-theme="light"] .ndc-stop span s{ text-decoration:none; font-weight:500; color:var(--nd-400); }
+      html[data-theme="light"] .nd-prog{ height:6px; border-radius:999px; background:var(--nd-100); overflow:hidden; }
+      html[data-theme="light"] .nd-prog i{ display:block; height:100%; border-radius:999px; background:var(--nd-act-500);
+        transition:width 520ms cubic-bezier(.2,0,.2,1); }
+      html[data-theme="light"] .ndc-row{ display:flex; align-items:center; gap:12px; min-height:52px; border-top:1px solid var(--nd-100); }
+      html[data-theme="light"] .ndc-list .ndc-row:first-of-type{ border-top:none; }
+      html[data-theme="light"] .nd-ini{ width:34px; height:34px; border-radius:50%; background:var(--nd-100); color:var(--nd-700);
+        font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex:none; }
+      html[data-theme="light"] .nd-rmid{ flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+      html[data-theme="light"] .nd-rmid b{ font-size:13.5px; font-weight:600; color:var(--nd-900); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      html[data-theme="light"] .nd-rmid s{ text-decoration:none; font-size:12px; font-weight:500; color:var(--nd-500); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      html[data-theme="light"] .nd-rend{ display:flex; flex-direction:column; align-items:flex-end; gap:2px; flex:none; }
+      html[data-theme="light"] .nd-rend b{ font-size:12.5px; font-weight:600; color:var(--nd-700); }
+      html[data-theme="light"] .nd-rend b.amt{ font-size:14px; font-weight:700; color:var(--nd-ok-700); }
+      html[data-theme="light"] .nd-rend s{ text-decoration:none; font-size:11.5px; font-weight:500; color:var(--nd-400); }
+      html[data-theme="light"] .nd-empty{ font-size:13px; font-weight:500; color:var(--nd-400); padding:14px 0; }
+
+      /* every other screen inherits the console card language */
+      html[data-theme="light"] :is(.ov-card,.ocard,.nb-card,.okpi,.rev-kpi,.infl-card,.panel,.table-wrap,.result-card){
+        background:var(--nd-0) !important; border:1px solid var(--nd-edge) !important;
+        border-radius:16px !important; box-shadow:var(--nd-sh) !important; }
+      html[data-theme="light"] .page:not(#page-overview){ padding:24px !important; }
+
+      @media (prefers-reduced-motion:reduce){
+        html[data-theme="light"] .ndc{ animation:none !important; }
+        html[data-theme="light"] .nd-topbar .bucket-seg::before{ transition:none; }
+      }
+    }
+
+    /* ── Alerts panel (both breakpoints) ── */
+    html[data-theme="light"] .nd-alerts-ov{ position:fixed; inset:0; z-index:400; background:rgba(15,28,61,.28);
+      display:none; align-items:flex-end; justify-content:center; }
+    html[data-theme="light"] .nd-alerts-ov.open{ display:flex; }
+    @media (min-width:961px){ html[data-theme="light"] .nd-alerts-ov{ align-items:flex-start; justify-content:flex-end; padding:70px 24px 0; } }
+    @keyframes ndSheet{ from{ transform:translateY(40px); opacity:0 } to{ transform:none; opacity:1 } }
+    html[data-theme="light"] .nd-alerts{ width:min(420px,100%); max-height:72vh; overflow:auto; background:#fff;
+      border:1px solid var(--nd-edge,#E6EAF3); border-radius:20px 20px 0 0; box-shadow:0 24px 64px rgba(15,20,25,.22);
+      animation:ndSheet 280ms cubic-bezier(.2,0,.2,1) both; }
+    @media (min-width:961px){ html[data-theme="light"] .nd-alerts{ border-radius:16px; } }
+    html[data-theme="light"] .nd-alerts-h{ display:flex; align-items:center; justify-content:space-between;
+      padding:16px 18px 10px; position:sticky; top:0; background:#fff; }
+    html[data-theme="light"] .nd-alerts-h b{ font-size:17px; font-weight:700; color:var(--nd-900,#0F1C3D); }
+    html[data-theme="light"] .nd-alerts-x{ width:34px; height:34px; border-radius:50%; border:none; background:#EEF1F8;
+      color:#3F4A66; cursor:pointer; font-size:16px; line-height:1; font-family:inherit; }
+    html[data-theme="light"] .nd-alert{ display:flex; gap:12px; padding:12px 18px; border-top:1px solid rgba(15,28,61,.06); }
+    html[data-theme="light"] .nd-alert i{ width:8px; height:8px; border-radius:50%; margin-top:6px; flex:none; background:#2952FF; }
+    html[data-theme="light"] .nd-alert i.ok{ background:#19B672; } html[data-theme="light"] .nd-alert i.warn{ background:#F59E0C; }
+    html[data-theme="light"] .nd-alert .bd{ flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+    html[data-theme="light"] .nd-alert .tp{ display:flex; justify-content:space-between; gap:10px; align-items:baseline; }
+    html[data-theme="light"] .nd-alert b{ font-size:14px; font-weight:700; color:var(--nd-900,#0F1C3D); }
+    html[data-theme="light"] .nd-alert s{ text-decoration:none; font-size:11.5px; font-weight:500; color:#A2A6B3; flex:none; }
+    html[data-theme="light"] .nd-alert p{ margin:0; font-size:13px; line-height:1.45; color:#3F4A66; }
+
     /* ══════════════════════════════════════════════════════════════════
        MOBILE APP DESIGN (2026-09-16, v2 — matched to the approved
        Liquid Glass reference). Scoped to <=600px; desktop untouched.
@@ -4518,7 +4777,7 @@
     // Mobile topbar title
     const titleEl = document.getElementById('mobPageTitle');
     if (titleEl) titleEl.textContent = TAB_TITLES[name] || name;
-    try { ndBuildHeader(); ndSyncHeader(name); } catch(_) {}
+    try { ndBuildHeader(); ndSyncHeader(name); ndBuildConsole(); ndSyncConsole(name); } catch(_) {}
     // Bottom nav active state
     document.querySelectorAll('.mob-nav-item').forEach(b => b.classList.remove('active'));
     const mbnId = MBN_TAB[name] || 'mbn-more';
@@ -5657,7 +5916,7 @@
     _syncBucketSeg();
   }
   function setBucketView(v) {
-    setTimeout(() => { try { ndSyncSeg(); } catch(_) {} }, 0);
+    setTimeout(() => { try { ndSyncSeg(); ndSyncConsole(_ndTab()); } catch(_) {} }, 0);
     if (!['influencer','perf','overall'].includes(v)) return;   // allowlist: 'infl'/'perf' SQL labels derive from these
     if (BUCKET_VIEW === v) return;
     BUCKET_VIEW = v;
@@ -6332,6 +6591,244 @@
     try { await loadOverview(force); } finally { if (btn) btn.disabled = false; setBusy(false); }
   }
 
+  // ══ NEXTRAISE CONSOLE (desktop, 2026-09-16) + ALERTS ═════════════════
+  // Implements design/DesktopOverview.dc.html from the same live _ovData.
+  const ndIsDesk = () => { try { return matchMedia('(min-width:961px)').matches; } catch(_) { return false; } };
+
+  // ── shared data shaping (used by desktop + mobile + widgets) ──
+  function ndOverviewModel() {
+    const c = (_ovData && _ovData.counts) || [];
+    const newProduct = +c[0] || 0, newToday = +c[2] || 0, newWeek = +c[3] || 0,
+          activePro = +c[7] || 0, newYesterday = +c[9] || 0, newWeekPrev = +c[10] || 0;
+    const revInr = +(_ovData && _ovData.revInr) || 0, revUsd = +(_ovData && _ovData.revUsd) || 0;
+    const totalRevInr = Math.round(revInr + revUsd * USD_TO_INR);
+    const revPayers = (+(_ovData && _ovData.revPayers) || 0) || activePro;
+    const arpu = revPayers ? Math.round(totalRevInr / revPayers) : 0;
+    const rangeLabel = tabGdrPreset('overview').label, key = tabGdrKey('overview');
+    const growth = ((_ovData && _ovData.growth) || []).map(r => ({ d: r[0], v: +r[1] || 0 }));
+    const rangeSignups = growth.reduce((a, b) => a + b.v, 0) ||
+      (key === 'today' ? newToday : key === 'yest' ? newYesterday : key === '7d' ? newWeek : newProduct);
+    const payCount = ((_ovData && _ovData.dailyPay) || []).reduce((a, r) => a + (+r[1] || 0), 0);
+    let dPct = null, prevN = null;
+    if (key === 'today' && newYesterday) { dPct = (newToday - newYesterday) / newYesterday * 100; prevN = newYesterday; }
+    else if (key === '7d' && newWeekPrev) { dPct = (newWeek - newWeekPrev) / newWeekPrev * 100; prevN = newWeekPrev; }
+    const sw = _ovData && _ovData.sameWin;
+    const swCur = sw ? +sw[0] || 0 : null, swPrev = sw ? +sw[1] || 0 : 0;
+    const swDelta = (swCur != null && swPrev) ? (swCur - swPrev) / swPrev * 100 : null;
+    const chMap = {}, chConv = {};
+    for (const row of ((_ovData && _ovData.sources) || [])) {
+      const ch = channelOf(row[0], row[1]);
+      chMap[ch] = (chMap[ch] || 0) + (+row[2] || 0);
+      chConv[ch] = (chConv[ch] || 0) + (+row[3] || 0);
+    }
+    const chList = Object.keys(chMap).map(k => [k, chMap[k], chConv[k] || 0]).sort((a, b) => b[1] - a[1]);
+    return { newProduct, newToday, newWeek, newYesterday, activePro, revInr, revUsd, totalRevInr,
+      revPayers, arpu, rangeLabel, key, growth, rangeSignups, payCount, dPct, prevN,
+      swCur, swDelta, chList, viewLabel: (BUCKET_VIEW === 'overall' ? 'Overall' : BUCKET_VIEW === 'perf' ? 'Perf' : 'Influencer') };
+  }
+  const ndIni = s => { const t = String(s || '?').trim(), p = t.split(/\s+/);
+    return ((p[0] || '?')[0] || '?').toUpperCase() + ((p[1] || '')[0] || '').toUpperCase(); };
+  const ndAgo = ts => { const t = new Date(String(ts || '').replace(' ', 'T') + 'Z');
+    if (isNaN(t.getTime())) return '';
+    const m = Math.max(0, Math.round((Date.now() - t.getTime()) / 60000));
+    return m < 1 ? 'now' : m < 60 ? m + 'm ago' : m < 1440 ? Math.round(m / 60) + 'h ago' : Math.round(m / 1440) + 'd ago'; };
+
+  // ── desktop chrome: header bar + team card + key state ──
+  function ndBuildConsole() {
+    if (!ndIsDesk()) return;
+    const body = document.querySelector('.app-body');
+    if (body && !document.querySelector('.nd-topbar')) {
+      const bar = document.createElement('header');
+      bar.className = 'nd-topbar';
+      bar.innerHTML =
+        '<div class="nd-tb-t"><b id="ndDeskTitle">Overview</b>' +
+        '<s>PostHog ' + (cfg('projectId') || '399417') + ' · Asia/Kolkata · internal and test accounts excluded</s></div>' +
+        '<span id="ndSegSlot"></span><span id="ndDateSlot"></span><span class="nd-live" id="ndDeskLive"></span>' +
+        '<button class="nd-tb-ico dot" id="ndDeskBell" onclick="ndOpenAlerts()" aria-label="Alerts">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></button>' +
+        '<button class="nd-tb-av" onclick="openSettings()" aria-label="Account">JS</button>';
+      body.insertBefore(bar, body.firstChild);
+    }
+    // brand suffix + team card + key state (once)
+    const brand = document.querySelector('.sidebar-brand');
+    if (brand && !brand.querySelector('.nd-brandmark')) {
+      const m = document.createElement('span'); m.className = 'nd-brandmark'; m.textContent = 'Analytics';
+      brand.appendChild(m);
+    }
+    const nav = document.querySelector('.sidebar-nav');
+    if (nav && !document.querySelector('.nd-team')) {
+      const t = document.createElement('button');
+      t.className = 'nd-team'; t.onclick = () => switchTab('influencers');
+      t.innerHTML = '<span class="av">GR</span><span class="tx"><b>Growth</b><s id="ndTeamSub">Team · Overall bucket</s></span>';
+      nav.parentNode.insertBefore(t, nav);
+    }
+    const sb = document.querySelector('.settings-btn');
+    if (sb && !sb.querySelector('.nd-keystate')) {
+      const k = document.createElement('span'); k.className = 'nd-keystate'; k.id = 'ndKeyState';
+      k.textContent = cfg('apiKey') ? 'PostHog key set' : 'No key';
+      sb.appendChild(k);
+    }
+    // move the range pill + attribution toggle into the header
+    const segSlot = document.getElementById('ndSegSlot'), dateSlot = document.getElementById('ndDateSlot');
+    const seg = document.getElementById('bucketSeg'), btn = document.getElementById('gdrTabBtn-overview');
+    if (segSlot && seg && seg.parentNode !== segSlot.parentNode) { seg.style.marginTop = '0'; segSlot.replaceWith(seg); }
+    if (dateSlot && btn && btn.parentNode !== dateSlot.parentNode) { btn.style.marginTop = '0'; dateSlot.replaceWith(btn); }
+  }
+  function ndSyncConsole(name) {
+    const t = document.getElementById('ndDeskTitle');
+    if (t && typeof TAB_TITLES !== 'undefined') t.textContent = TAB_TITLES[name] || name;
+    const sub = document.getElementById('ndTeamSub');
+    if (sub) sub.textContent = 'Team · ' + (BUCKET_VIEW === 'overall' ? 'Overall' : BUCKET_VIEW === 'perf' ? 'Perf' : 'Influencer') + ' bucket';
+    const k = document.getElementById('ndKeyState');
+    if (k) k.textContent = cfg('apiKey') ? 'PostHog key set' : 'No key';
+  }
+  function ndLiveEl(el) {
+    if (!el) return;
+    const paused = (typeof budgetPauseUntil === 'function') && budgetPauseUntil();
+    const age = Math.max(0, Math.round((Date.now() - (_ovDataTs || Date.now())) / 60000));
+    el.className = 'nd-live' + (paused || age > 10 ? ' is-stale' : '');
+    el.textContent = paused ? 'Paused' : (age < 2 ? 'Live · now' : 'Live · ' + age + 'm');
+  }
+
+  function renderOverviewConsole() {
+    const area = document.getElementById('overviewArea');
+    if (!area || !_ovData) return;
+    const esc = s => h(s == null ? '' : s);
+    const M = ndOverviewModel();
+    const bars = M.growth.slice(-14);
+    const bMax = Math.max(1, ...bars.map(b => b.v));
+    const barsHtml = bars.map(b => '<span><i style="height:' + Math.max(3, Math.round(b.v / bMax * 100)) +
+      '%" title="' + esc(b.d) + ' · ' + b.v.toLocaleString('en-IN') + ' signups"></i></span>').join('');
+    const xLbl = bars.map(b => { const d = new Date(b.d);
+      return '<span>' + (isNaN(d.getTime()) ? String(b.d).slice(5) : d.toLocaleDateString('en-IN', { weekday: 'short' })) + '</span>'; }).join('');
+    const dCls = M.dPct == null ? 'flat' : M.dPct >= 0 ? 'up' : 'down';
+    const dTxt = M.dPct == null ? M.rangeLabel : (M.dPct >= 0 ? '+' : '') + M.dPct.toFixed(1) + '%';
+    const chMax = Math.max(1, ...M.chList.map(x => x[1]));
+
+    const signupRows = ((_ovData.signups) || []).slice(0, 5).map(r => {
+      const email = r[0] || '', name = r[1] || '';
+      return '<div class="ndc-row"><span class="nd-ini">' + esc(ndIni(name || email)) + '</span>' +
+        '<span class="nd-rmid"><b>' + esc(name || email.split('@')[0]) + '</b><s>' + esc(email) + '</s></span>' +
+        '<span class="nd-rend"><b>' + esc(planLabel(r[2] || 'free')) + '</b><s>' + ndAgo(r[3]) + '</s></span></div>';
+    }).join('') || '<div class="nd-empty">No signups in this range</div>';
+
+    const payRows = ((_ovData.payments) || []).slice(0, 5).map(r => {
+      const email = r[0] || '', amt = +r[4] || 0, cur = r[5];
+      const amtTxt = cur === 'USD' ? '+$' + Math.round(amt) : '+₹' + Math.round(amt).toLocaleString('en-IN');
+      return '<div class="ndc-row"><span class="nd-rmid"><b>' + esc(email) + '</b><s>' +
+        esc(planLabel(r[2] || 'pro')) + ' · ' + ndAgo(r[3]) + '</s></span>' +
+        '<span class="nd-rend"><b class="amt">' + amtTxt + '</b></span></div>';
+    }).join('') || '<div class="nd-empty">No payments in this range</div>';
+
+    area.innerHTML =
+      '<div class="ndc nd-s8 ndc-hero">' +
+        '<div class="ndc-hero-top"><div style="display:flex;flex-direction:column;gap:6px">' +
+          '<span class="nd-lbl">New signups · ' + esc(M.rangeLabel) + ' · ' + esc(M.viewLabel) + '</span>' +
+          '<div class="ndc-hnum"><span class="ndc-big stat-num">' + M.rangeSignups.toLocaleString('en-IN') + '</span>' +
+          '<span class="nd-badge ' + dCls + '">' + esc(dTxt) + '</span>' +
+          (M.prevN != null ? '<span class="nd-prev">vs ' + M.prevN.toLocaleString('en-IN') + ' prior period</span>' : '') +
+        '</div></div></div>' +
+        '<div><div class="ndc-bars">' + barsHtml + '</div><div class="ndc-xlbl">' + xLbl + '</div></div>' +
+      '</div>' +
+      '<div class="ndc-kpis">' +
+        '<button class="ndc ndc-kpi" onclick="switchTab(\'revenue\')"><span class="nd-lbl">Revenue</span>' +
+          '<b>₹' + M.totalRevInr.toLocaleString('en-IN') + '</b><s>' +
+          (M.revUsd > 0 ? '+ $' + Math.round(M.revUsd).toLocaleString('en-US') + ' · ' : '') +
+          (M.payCount ? M.payCount.toLocaleString('en-IN') + ' payments' : 'completed') + '</s></button>' +
+        '<button class="ndc ndc-kpi" onclick="switchTab(\'pro\')"><span class="nd-lbl">Active Pro</span>' +
+          '<b>' + M.activePro.toLocaleString('en-IN') + '</b><s>' +
+          (M.newProduct ? (M.activePro / M.newProduct * 100).toFixed(2) : '0') + '% of ' +
+          (M.newProduct >= 1000 ? (M.newProduct / 1000).toFixed(1) + 'K' : M.newProduct) + ' users</s></button>' +
+        '<button class="ndc ndc-kpi" onclick="switchTab(\'insights\')"><span class="nd-lbl">Signed up &amp; paid</span>' +
+          '<b>' + (M.swCur == null ? '—' : M.swCur.toLocaleString('en-IN')) + '</b>' +
+          '<s class="' + (M.swDelta == null ? '' : M.swDelta >= 0 ? 'up' : 'down') + '">' +
+          (M.swCur == null ? 'after next refresh'
+            : M.swDelta != null ? (M.swDelta >= 0 ? '+' : '') + M.swDelta.toFixed(0) + '% vs prior period'
+            : (M.rangeSignups ? (M.swCur / M.rangeSignups * 100).toFixed(1) + '% of signups' : 'same window')) + '</s></button>' +
+        '<button class="ndc ndc-kpi" onclick="switchTab(\'revenue\')"><span class="nd-lbl">Payers · ARPU</span>' +
+          '<b>' + M.revPayers.toLocaleString('en-IN') + '</b><s>₹' + M.arpu.toLocaleString('en-IN') + ' per payer</s></button>' +
+      '</div>' +
+      '<div class="ndc nd-s4 ndc-panel"><div class="ndc-ph"><b>Acquisition</b>' +
+        '<button class="nd-see" onclick="switchTab(\'acquire\')">See all ›</button></div>' +
+        (M.chList.slice(0, 5).map(x => '<div class="ndc-srow"><div class="ndc-stop"><b>' + esc(x[0]) + '</b><span>' +
+          x[1].toLocaleString('en-IN') + ' <s>· ' + x[2].toLocaleString('en-IN') + ' paid</s></span></div>' +
+          '<div class="nd-prog"><i style="width:' + Math.round(x[1] / chMax * 100) + '%"></i></div></div>').join('')
+          || '<div class="nd-empty">No channel data in this range</div>') +
+      '</div>' +
+      '<div class="ndc nd-s4 ndc-panel ndc-list"><div class="ndc-ph"><b>Recent signups</b>' +
+        '<button class="nd-see" onclick="switchTab(\'search\')">See all ›</button></div>' + signupRows + '</div>' +
+      '<div class="ndc nd-s4 ndc-panel ndc-list"><div class="ndc-ph"><b>Recent payments</b>' +
+        '<button class="nd-see" onclick="switchTab(\'revenue\')">See all ›</button></div>' + payRows + '</div>';
+
+    ndBuildConsole();
+    ndLiveEl(document.getElementById('ndDeskLive'));
+    ndSyncSeg();
+    ndSyncConsole(_ndTab());
+  }
+
+  // ══ ALERTS — built from live data, never mock copy ══════════════════
+  function ndAlerts() {
+    const out = [];
+    if (!_ovData) return out;
+    const M = ndOverviewModel();
+    const c = _ovData.counts || [];
+    const newToday = +c[2] || 0, newYest = +c[9] || 0;
+    const tp = _ovData.todayPay || [];
+    const yRow = tp.length ? tp[0] : null, tRow = tp.length > 1 ? tp[1] : null;
+    const yRev = yRow ? Math.round((+yRow[3] || 0) + (+yRow[4] || 0) * USD_TO_INR) : null;
+    const pausedUntil = (typeof budgetPauseUntil === 'function') && budgetPauseUntil();
+    if (pausedUntil) out.push({ tone: 'warn', title: 'PostHog read budget exhausted',
+      body: 'Live queries are paused. The dashboard is serving the last cached snapshot and retries at ' +
+        new Date(pausedUntil).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '.',
+      when: 'now' });
+    if (newYest) {
+      const d = newToday && newYest ? (newToday - newYest) / newYest * 100 : null;
+      out.push({ tone: 'info', title: 'Daily digest',
+        body: 'Yesterday: ' + newYest.toLocaleString('en-IN') + ' signups' +
+          (yRev != null ? ', ₹' + yRev.toLocaleString('en-IN') + ' revenue' : '') +
+          (yRow ? ', ' + (+yRow[2] || 0) + ' payers' : '') + '. Today so far: ' + newToday.toLocaleString('en-IN') +
+          (d != null ? ' (' + (d >= 0 ? '+' : '') + d.toFixed(0) + '%)' : '') + '.',
+        when: 'today' });
+    }
+    if (M.chList.length) {
+      const top = M.chList[0], share = M.rangeSignups ? top[1] / M.rangeSignups * 100 : 0;
+      out.push({ tone: 'info', title: 'Top acquisition channel',
+        body: top[0] + ' drove ' + top[1].toLocaleString('en-IN') + ' signups in ' + M.rangeLabel.toLowerCase() +
+          ' — ' + share.toFixed(0) + '% of the total, with ' + top[2].toLocaleString('en-IN') + ' now paying.',
+        when: M.rangeLabel.toLowerCase() });
+    }
+    if (M.totalRevInr) out.push({ tone: 'ok', title: 'Revenue',
+      body: '₹' + M.totalRevInr.toLocaleString('en-IN') + ' collected in ' + M.rangeLabel.toLowerCase() +
+        ' from ' + M.revPayers.toLocaleString('en-IN') + ' payers · ₹' + M.arpu.toLocaleString('en-IN') + ' each.',
+      when: M.rangeLabel.toLowerCase() });
+    if (M.swCur != null && M.swDelta != null) out.push({ tone: M.swDelta >= 0 ? 'ok' : 'warn',
+      title: 'Same-window conversions ' + (M.swDelta >= 0 ? 'up' : 'down'),
+      body: M.swCur.toLocaleString('en-IN') + ' users signed up and paid inside ' + M.rangeLabel.toLowerCase() +
+        ', ' + (M.swDelta >= 0 ? '+' : '') + M.swDelta.toFixed(0) + '% versus the previous period.',
+      when: M.rangeLabel.toLowerCase() });
+    return out;
+  }
+  function ndOpenAlerts() {
+    let ov = document.getElementById('ndAlertsOv');
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.className = 'nd-alerts-ov'; ov.id = 'ndAlertsOv';
+      ov.onclick = e => { if (e.target === ov) ndCloseAlerts(); };
+      ov.innerHTML = '<div class="nd-alerts"><div class="nd-alerts-h"><b>Alerts</b>' +
+        '<button class="nd-alerts-x" onclick="ndCloseAlerts()" aria-label="Close">✕</button></div>' +
+        '<div id="ndAlertsBody"></div></div>';
+      document.body.appendChild(ov);
+    }
+    const list = ndAlerts();
+    document.getElementById('ndAlertsBody').innerHTML = list.length
+      ? list.map(a => '<div class="nd-alert"><i class="' + (a.tone === 'ok' ? 'ok' : a.tone === 'warn' ? 'warn' : '') + '"></i>' +
+          '<div class="bd"><div class="tp"><b>' + h(a.title) + '</b><s>' + h(a.when) + '</s></div>' +
+          '<p>' + h(a.body) + '</p></div></div>').join('')
+      : '<div class="nd-alert"><i></i><div class="bd"><p>Nothing to report yet — open the Overview to load today\'s data.</p></div></div>';
+    ov.classList.add('open');
+  }
+  function ndCloseAlerts() { const ov = document.getElementById('ndAlertsOv'); if (ov) ov.classList.remove('open'); }
+
   // ══ MOBILE APP UI (2026-09-16) ═══════════════════════════════════════
   // Renders the Claude Design handoff's Overview screen (design/) from the
   // SAME live _ovData the desktop uses. Active only <=600px.
@@ -6357,7 +6854,7 @@
         '</div>' +
         '<div class="nd-hbtns">' +
           '<button class="nd-ico" onclick="refreshOverview()" aria-label="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button>' +
-          '<button class="nd-ico dot" onclick="switchTab(\'quality\')" aria-label="Alerts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></button>' +
+          '<button class="nd-ico dot" onclick="ndOpenAlerts()" aria-label="Alerts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></button>' +
           '<button class="nd-ico" onclick="openSettings()" aria-label="Account"><span class="nd-av">JS</span></button>' +
         '</div>' +
       '</div>';
@@ -6514,6 +7011,7 @@
     if (!_ovData) return;
     // Phones get the app design (design/ handoff) off the same live data.
     if (ndIsMobile()) { ndBuildHeader(); try { renderOverviewMobile(); return; } catch(e) { console.warn('mobile render fell back', e); } }
+    if (ndIsDesk()) { try { renderOverviewConsole(); return; } catch(e) { console.warn('console render fell back', e); } }
     const c = _ovData.counts;
     const newProduct = +c[0]||0, newToday = +c[2]||0, newWeek = +c[3]||0, newMonth = +c[4]||0,
           activePro = +c[7]||0, activeBasic = +c[8]||0,
