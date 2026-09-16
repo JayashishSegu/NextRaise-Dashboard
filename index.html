@@ -6726,14 +6726,17 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       expiring:  { btn: 'expiringBtn',   area: 'expiringArea', sp: 'sp-orange', fetch: () => fetchExpiringSoon(),  hasData: () => _expiringRows.length > 0 },
       activation:{ btn: 'activationRefreshBtn', area: 'activationArea', sp: 'sp-blue', fetch: () => fetchActivation(), hasData: () => !!_actData },
     }[name];
+    // Not every screen is a list screen. Callers used to get a TypeError here,
+    // which surfaced as a silent no-op on Report, Daily, Insights and friends.
+    if (!conf) return;
     const btn = document.getElementById(conf.btn);
-    btn.disabled = true;
+    if (btn) btn.disabled = true;
     setBusy(true);
     if (!conf.hasData()) {
       document.getElementById(conf.area).innerHTML =
         stateBox(null, 'Syncing latest data from MongoDB… (takes up to a minute)', conf.sp);
     }
-    try { await syncMongoAndWait(); } finally { btn.disabled = false; setBusy(false); }
+    try { await syncMongoAndWait(); } finally { if (btn) btn.disabled = false; setBusy(false); }
     _syncInfo = null;
     // Refresh must fetch LIVE data, not the cached snapshot.
     _bypassQueryCache = true;
@@ -7997,33 +8000,85 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     el.title = ts ? 'Data computed ' + new Date(ts).toLocaleString('en-IN') : 'No snapshot loaded yet';
   }
   // Refresh with visible feedback (design has a refresh action in the bar).
+  // Every screen that can refresh, and how. `refreshTab` only knows the nine
+  // list screens; the rest each have their own fetcher plus a "loaded" flag
+  // that has to be cleared or the fetch is skipped.
+  const ND_REFRESHERS = {
+    report:    function () { _reportLoaded = false; return fetchCeoReport(); },
+    daily:     function () { _dlyLoaded    = false; return fetchDaily(); },
+    insights:  function () { _insLoaded    = false; return fetchInsights(); },
+    acquire:   function () { _acqLoaded    = false; return fetchAcquire(); },
+    retention: function () { _retLoaded    = false; return fetchRetention(); },
+    referrals: function () { _refLoaded    = false; return fetchReferrals(); },
+    lifecycle: function () { _lifLoaded    = false; return fetchLifecycle(); },
+    emails:    function () { _emlLoaded    = false; return fetchEmails(); },
+    weekly:    function () { _wkLoaded     = false; return fetchWeekly(); },
+    monthly:   function () { _moLoaded     = false; return fetchMonthly(); },
+    features:  function () { _featLoaded   = false; return fetchFeatures(); },
+    quality:   function () { _qualLoaded   = false; return fetchQuality(); },
+  };
+  // The screens refreshTab's own lookup covers.
+  const ND_REFRESH_TAB = ['credits', 'pro', 'power', 'abandoned', 'uninstalled',
+    'influencers', 'salahkart', 'skpro', 'revenue', 'expiring', 'activation'];
+
+  function ndRefreshWork(tab) {
+    if (tab === 'overview') {
+      return typeof refreshOverview === 'function' ? refreshOverview() : null;
+    }
+    if (ND_REFRESH_TAB.indexOf(tab) > -1 && typeof refreshTab === 'function') {
+      return refreshTab(tab);
+    }
+    const f = ND_REFRESHERS[tab];
+    if (f) {
+      _bypassQueryCache = true;
+      return Promise.resolve()
+        .then(f)
+        .then(
+          function (r) { _bypassQueryCache = false; return r; },
+          function (e) { _bypassQueryCache = false; throw e; }
+        );
+    }
+    return 'none';                       // nothing on this screen to refresh
+  }
+
   function ndRefresh(btn) {
-    if (_ndRefreshBusy) return;                       // no-op while refreshing
+    if (_ndRefreshBusy) return;
+    const tab = _ndTab();
+    let work;
+    try { work = ndRefreshWork(tab); } catch (e) { work = Promise.reject(e); }
+    if (work === 'none') { ndToast('Nothing to refresh on this screen'); return; }
+
     _ndRefreshBusy = true;
     if (btn) { btn.classList.add('spin'); btn.disabled = true; }
     const t0 = Date.now();
     let settled = false;
-    const finish = (ok) => {
+    const finish = (ok, err) => {
       _ndRefreshBusy = false;
       if (btn) { btn.classList.remove('spin'); btn.disabled = false; }
+      if (!ok && err) console.warn('refresh failed on ' + tab, err);
       try {
         const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         ndToast(ok ? 'Refreshed · ' + now : 'Refresh failed · showing the last snapshot');
       } catch (_) {}
+      if (ok) { try { ndLiveEl(document.getElementById('ndDeskLive')); ndLiveEl(document.getElementById('ndLive')); } catch (_) {} }
     };
-    // Spec: the spinner runs 900ms (one ndSpin turn) before the toast lands.
-    const done = (ok) => {
+    // the glyph completes one full 900ms turn before the toast lands
+    const done = (ok, err) => {
       if (settled) return;
       settled = true;
-      setTimeout(() => finish(ok), Math.max(0, 900 - (Date.now() - t0)));
+      setTimeout(() => finish(ok, err), Math.max(0, 900 - (Date.now() - t0)));
     };
-    try {
-      const p = (typeof refreshOverview === 'function' && _ndTab() === 'overview')
-        ? refreshOverview() : (typeof refreshTab === 'function' ? refreshTab(_ndTab()) : null);
-      Promise.resolve(p).then(() => done(true), () => done(false));
-      setTimeout(() => done(false), 20000);   // 20s hang is a failure, not a refresh
-    } catch (_) { done(false); }
+    // Several fetchers catch their own failures and paint an error box rather
+    // than rejecting. Resolving is therefore not proof of a refresh: check the
+    // screen before claiming one.
+    const painted = () => {
+      const pg = document.querySelector('[id^="page-"].active');
+      return !(pg && pg.querySelector('.error-box'));
+    };
+    Promise.resolve(work).then(() => done(painted()), (e) => done(false, e));
+    setTimeout(() => done(false, 'timeout'), 20000);
   }
+
 
   function renderOverviewConsole() {
     const area = document.getElementById('overviewArea');
