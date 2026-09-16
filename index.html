@@ -4311,6 +4311,19 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       html[data-theme="light"] :is(.ndm-act,.ndm-chip,button.ndm-tr):active{ transform:none !important; }
     }
 
+    /* ── design-fidelity layer, part 3 · footer + single control set ───── */
+    @media (min-width:901px){
+      /* the footer collapsed to a row on some screens, squeezing Settings
+         to a 24px icon. The console layout is a column, full width. */
+      html[data-theme="light"] .sidebar-footer{
+        flex-direction:column !important; align-items:stretch !important; gap:10px !important; }
+      html[data-theme="light"] .settings-btn{ width:100% !important; }
+      html[data-theme="light"] .settings-btn > span{ display:inline !important; }
+      /* the topbar owns range, bucket and refresh; in-page copies are hidden
+         by ndTidyOvHead, this is the CSS belt to its braces */
+      html[data-theme="light"] .ov-head [data-nd-dup]{ display:none !important; }
+    }
+
   </style>
 </head>
 <body>
@@ -7896,8 +7909,61 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     if (segSlot && seg && seg.parentNode !== segSlot.parentNode) { seg.style.marginTop = '0'; segSlot.replaceWith(seg); }
     if (dateSlot && btn && btn.parentNode !== dateSlot.parentNode) { btn.style.marginTop = '0'; dateSlot.replaceWith(btn); }
   }
+  // The topbar owns the range pill, the attribution toggle and Refresh on the
+  // console. Each screen keeps its own date range, so the pill that shows is the
+  // active screen's own control, moved in. Whatever it replaces goes back to the
+  // hidden stash so its state and handlers survive.
+  function ndDeskRange(name) {
+    if (!ndIsDesk()) return;
+    const bar = document.querySelector('.nd-topbar');
+    if (!bar) return;
+    let stash = document.getElementById('ndGdrStash');
+    if (!stash) {
+      stash = document.createElement('div');
+      stash.id = 'ndGdrStash';
+      stash.style.display = 'none';
+      bar.appendChild(stash);
+    }
+    const want = document.getElementById('gdrTabBtn-' + name);
+    const cur = bar.querySelector(':scope > .gdr-btn');
+    if (cur === want) return;
+    if (cur) stash.appendChild(cur);
+    if (want) {
+      want.style.marginTop = '0';
+      const live = document.getElementById('ndDeskLive');
+      if (live) bar.insertBefore(want, live); else bar.appendChild(want);
+    }
+  }
+
+  // The legacy in-page toolbar duplicated the range pill, the bucket toggle and
+  // Refresh. Hide just those; anything else on the row (Influencer data, Export
+  // CSV) stays. A row left with nothing visible is hidden outright.
+  function ndTidyOvHead() {
+    if (!ndIsDesk()) return;
+    document.querySelectorAll('.ov-head').forEach(row => {
+      // mark the controls the topbar already owns, at any depth
+      row.querySelectorAll('.gdr-btn, .bucket-seg').forEach(el => { el.dataset.ndDup = '1'; });
+      row.querySelectorAll('button').forEach(el => {
+        if ((el.textContent || '').trim() === 'Refresh') el.dataset.ndDup = '1';
+      });
+      // A row is empty only when nothing is left that carries its own content.
+      // getComputedStyle reads the element's own display, so this stays correct
+      // even after the row itself has been hidden by an earlier pass.
+      let keep = 0;
+      row.querySelectorAll('button, a, input, select, h1, h2, h3, .ov-sub, .home-title').forEach(el => {
+        if (el.dataset.ndDup === '1') return;
+        if (getComputedStyle(el).display === 'none') return;
+        if ((el.textContent || '').trim() || el.tagName === 'INPUT' || el.tagName === 'SELECT') keep++;
+      });
+      row.style.display = keep ? '' : 'none';
+    });
+  }
+
   function ndSyncConsole(name) {
     ndApplyAppearance();
+    try { ndDeskRange(name); ndTidyOvHead(); } catch (_) {}
+    // a screen can swap its own toolbar in after this returns, so run once more
+    setTimeout(function () { try { ndDeskRange(name); ndTidyOvHead(); } catch (_) {} }, 0);
     const t = document.getElementById('ndDeskTitle');
     if (t && typeof TAB_TITLES !== 'undefined') t.textContent = TAB_TITLES[name] || name;
     const sub = document.getElementById('ndTeamSub');
