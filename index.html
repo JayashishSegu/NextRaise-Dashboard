@@ -2824,6 +2824,10 @@
         color:var(--nd-act-600); font-size:12.5px; font-weight:700; display:flex; align-items:center; justify-content:center;
         border:none; cursor:pointer; font-family:inherit; }
 
+      @keyframes ndSpin{ to{ transform:rotate(360deg) } }
+      html[data-theme="light"] .nd-tb-ico.spin svg{ animation:ndSpin .9s linear infinite; }
+      html[data-theme="light"] .nd-ico.spin svg{ animation:ndSpin .9s linear infinite; }
+
       /* ── Content: 12-column bento ── */
       html[data-theme="light"] .app-body > .page{ flex:1; min-height:0; overflow:auto; padding:0 !important; max-width:none !important; }
       html[data-theme="light"] #page-overview .ov-head{ display:none !important; }
@@ -2852,7 +2856,10 @@
       html[data-theme="light"] .nd-badge.flat{ background:var(--nd-100); color:var(--nd-500); }
       html[data-theme="light"] .nd-prev{ font-size:12px; font-weight:500; color:var(--nd-400); }
       html[data-theme="light"] .ndc-bars{ height:220px; display:flex; align-items:flex-end; gap:8px; border-bottom:1px solid var(--nd-100); }
-      html[data-theme="light"] .ndc-bars > span{ flex:1; min-width:0; height:100%; display:flex; align-items:flex-end; }
+      html[data-theme="light"] .ndc-bars{ justify-content:center; }
+      html[data-theme="light"] .ndc-bars > span{ flex:1 1 0; min-width:0; max-width:92px; height:100%; display:flex; align-items:flex-end; }
+      html[data-theme="light"] .ndc-xlbl{ justify-content:center; }
+      html[data-theme="light"] .ndc-xlbl span{ flex:1 1 0; max-width:92px; }
       html[data-theme="light"] .ndc-bars i{ display:block; width:100%; border-radius:6px 6px 2px 2px; background:var(--nd-act-500);
         transition:height 520ms cubic-bezier(.2,0,.2,1); }
       html[data-theme="light"] .ndc-xlbl{ display:flex; gap:8px; margin-top:8px; }
@@ -2906,6 +2913,58 @@
         html[data-theme="light"] .nd-topbar .bucket-seg::before{ transition:none; }
       }
     }
+
+    /* ── Appearance switcher (design: Light · Dark · Auto) ── */
+    html[data-theme="light"] .nd-modes{ position:relative; display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+      padding:3px; border-radius:999px; background:var(--nd-100,#EEF1F8); }
+    html[data-theme="light"] .nd-modes::before{ content:""; position:absolute; top:3px; bottom:3px; left:3px;
+      width:calc((100% - 6px) / 3); border-radius:999px; background:var(--nd-0,#fff);
+      box-shadow:0 1px 3px rgba(15,20,25,.08); transition:transform 320ms cubic-bezier(.32,.72,0,1);
+      transform:translateX(var(--mode-x,0)); }
+    html[data-theme="light"] .nd-mode{ position:relative; height:34px; border:none; background:none; cursor:pointer;
+      border-radius:999px; font-family:inherit; font-size:12px; font-weight:600; color:var(--nd-500,#70778B);
+      transition:color 220ms; }
+    html[data-theme="light"] .nd-mode.on{ color:var(--nd-900,#0F1C3D); }
+    @media (max-width:960px){ html[data-theme="light"] .nd-modes{ display:none; } }
+
+    /* ══ DARK APPEARANCE — the handoff's dark token remap. Applied to the
+       shared token layer so every screen follows, not just the shell. ══ */
+    html[data-theme="light"][data-appearance="dark"]{
+      --nd-0:#131A2B; --nd-50:#090D18; --nd-100:#1A2236; --nd-200:#242E46;
+      --nd-400:#6C7796; --nd-500:#9AA5C0; --nd-700:#C9D1E4; --nd-900:#F2F5FB;
+      --nd-edge:rgba(255,255,255,.10); --nd-card:rgba(255,255,255,.055);
+      --nd-hair:rgba(255,255,255,.08);
+      --nd-act-50:rgba(92,121,255,.16); --nd-act-500:#5C79FF; --nd-act-600:#8FA3FF;
+      --nd-ok-50:rgba(25,182,114,.14); --nd-ok-700:#4BD69B;
+      --nd-red-100:rgba(229,72,77,.16); --nd-red-700:#FF9B9B;
+      --nd-amber-100:rgba(245,158,12,.16); --nd-amber-700:#F6C270;
+      --nd-sh:0 16px 40px -20px rgba(0,0,0,.6);
+      /* base app tokens so the other screens follow */
+      --canvas:#090D18; --bg:#090D18; --surface:#131A2B; --surface-2:#1A2236; --pop:#131A2B;
+      --border:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.18);
+      --hover:rgba(255,255,255,.05); --sep:rgba(255,255,255,.08); --row-border:rgba(255,255,255,.08);
+      --text:#F2F5FB; --ink:#F2F5FB; --text-2:#C9D1E4; --text-3:#9AA5C0;
+      --blue:#5C79FF; --blue-soft:rgba(92,121,255,.16); --blue-text:#8FA3FF;
+      --green:#19B672; --green-soft:rgba(25,182,114,.14); --green-text:#4BD69B;
+      --red:#E5484D; --red-soft:rgba(229,72,77,.16); --red-text:#FF9B9B;
+      --amber:#F59E0C; --amber-soft:rgba(245,158,12,.16); --amber-text:#F6C270;
+      --violet:#8B9BFF; --violet-soft:rgba(139,155,255,.16); --violet-text:#A9B6FF;
+      color-scheme:dark;
+    }
+    html[data-theme="light"][data-appearance="dark"] body{ background:var(--nd-50) !important; color:var(--nd-900); }
+    html[data-theme="light"][data-appearance="dark"] :is(.sidebar,.nd-topbar,.mobile-topbar){
+      background:var(--nd-0) !important; border-color:var(--nd-edge) !important; }
+    html[data-theme="light"][data-appearance="dark"] :is(.ndc,.nd-card,.ov-card,.ocard,.nb-card,.okpi,.rev-kpi,.infl-card,.panel,.table-wrap,.result-card){
+      background:var(--nd-0) !important; border-color:var(--nd-edge) !important; box-shadow:var(--nd-sh) !important; }
+    html[data-theme="light"][data-appearance="dark"] .app-body{ background:var(--nd-50) !important; }
+    html[data-theme="light"][data-appearance="dark"] .app-body::before{ opacity:.5; }
+    html[data-theme="light"][data-appearance="dark"] .mob-bottom-nav{ background:rgba(19,26,43,.82) !important; border-color:var(--nd-edge) !important; }
+    html[data-theme="light"][data-appearance="dark"] :is(.nd-alerts,.nd-alerts-h){ background:var(--nd-0) !important; color:var(--nd-900); }
+    html[data-theme="light"][data-appearance="dark"] .nd-alert p{ color:var(--nd-700); }
+    html[data-theme="light"][data-appearance="dark"] :is(.bucket-seg,.nd-modes){ background:rgba(255,255,255,.07) !important; }
+    html[data-theme="light"][data-appearance="dark"] :is(.bucket-seg::before,.nd-modes::before){ background:rgba(255,255,255,.14) !important; }
+    html[data-theme="light"][data-appearance="dark"] :is(.gdr-btn,.nd-tb-ico,.btn,.btn-secondary){
+      background:var(--nd-0) !important; border-color:var(--nd-edge) !important; color:var(--nd-700) !important; }
 
     /* ── Alerts panel (both breakpoints) ── */
     html[data-theme="light"] .nd-alerts-ov{ position:fixed; inset:0; z-index:400; background:rgba(15,28,61,.28);
@@ -3040,7 +3099,10 @@
       html[data-theme="light"] .nd-prev{ font-size:11.5px; font-weight:400; color:var(--nd-400); }
       html[data-theme="light"] .nd-chart{ margin-top:20px; }
       html[data-theme="light"] .nd-bars{ height:120px; display:flex; align-items:flex-end; gap:8px; padding-top:22px; }
-      html[data-theme="light"] .nd-bars > span{ flex:1; min-width:0; height:100%; display:flex; align-items:flex-end; }
+      html[data-theme="light"] .nd-bars{ justify-content:center; }
+      html[data-theme="light"] .nd-bars > span{ flex:1 1 0; min-width:0; max-width:64px; height:100%; display:flex; align-items:flex-end; }
+      html[data-theme="light"] .nd-xlbl{ justify-content:center; }
+      html[data-theme="light"] .nd-xlbl span{ flex:1 1 0; max-width:64px; }
       html[data-theme="light"] .nd-bars i{ display:block; width:100%; border-radius:8px 8px 4px 4px; background:var(--nd-act-500);
         box-shadow:inset 0 1px 0 rgba(255,255,255,.45); transition:height 720ms cubic-bezier(.34,1.25,.64,1); }
       html[data-theme="light"] .nd-xlbl{ display:flex; gap:8px; margin-top:8px; }
@@ -3178,56 +3240,69 @@
       </div>
     </div>
     <nav class="sidebar-nav">
-      <div class="nav-label">Overview</div>
-      <a class="tab active" id="tab-overview" onclick="switchTab('overview')"href="#overview" title="Live business overview">
+      <div class="nav-group nd-primary">
+        <a class="tab active" id="tab-overview" onclick="switchTab('overview')"href="#overview" title="Live business overview">
         <svg class="ic-sm"><use href="#i-grid"/></svg> Overview
       </a>
-      <a class="tab" id="tab-report" onclick="switchTab('report')"href="#report" title="CEO Marketing Report — hero KPIs + channel spend">
+        <a class="tab" id="tab-report" onclick="switchTab('report')"href="#report" title="CEO Marketing Report — hero KPIs + channel spend">
         <svg class="ic-sm"><use href="#i-trending"/></svg> Report
       </a>
-      <a class="tab" id="tab-daily" onclick="switchTab('daily')"href="#daily" title="Daily metrics dashboard">
-        <svg class="ic-sm"><use href="#i-calendar"/></svg> Daily
+        <a class="tab tab-rose" id="tab-influencers" onclick="switchTab('influencers')"href="#influencers" title="Referrers ranked by signups they drove — primary growth channel">
+        <svg class="ic-sm"><use href="#i-megaphone"/></svg> Creators
+        <span class="tab-badge" id="inflTabBadge">—</span>
       </a>
-      <a class="tab" id="tab-insights" onclick="switchTab('insights')"href="#insights" title="Signup → activation → pro funnel & saved metrics">
-        <svg class="ic-sm"><use href="#i-pie"/></svg> Insights
-      </a>
-      <a class="tab" id="tab-search" onclick="switchTab('search')"href="#search" title="Look up any user by email, name or PostHog UUID">
+        <a class="tab" id="tab-search" onclick="switchTab('search')"href="#search" title="Look up any user by email, name or PostHog UUID">
         <svg class="ic-sm"><use href="#i-search"/></svg> Search
       </a>
-      <div class="nav-sep"></div>
-      <div class="nav-label nl-gtm">Growth</div>
-      <a class="tab" id="tab-acquire" onclick="switchTab('acquire')"href="#acquire" title="Acquisition channels & source breakdown">
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">Overview</div>
+        <a class="tab" id="tab-daily" onclick="switchTab('daily')"href="#daily" title="Daily metrics dashboard">
+        <svg class="ic-sm"><use href="#i-calendar"/></svg> Daily
+      </a>
+        <a class="tab" id="tab-insights" onclick="switchTab('insights')"href="#insights" title="Signup → activation → pro funnel & saved metrics">
+        <svg class="ic-sm"><use href="#i-pie"/></svg> Insights
+      </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">Growth</div>
+        <a class="tab" id="tab-acquire" onclick="switchTab('acquire')"href="#acquire" title="Acquisition channels & source breakdown">
         <svg class="ic-sm"><use href="#i-globe"/></svg> Acquire
       </a>
-      <a class="tab" id="tab-activation" onclick="switchTab('activation')"href="#activation" title="Activation funnel, engagement (DAU/WAU), time-to-convert">
+        <a class="tab" id="tab-activation" onclick="switchTab('activation')"href="#activation" title="Activation funnel, engagement (DAU/WAU), time-to-convert">
         <svg class="ic-sm"><use href="#i-zap"/></svg> Activate
       </a>
-      <a class="tab tab-green" id="tab-revenue" onclick="switchTab('revenue')"href="#revenue" title="Monthly revenue, ARR, top payers">
+        <a class="tab tab-green" id="tab-revenue" onclick="switchTab('revenue')"href="#revenue" title="Monthly revenue, ARR, top payers">
         <svg class="ic-sm"><use href="#i-coins"/></svg> Monetization
         <span class="tab-badge" id="revTabBadge">—</span>
       </a>
-      <a class="tab" id="tab-retention" onclick="switchTab('retention')"href="#retention" title="Weekly retention cohorts">
+        <a class="tab" id="tab-retention" onclick="switchTab('retention')"href="#retention" title="Weekly retention cohorts">
         <svg class="ic-sm"><use href="#i-refresh"/></svg> Retention
       </a>
-      <a class="tab" id="tab-lifecycle" onclick="switchTab('lifecycle')"href="#lifecycle" title="New, returning, resurrecting & dormant users">
+        <a class="tab" id="tab-lifecycle" onclick="switchTab('lifecycle')"href="#lifecycle" title="New, returning, resurrecting & dormant users">
         <svg class="ic-sm"><use href="#i-users"/></svg> Lifecycle
       </a>
-      <a class="tab tab-rose" id="tab-influencers" onclick="switchTab('influencers')"href="#influencers" title="Referrers ranked by signups they drove — primary growth channel">
-        <svg class="ic-sm"><use href="#i-megaphone"/></svg> Influencers
-        <span class="tab-badge" id="inflTabBadge">—</span>
-      </a>
-      <a class="tab" id="tab-emails" onclick="switchTab('emails')"href="#emails" title="Email send → deliver → open → click funnel">
+        <a class="tab" id="tab-emails" onclick="switchTab('emails')"href="#emails" title="Email send → deliver → open → click funnel">
         <svg class="ic-sm"><use href="#i-check-circle"/></svg> Emails
       </a>
-      <a class="tab" id="tab-referrals" onclick="switchTab('referrals')"href="#referrals" title="Referral program funnel & top referrers">
+        <a class="tab" id="tab-referrals" onclick="switchTab('referrals')"href="#referrals" title="Referral program funnel & top referrers">
         <svg class="ic-sm"><use href="#i-share"/></svg> Referrals
       </a>
-      <a class="tab tab-purple" id="tab-pro" onclick="switchTab('pro')"href="#pro">
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">Users</div>
+        <a class="tab tab-purple" id="tab-pro" onclick="switchTab('pro')"href="#pro">
         <svg class="ic-sm"><use href="#i-star"/></svg> Pro Users
         <span class="tab-badge" id="proTabBadge">—</span>
       </a>
+      </div>
     </nav>
     <div class="sidebar-footer">
+      <div class="nd-modes" id="ndModes" role="group" aria-label="Appearance">
+        <button class="nd-mode" data-mode="light" onclick="ndSetAppearance('light')">Light</button>
+        <button class="nd-mode" data-mode="dark" onclick="ndSetAppearance('dark')">Dark</button>
+        <button class="nd-mode" data-mode="auto" onclick="ndSetAppearance('auto')">Auto</button>
+      </div>
       <button class="settings-btn" onclick="openSettings()">
         <svg class="ic-sm"><use href="#i-gear"/></svg> <span>Settings</span>
       </button>
@@ -6644,6 +6719,8 @@
         '<div class="nd-tb-t"><b id="ndDeskTitle">Overview</b>' +
         '<s>PostHog ' + (cfg('projectId') || '399417') + ' · Asia/Kolkata · internal and test accounts excluded</s></div>' +
         '<span id="ndSegSlot"></span><span id="ndDateSlot"></span><span class="nd-live" id="ndDeskLive"></span>' +
+        '<button class="nd-tb-ico" id="ndDeskRefresh" onclick="ndRefresh(this)" aria-label="Refresh data" title="Refresh">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button>' +
         '<button class="nd-tb-ico dot" id="ndDeskBell" onclick="ndOpenAlerts()" aria-label="Alerts">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></button>' +
         '<button class="nd-tb-av" onclick="openSettings()" aria-label="Account">JS</button>';
@@ -6675,6 +6752,7 @@
     if (dateSlot && btn && btn.parentNode !== dateSlot.parentNode) { btn.style.marginTop = '0'; dateSlot.replaceWith(btn); }
   }
   function ndSyncConsole(name) {
+    ndApplyAppearance();
     const t = document.getElementById('ndDeskTitle');
     if (t && typeof TAB_TITLES !== 'undefined') t.textContent = TAB_TITLES[name] || name;
     const sub = document.getElementById('ndTeamSub');
@@ -6682,12 +6760,40 @@
     const k = document.getElementById('ndKeyState');
     if (k) k.textContent = cfg('apiKey') ? 'PostHog key set' : 'No key';
   }
+  // Live pill: minutes only while it's genuinely recent, then a real
+  // clock time, then the date too. Never "27558m".
+  function ndLiveText(ts) {
+    if (!ts) return 'No data yet';
+    const d = new Date(ts), m = Math.max(0, Math.round((Date.now() - ts) / 60000));
+    const hhmm = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const day = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    const today = new Date().toDateString() === d.toDateString();
+    if (m < 2) return 'Live · now';
+    if (m < 60) return 'Live · ' + m + 'm';
+    if (today) return 'Updated ' + hhmm;
+    return 'Updated ' + hhmm + ' · ' + day;
+  }
   function ndLiveEl(el) {
     if (!el) return;
     const paused = (typeof budgetPauseUntil === 'function') && budgetPauseUntil();
-    const age = Math.max(0, Math.round((Date.now() - (_ovDataTs || Date.now())) / 60000));
-    el.className = 'nd-live' + (paused || age > 10 ? ' is-stale' : '');
-    el.textContent = paused ? 'Paused' : (age < 2 ? 'Live · now' : 'Live · ' + age + 'm');
+    const ts = _ovDataTs || 0;
+    const m = ts ? Math.max(0, Math.round((Date.now() - ts) / 60000)) : 1e9;
+    el.className = 'nd-live' + (paused || m > 15 ? ' is-stale' : '');
+    el.textContent = paused
+      ? 'Paused · showing ' + ndLiveText(ts).replace(/^(Live|Updated) · ?/, '')
+      : ndLiveText(ts);
+    el.title = ts ? 'Data computed ' + new Date(ts).toLocaleString('en-IN') : 'No snapshot loaded yet';
+  }
+  // Refresh with visible feedback (design has a refresh action in the bar).
+  function ndRefresh(btn) {
+    if (btn) { btn.classList.add('spin'); btn.disabled = true; }
+    const done = () => { if (btn) { btn.classList.remove('spin'); btn.disabled = false; } };
+    try {
+      const p = (typeof refreshOverview === 'function' && _ndTab() === 'overview')
+        ? refreshOverview() : (typeof refreshTab === 'function' ? refreshTab(_ndTab()) : null);
+      Promise.resolve(p).then(done, done);
+      setTimeout(done, 20000);
+    } catch (_) { done(); }
   }
 
   function renderOverviewConsole() {
@@ -6766,6 +6872,35 @@
     ndSyncConsole(_ndTab());
   }
 
+  // ══ APPEARANCE (design: Light · Dark · Auto) ════════════════════════
+  const ND_APPEAR_KEY = 'nr_appearance';
+  function ndAppearance() { try { return localStorage.getItem(ND_APPEAR_KEY) || 'light'; } catch(_) { return 'light'; } }
+  function ndIsDark() {
+    const a = ndAppearance();
+    if (a === 'dark') return true;
+    if (a === 'auto') { try { return matchMedia('(prefers-color-scheme: dark)').matches; } catch(_) { return false; } }
+    return false;
+  }
+  function ndApplyAppearance() {
+    const dark = ndIsDark();
+    document.documentElement.setAttribute('data-appearance', dark ? 'dark' : 'light');
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', dark ? '#090D18' : '#ffffff');
+    const box = document.getElementById('ndModes');
+    if (box) {
+      const cur = ndAppearance(), order = ['light', 'dark', 'auto'];
+      box.style.setProperty('--mode-x', 'calc(' + Math.max(0, order.indexOf(cur)) + ' * 100%)');
+      box.querySelectorAll('.nd-mode').forEach(b => b.classList.toggle('on', b.dataset.mode === cur));
+    }
+  }
+  function ndSetAppearance(v) {
+    try { localStorage.setItem(ND_APPEAR_KEY, v); } catch(_) {}
+    ndApplyAppearance();
+    // repaint charts so their palette follows the appearance
+    try { if (typeof _ovData !== 'undefined' && _ovData && typeof renderOverview === 'function') renderOverview(); } catch(_) {}
+  }
+  try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (ndAppearance() === 'auto') ndApplyAppearance(); }); } catch(_) {}
+
   // ══ ALERTS — built from live data, never mock copy ══════════════════
   function ndAlerts() {
     const out = [];
@@ -6829,6 +6964,8 @@
   }
   function ndCloseAlerts() { const ov = document.getElementById('ndAlertsOv'); if (ov) ov.classList.remove('open'); }
 
+  try { ndApplyAppearance(); } catch(_) {}
+
   // ══ MOBILE APP UI (2026-09-16) ═══════════════════════════════════════
   // Renders the Claude Design handoff's Overview screen (design/) from the
   // SAME live _ovData the desktop uses. Active only <=600px.
@@ -6853,7 +6990,7 @@
           '<span class="nd-ttl"><b id="ndPageTitle">' + title + '</b><i>Growth</i></span>' +
         '</div>' +
         '<div class="nd-hbtns">' +
-          '<button class="nd-ico" onclick="refreshOverview()" aria-label="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button>' +
+          '<button class="nd-ico" onclick="ndRefresh(this)" aria-label="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button>' +
           '<button class="nd-ico dot" onclick="ndOpenAlerts()" aria-label="Alerts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></button>' +
           '<button class="nd-ico" onclick="openSettings()" aria-label="Account"><span class="nd-av">JS</span></button>' +
         '</div>' +
@@ -6866,7 +7003,7 @@
     if (t && typeof TAB_TITLES !== 'undefined') t.textContent = TAB_TITLES[name] || name;
   }
   function ndSyncSeg() {
-    document.querySelectorAll('.nd-head .bucket-seg').forEach(seg => {
+    document.querySelectorAll('.bucket-seg').forEach(seg => {
       const btns = Array.prototype.slice.call(seg.querySelectorAll('.bkt'));
       let i = btns.findIndex(b => b.classList.contains('is-on') || b.classList.contains('on'));
       if (i < 0) i = 0;
@@ -6997,13 +7134,7 @@
         '<button class="nd-see" onclick="switchTab(\'revenue\')">See all ›</button></div>' + payRows + '</div>';
 
     ndMountControls();
-    const live = document.getElementById('ndLive');
-    if (live) {
-      const paused = (typeof budgetPauseUntil === 'function') && budgetPauseUntil();
-      const age = Math.max(0, Math.round((Date.now() - (_ovDataTs || Date.now())) / 60000));
-      live.className = 'nd-live' + (paused || age > 10 ? ' is-stale' : '');
-      live.textContent = paused ? 'Paused' : (age < 2 ? 'Live · now' : 'Live · ' + age + 'm');
-    }
+    ndLiveEl(document.getElementById('ndLive'));
     ndSyncSeg();
   }
 
@@ -7269,7 +7400,7 @@
     (window._ovCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}}); window._ovCharts=[];
     setTimeout(()=>{
       if(!window.ApexCharts) return;
-      const DK=false;   // light-only build
+      const DK=ndIsDark();
       const BLUE='#0065F4', GRN='#0f7a3d';
       const AX={chart:{toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:'rgba(10,10,10,.55)',animations:{enabled:true,speed:900}},grid:{borderColor:'#ededea',strokeDashArray:0},tooltip:{theme:DK?'dark':'light'}};
       const push=(sel,opt)=>{const el=document.querySelector(sel);if(!el)return;const ch=new ApexCharts(el,opt);ch.render();window._ovCharts.push(ch);};
@@ -10716,7 +10847,7 @@
     (window._revCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}}); window._revCharts=[];
     setTimeout(()=>{
       if(!window.ApexCharts) return;
-      const DK=false;   // light-only build
+      const DK=ndIsDark();
       const BLUE='#0065F4';
       const fmtInr=v=>v>=100000?'₹'+(v/100000).toFixed(1)+'L':v>=1000?'₹'+(v/1000).toFixed(0)+'k':'₹'+Math.round(v);
       const put=(sel,opt)=>{const el=document.querySelector(sel);if(!el)return;const ch=new ApexCharts(el,opt);ch.render();window._revCharts.push(ch);};
@@ -11826,7 +11957,7 @@
       if (!window.ApexCharts) return;
       const trendEl = document.getElementById('reportTrendChart');
       if (!trendEl) return;
-      const DK2 = false;   // light-only build
+      const DK2 = ndIsDark();
       const BLUE = '#0065F4';
       const GRN  = '#0f7a3d';
       const fmtInr = v => v >= 100000 ? '₹'+(v/100000).toFixed(1)+'L' : v >= 1000 ? '₹'+(v/1000).toFixed(0)+'k' : '₹'+Math.round(v);
@@ -12275,7 +12406,7 @@
         <div id="lifeChart" style="margin:6px -6px -8px"></div></div>`;
     (window._lifCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}}); window._lifCharts=[];
     setTimeout(()=>{ if(!window.ApexCharts) return; const el=document.querySelector('#lifeChart'); if(!el) return;
-      const DK=false, BLUE='#0065F4', GRN='#0f7a3d';   // light-only build
+      const DK=ndIsDark(), BLUE=DK?'#8FA3FF':'#0065F4', GRN=DK?'#4BD69B':'#0f7a3d';
       const ch=new ApexCharts(el,{chart:{type:'bar',height:240,stacked:true,toolbar:{show:false},fontFamily:'General Sans',foreColor:'rgba(10,10,10,.55)',animations:{enabled:true,speed:900}},
         series:[{name:'New',data:lNew},{name:'Returning',data:lRet}],colors:[GRN,BLUE],
         plotOptions:{bar:{borderRadius:6,columnWidth:'56%',borderRadiusApplication:'end'}},dataLabels:{enabled:false},legend:{show:false},
@@ -12622,7 +12753,7 @@
         <div style="padding:8px 20px 16px;"><table style="width:100%"><thead><tr><th style="text-align:left">Day</th><th style="text-align:right">Signups</th><th style="text-align:right">Activations</th><th style="text-align:right">Payments</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
     (window._dlyCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}}); window._dlyCharts=[];
     setTimeout(()=>{ if(!window.ApexCharts) return; const el=document.querySelector('#dailyChart'); if(!el) return;
-      const DK=false, BLUE='#0065F4', GRN='#0f7a3d';   // light-only build
+      const DK=ndIsDark(), BLUE=DK?'#8FA3FF':'#0065F4', GRN=DK?'#4BD69B':'#0f7a3d';
       const ch=new ApexCharts(el,{chart:{type:'area',height:260,toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:'rgba(10,10,10,.55)',animations:{enabled:true,speed:900}},
         series:[{name:'Signups',data:dSign},{name:'Activated',data:dAct}],stroke:{curve:'smooth',width:[3,2.5],colors:[BLUE,GRN]},
         fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.3,opacityTo:0,stops:[0,95]}},colors:[BLUE,GRN],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},legend:{show:false},
