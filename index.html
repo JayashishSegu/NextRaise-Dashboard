@@ -4404,6 +4404,43 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       html[data-theme="light"] .ov-head [data-nd-dup]{ display:none !important; }
     }
 
+    /* ── auto-refresh state on the Live pill ──────────────────────────── */
+    html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
+    html[data-theme="light"] :is(#ndDeskLive,#ndLive)[data-auto="0"]{
+      opacity:.72; text-decoration:underline dotted 1px; text-underline-offset:3px; }
+    /* the dot breathes while auto-refresh is live, so the pill reads as active */
+    html[data-theme="light"] :is(#ndDeskLive,#ndLive)[data-auto="1"]::before{
+      animation:ndPulse 2.4s ease-in-out infinite; }
+    @keyframes ndPulse{ 0%,100%{ opacity:1 } 50%{ opacity:.35 } }
+    @media (prefers-reduced-motion:reduce){
+      html[data-theme="light"] :is(#ndDeskLive,#ndLive)[data-auto="1"]::before{ animation:none; }
+    }
+
+    /* ── desktop screens: fill the column, and stop repeating the title ──
+       .app-body is a column flex container and .page carries the base
+       `margin: 0 auto`, so every screen was a shrink-to-fit flex item: Acquire
+       rendered 356px wide inside a 1192px column with ~418px of dead space each
+       side, and its overflow:auto scrollbar sat at that narrow box's edge in the
+       middle of the window. Stretch the item and the scrollbar returns to the
+       right edge where it belongs.                                            */
+    @media (min-width:901px){
+      html[data-theme="light"] .app-body > .page{
+        width:100% !important; max-width:none !important;
+        margin:0 !important; align-self:stretch;
+        padding:24px 24px 56px !important;      /* design: 24px page padding */
+      }
+      /* the shared shell fills the column, capped at the design's content max */
+      html[data-theme="light"] .nd-pg{ width:100%; max-width:1200px; }
+      /* The topbar already carries the screen name and the project meta, so the
+         in-page heading block was the same words twice. Hide the heading, keep
+         whatever actions share that row; ndTidyOvHead() then drops any row left
+         with nothing of its own. */
+      html[data-theme="light"] .ov-head .home-title,
+      html[data-theme="light"] .ov-head .ov-sub,
+      html[data-theme="light"] .page > .home-title,
+      html[data-theme="light"] .page > .ov-sub{ display:none !important; }
+    }
+
   </style>
 </head>
 <body>
@@ -8262,6 +8299,16 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       ? 'Paused · showing ' + ndLiveText(ts).replace(/^(Live|Updated) · ?/, '')
       : ndLiveText(ts);
     el.title = ts ? 'Data computed ' + new Date(ts).toLocaleString('en-IN') : 'No snapshot loaded yet';
+    // Auto-refresh state lives on the pill, and this is the only place the pill
+    // is painted — decorating here means it is right from the first render,
+    // including the console header, which is built after the module loads.
+    try {
+      const on = (typeof ndAutoOn === 'function') ? ndAutoOn() : false;
+      el.dataset.auto = on ? '1' : '0';
+      el.style.cursor = 'pointer';
+      el.title += on ? ' · Auto-refresh every minute. Click to turn off.'
+                     : ' · Auto-refresh off. Click to turn on.';
+    } catch (_) {}
   }
   // Refresh with visible feedback (design has a refresh action in the bar).
   // Every screen that can refresh, and how. `refreshTab` only knows the nine
@@ -15119,6 +15166,98 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     else if (name === 'more') ndmRenderMore();
   }
   try { ndmEnsureMore(); } catch (_) {}
+
+  // ══ AUTO-REFRESH ════════════════════════════════════════════════════
+  // Ticks once a minute. What it does on each tick is deliberately cheap:
+  //
+  //   • loadOverview(false) returns WITHOUT a network call while the snapshot
+  //     is under OV_FRESH_TTL (3 min), and otherwise reads the edge-cached
+  //     /api/overview. Neither path costs PostHog a single byte.
+  //   • a genuine recompute (force) is the expensive one: it bypasses the edge
+  //     and re-runs every heavy query, so it is capped at ND_AUTO_FORCE_MS.
+  //     Forcing once a minute would be ~60 ClickHouse passes an hour per open
+  //     tab against a read budget that has already taken this dashboard down
+  //     once, which is why the minute tick and the recompute are separate.
+  //
+  // It also repaints the Live pill every tick, so the age on screen is true
+  // even when nothing was fetched.
+  //
+  // Costs nothing when you are not looking: a hidden tab and an idle one both
+  // skip the tick entirely, so a dashboard left open overnight does no work.
+  const ND_AUTO_KEY      = 'nr_auto_refresh';
+  const ND_AUTO_TICK_MS  = 60 * 1000;        // check every minute
+  const ND_AUTO_FORCE_MS = 5 * 60 * 1000;    // real recompute at most every 5 min
+  const ND_AUTO_IDLE_MS  = 30 * 60 * 1000;   // stop after 30 min of no interaction
+  let _ndAutoTimer = null, _ndAutoLastForce = 0, _ndLastSeen = Date.now(), _ndAutoBusy = false;
+
+  function ndAutoOn() {
+    try { return localStorage.getItem(ND_AUTO_KEY) !== '0'; } catch (_) { return true; }
+  }
+  function ndAutoIdle() { return (Date.now() - _ndLastSeen) > ND_AUTO_IDLE_MS; }
+
+  async function ndAutoTick() {
+    try {
+      if (!ndAutoOn() || _ndAutoBusy) return;
+      if (document.hidden || ndAutoIdle()) { ndAutoPaint(); return; }
+      if (typeof budgetPauseUntil === 'function' && budgetPauseUntil()) { ndAutoPaint(); return; }
+      if (_ndRefreshBusy) return;                 // a manual refresh owns the screen
+      if (_ndTab() !== 'overview') { ndAutoPaint(); return; }
+      _ndAutoBusy = true;
+      const force = (Date.now() - _ndAutoLastForce) > ND_AUTO_FORCE_MS;
+      if (force) _ndAutoLastForce = Date.now();
+      try { await loadOverview(force); } catch (_) { /* keep the last snapshot */ }
+    } catch (_) {
+    } finally {
+      _ndAutoBusy = false;
+      ndAutoPaint();
+    }
+  }
+
+  // Repaint the age, and mark the pill when auto-refresh is off so the reading
+  // cannot be mistaken for something that is keeping itself current.
+  function ndAutoPaint() {
+    try {
+      ndLiveEl(document.getElementById('ndDeskLive'));
+      ndLiveEl(document.getElementById('ndLive'));
+    } catch (_) {}
+  }
+
+  function ndSetAuto(on) {
+    try { localStorage.setItem(ND_AUTO_KEY, on ? '1' : '0'); } catch (_) {}
+    ndAutoStart();
+    ndAutoPaint();
+    try {
+      ndToast(on ? 'Auto-refresh on · checking every minute' : 'Auto-refresh off');
+    } catch (_) {}
+    if (on) ndAutoTick();
+  }
+  function ndToggleAuto() { ndSetAuto(!ndAutoOn()); }
+
+  function ndAutoStart() {
+    if (_ndAutoTimer) { clearInterval(_ndAutoTimer); _ndAutoTimer = null; }
+    if (!ndAutoOn()) return;
+    _ndAutoTimer = setInterval(ndAutoTick, ND_AUTO_TICK_MS);
+  }
+
+  (function ndAutoInit() {
+    const seen = function () { _ndLastSeen = Date.now(); };
+    ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(function (ev) {
+      document.addEventListener(ev, seen, { passive: true });
+    });
+    // Coming back to the tab is the moment a stale number is most visible, so
+    // check immediately rather than waiting out the rest of the minute.
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) { seen(); ndAutoTick(); }
+    });
+    window.addEventListener('focus', function () { seen(); ndAutoTick(); });
+    // Clicking the Live pill toggles it.
+    document.addEventListener('click', function (e) {
+      const t = e.target && e.target.closest && e.target.closest('#ndDeskLive, #ndLive');
+      if (t) { e.preventDefault(); ndToggleAuto(); }
+    });
+    ndAutoStart();
+    ndAutoPaint();
+  })();
 
 </script>
 <nav class="mob-bottom-nav" id="mobBottomNav" aria-label="Mobile navigation">
