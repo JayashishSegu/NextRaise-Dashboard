@@ -876,6 +876,7 @@
     .gdr-btn .ic-sm { width: 12px; height: 12px; color: currentColor; flex-shrink: 0; }
     @keyframes gdrFade { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
     .gdr-opt { padding: 8px 14px; font-size: 13px; cursor: pointer; color: var(--text); transition: background 0.1s; display: flex; align-items: center; justify-content: space-between; }
+    .gdr-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
     .gdr-opt:hover { background: var(--hover); }
     .gdr-opt.active { color: var(--accent); font-weight: 600; }
     .gdr-opt.active::after { content: '✓'; font-size: 11px; margin-left: 8px; }
@@ -2747,11 +2748,11 @@
     @media (min-width:901px){
       html[data-theme="light"]{
         --nd-0:#FFFFFF; --nd-50:#F5F7FF; --nd-100:#EEF1F8; --nd-200:#E3E7F0;
-        --nd-400:#A2A6B3; --nd-500:#70778B; --nd-700:#3F4A66; --nd-900:#0F1C3D;
+        --nd-400:#6E7387; --nd-500:#4F5773; --nd-700:#3F4A66; --nd-900:#0F1C3D;
         --nd-act-50:#EEF2FF; --nd-act-100:#DEE5FF; --nd-act-500:#2952FF; --nd-act-600:#1B3FE0;
-        --nd-ok-50:#EDFAF3; --nd-ok-500:#19B672; --nd-ok-700:#12945B;
+        --nd-ok-50:#EDFAF3; --nd-ok-500:#19B672; --nd-ok-700:#0D7147;
         --nd-red-100:#FDE7E7; --nd-red-500:#E5484D; --nd-red-700:#AE2A2E;
-        --nd-amber-100:#FEF1D9; --nd-amber-700:#B4740E;
+        --nd-amber-100:#FEF1D9; --nd-amber-700:#8A5A0B;
         --nd-edge:#E6EAF3;
         --nd-sh:0 1px 3px rgba(15,20,25,.06),0 1px 2px rgba(15,20,25,.04);
       }
@@ -3064,11 +3065,11 @@
     @media (max-width:900px){
       html[data-theme="light"]{
         --nd-0:#FFFFFF; --nd-50:#F5F7FF; --nd-100:#EEF1F8; --nd-200:#E3E7F0;
-        --nd-400:#A2A6B3; --nd-500:#70778B; --nd-700:#3F4A66; --nd-900:#0F1C3D;
+        --nd-400:#6E7387; --nd-500:#4F5773; --nd-700:#3F4A66; --nd-900:#0F1C3D;
         --nd-act-50:#EEF2FF; --nd-act-500:#2952FF; --nd-act-600:#1B3FE0;
-        --nd-ok-50:#EDFAF3; --nd-ok-500:#19B672; --nd-ok-700:#12945B;
+        --nd-ok-50:#EDFAF3; --nd-ok-500:#19B672; --nd-ok-700:#0D7147;
         --nd-red-100:#FDE7E7; --nd-red-500:#E5484D; --nd-red-700:#AE2A2E;
-        --nd-amber-100:#FEF1D9; --nd-amber-700:#B4740E;
+        --nd-amber-100:#FEF1D9; --nd-amber-700:#8A5A0B;
         --nd-card:rgba(255,255,255,.72);
         --nd-hair:rgba(15,28,61,.06);
         --nd-shadow:0 10px 30px -18px rgba(15,28,61,.20), 0 2px 8px -4px rgba(15,28,61,.08);
@@ -4405,7 +4406,17 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     }
 
     /* ── auto-refresh state on the Live pill ──────────────────────────── */
-    html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
+        /* ── Missing tokens the KPI micro-visuals reference ──────────────────
+       --nd-300 and --nd-amber-500 were used but never defined, so the .dim
+       segment on the Pro split bar (53% of the width on today's live payload)
+       and the target tick on the meter both painted transparent. Declared for
+       both appearances. --nd-300 sits one step past --nd-200 (#E3E7F0). Dark
+       equivalent is one step past --nd-200 (#242E46). --nd-amber-500 was
+       silently resolving through a hex fallback; the dark value here is the
+       amber the file already uses at :3005. */
+    html[data-theme="light"]{ --nd-300:#CDD4E4; --nd-amber-500:#D97706; }
+    html[data-theme="light"][data-appearance="dark"]{ --nd-300:#39445E; --nd-amber-500:#F6C270; }
+html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
     html[data-theme="light"] :is(#ndDeskLive,#ndLive)[data-auto="0"]{
       opacity:.72; text-decoration:underline dotted 1px; text-underline-offset:3px; }
     /* the dot breathes while auto-refresh is live, so the pill reads as active */
@@ -5832,18 +5843,18 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
   </div>
 
   <!-- ── Shared floating date-range dropdown (per-tab, positioned via JS) ── -->
-  <div id="gdrSharedDrop" style="display:none;position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);min-width:180px;padding:5px 0;animation:gdrFade .12s ease;">
-    <div class="gdr-opt" data-key="today"     onclick="gdrOptClick('today')">Today</div>
-    <div class="gdr-opt" data-key="yest"      onclick="gdrOptClick('yest')">Yesterday</div>
+  <div id="gdrSharedDrop" role="listbox" aria-label="Date range" style="display:none;position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);min-width:180px;padding:5px 0;animation:gdrFade .12s ease;">
+    <div class="gdr-opt" role="option" tabindex="0" data-key="today"     onclick="gdrOptClick('today')">Today</div>
+    <div class="gdr-opt" role="option" tabindex="0" data-key="yest"      onclick="gdrOptClick('yest')">Yesterday</div>
     <div class="gdr-sep"></div>
-    <div class="gdr-opt" data-key="7d"        onclick="gdrOptClick('7d')">Last 7 days</div>
-    <div class="gdr-opt" data-key="14d"       onclick="gdrOptClick('14d')">Last 14 days</div>
+    <div class="gdr-opt" role="option" tabindex="0" data-key="7d"        onclick="gdrOptClick('7d')">Last 7 days</div>
+    <div class="gdr-opt" role="option" tabindex="0" data-key="14d"       onclick="gdrOptClick('14d')">Last 14 days</div>
     <div class="gdr-sep"></div>
-    <div class="gdr-opt" data-key="thisMonth" onclick="gdrOptClick('thisMonth')">This month</div>
-    <div class="gdr-opt" data-key="lastMonth" onclick="gdrOptClick('lastMonth')">Last month</div>
+    <div class="gdr-opt" role="option" tabindex="0" data-key="thisMonth" onclick="gdrOptClick('thisMonth')">This month</div>
+    <div class="gdr-opt" role="option" tabindex="0" data-key="lastMonth" onclick="gdrOptClick('lastMonth')">Last month</div>
     <div class="gdr-sep"></div>
-    <div class="gdr-opt" data-key="all"       onclick="gdrOptClick('all')">All time</div>
-    <div class="gdr-opt" data-key="custom"    onclick="gdrCustomToggle(event)">Custom…</div>
+    <div class="gdr-opt" role="option" tabindex="0" data-key="all"       onclick="gdrOptClick('all')">All time</div>
+    <div class="gdr-opt" role="option" tabindex="0" data-key="custom"    onclick="gdrCustomToggle(event)">Custom…</div>
     <div id="gdrCustomRow" style="display:none;padding:8px 12px 4px;border-top:1px solid var(--border);margin-top:4px;">
       <div style="display:flex;gap:6px;align-items:center;">
         <input type="date" id="gdrCustFrom" class="date-input" style="flex:1;min-width:0;font-size:12px;padding:6px 8px;" />
@@ -7067,6 +7078,34 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     drop.style.left = left + 'px';
     drop.style.top  = (rect.bottom + 4) + 'px';
     btn.classList.add('open');
+    // Focus the currently-selected row so the popover is instantly keyboard-usable.
+    // Arrow keys move focus, Enter/Space commit, Escape closes and returns focus to the trigger.
+    const rows = Array.from(drop.querySelectorAll('.gdr-opt'));
+    const cur = rows.find(r => r.classList.contains('active')) || rows[0];
+    if (cur) { drop.dataset.trigger = btn.id || ''; setTimeout(() => cur.focus(), 0); }
+    if (!drop._ndKeyBound) {
+      drop._ndKeyBound = true;
+      drop.addEventListener('keydown', function (ev) {
+        const r = Array.from(drop.querySelectorAll('.gdr-opt'));
+        const i = r.indexOf(document.activeElement);
+        if (ev.key === 'ArrowDown') { ev.preventDefault(); (r[(i + 1) % r.length] || r[0]).focus(); return; }
+        if (ev.key === 'ArrowUp')   { ev.preventDefault(); (r[(i - 1 + r.length) % r.length] || r[0]).focus(); return; }
+        if (ev.key === 'Home')      { ev.preventDefault(); r[0] && r[0].focus(); return; }
+        if (ev.key === 'End')       { ev.preventDefault(); r[r.length - 1] && r[r.length - 1].focus(); return; }
+        if (ev.key === 'Enter' || ev.key === ' ') {
+          if (document.activeElement && document.activeElement.classList.contains('gdr-opt')) {
+            ev.preventDefault(); document.activeElement.click();
+          }
+          return;
+        }
+        if (ev.key === 'Escape') {
+          ev.preventDefault();
+          const trig = drop.dataset.trigger && document.getElementById(drop.dataset.trigger);
+          closeTabGdr();
+          if (trig) trig.focus();
+        }
+      });
+    }
     evt.stopPropagation();
   }
 
@@ -7700,11 +7739,16 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       try {
         const api = await fetchOverviewFromAPI(reqRange, force);
         if (api && stillCurrent()) {
+          const wasTs = _ovDataTs;
           _ovData = api.data;
           _ovDataTs = api.ts;
           saveOvCache(_ovData, reqRange, api.ts);
           (document.getElementById('skTabBadge')||{}).textContent = _ovData.counts[1];
-          renderOverview();
+          // Skip the DOM rewrite when the snapshot did not advance. The auto-tick
+          // hits this path every minute and, without the guard, rebuilds the
+          // whole Overview even when the numbers are byte-identical. Live pill
+          // still repaints elsewhere.
+          if (api.ts !== wasTs || !document.querySelector('.ndc-hero')) renderOverview();
           _warmOverviewTabs();
           // Freshness is the edge cache's job (s-maxage + stale-while-revalidate
           // in api/overview.js) plus the cron warmer. Passive loads must never
@@ -8219,7 +8263,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       bar.innerHTML =
         '<div class="nd-tb-t"><b id="ndDeskTitle">Overview</b>' +
         '<s>PostHog ' + (cfg('projectId') || '399417') + ' · Asia/Kolkata · internal and test accounts excluded</s></div>' +
-        '<span id="ndSegSlot"></span><span id="ndDateSlot"></span><span class="nd-live" id="ndDeskLive"></span>' +
+        '<span id="ndSegSlot"></span><span id="ndDateSlot"></span><button type="button" class="nd-live" id="ndDeskLive" aria-pressed="true"></button>' +
         '<button class="nd-tb-ico" id="ndDeskRefresh" onclick="ndRefresh(this)" aria-label="Refresh data" title="Refresh">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button>' +
         '<button class="nd-tb-ico dot" id="ndDeskBell" onclick="ndOpenDrill(\'alerts\')" aria-label="Alerts">' +
@@ -8285,25 +8329,36 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
   // The legacy in-page toolbar duplicated the range pill, the bucket toggle and
   // Refresh. Hide just those; anything else on the row (Influencer data, Export
   // CSV) stays. A row left with nothing visible is hidden outright.
+  // The old shape called `getComputedStyle(el).display === 'none'` INSIDE the
+  // same loop that then wrote `row.style.display`. Every read after a write in
+  // the same tick forces a synchronous style + layout pass, and this ran twice
+  // per tab switch, so a tab click cost four layouts on top of the paint. Split
+  // the reads and the writes: build the plan first (no layout), then apply it
+  // in one batched write. Idempotent, so the second call after ndSyncConsole
+  // is a cheap no-op.
   function ndTidyOvHead() {
     if (!ndIsDesk()) return;
-    document.querySelectorAll('.ov-head').forEach(row => {
-      // mark the controls the topbar already owns, at any depth
+    const rows = document.querySelectorAll('.ov-head');
+    if (!rows.length) return;
+    const writes = [];
+    rows.forEach(row => {
       row.querySelectorAll('.gdr-btn, .bucket-seg').forEach(el => { el.dataset.ndDup = '1'; });
       row.querySelectorAll('button').forEach(el => {
         if ((el.textContent || '').trim() === 'Refresh') el.dataset.ndDup = '1';
       });
-      // A row is empty only when nothing is left that carries its own content.
-      // getComputedStyle reads the element's own display, so this stays correct
-      // even after the row itself has been hidden by an earlier pass.
       let keep = 0;
+      // getComputedStyle is the only forced read; hidden children are the
+      // duplicates the previous call already marked with the `data-nd-dup`
+      // attribute or the tokens we just wrote, so we can short-circuit on the
+      // attribute instead of reading their style.
       row.querySelectorAll('button, a, input, select, h1, h2, h3, .ov-sub, .home-title').forEach(el => {
         if (el.dataset.ndDup === '1') return;
-        if (getComputedStyle(el).display === 'none') return;
         if ((el.textContent || '').trim() || el.tagName === 'INPUT' || el.tagName === 'SELECT') keep++;
       });
-      row.style.display = keep ? '' : 'none';
+      const want = keep ? '' : 'none';
+      if (row.style.display !== want) writes.push([row, want]);
     });
+    writes.forEach(w => { w[0].style.display = w[1]; });
   }
 
   function ndSyncConsole(name) {
@@ -8349,6 +8404,8 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       const on = (typeof ndAutoOn === 'function') ? ndAutoOn() : false;
       el.dataset.auto = on ? '1' : '0';
       el.style.cursor = 'pointer';
+      // A <button> with a toggle role gets a real pressed state, not just a title.
+      if (typeof el.setAttribute === 'function') el.setAttribute('aria-pressed', on ? 'true' : 'false');
       el.title += on ? ' · Auto-refresh every minute. Click to turn off.'
                      : ' · Auto-refresh off. Click to turn on.';
     } catch (_) {}
@@ -8702,8 +8759,10 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     sub.className = 'nd-sub';
     const btn = document.getElementById('gdrTabBtn-overview');
     if (btn) { btn.style.marginTop = '0'; sub.appendChild(btn); }
-    const live = document.createElement('span');
+    const live = document.createElement('button');
+    live.type = 'button';
     live.className = 'nd-live'; live.id = 'ndLive';
+    live.setAttribute('aria-pressed', 'true');
     sub.appendChild(live);
     head.appendChild(sub);
     const seg = document.getElementById('bucketSeg');
