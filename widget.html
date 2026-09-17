@@ -95,13 +95,32 @@
       </div>
     </div>
     <p class="note">Live from the dashboard's cached overview.<br>
+      <span id="wFx">USD converted at the shared dashboard rate.</span><br>
       Add to your home screen: open this page in Safari or Chrome → Share → Add to Home Screen.<br>
       <a href="/">Open the full dashboard →</a></p>
   </div>
 
 <script>
 (function(){
-  var USD = 95.51;
+  // ONE rate for every surface: resolved once server-side in lib/fx.js and
+  // served by /api/fx, which is edge-cached and reads no PostHog data. The
+  // widget never fetches a rate of its own and never hard-codes one.
+  // FX_FALLBACK applies only when /api/fx cannot be reached, and the note then
+  // says so instead of implying a live rate.
+  var FX_FALLBACK = 84;   // design/README.md: the documented default, ₹84 per $1
+  var FX = { rate: FX_FALLBACK, asOf: null, source: 'fallback' };
+  var FX_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function applyFx(f){
+    FX = (f && +f.rate > 50 && +f.rate < 200)
+      ? { rate: Math.round(+f.rate * 100) / 100, asOf: f.asOf || null, source: f.source || 'server' }
+      : { rate: FX_FALLBACK, asOf: null, source: 'fallback' };
+  }
+  function fxNote(){
+    var p = FX.asOf ? String(FX.asOf).slice(0, 10).split('-') : [];
+    var on = (p.length === 3 && FX_MONTHS[+p[1] - 1]) ? (+p[2]) + ' ' + FX_MONTHS[+p[1] - 1] + ' ' + p[0] : '';
+    return 'USD converted at ₹' + FX.rate + '/$ · ' +
+      (on ? 'rate as of ' + on : 'fallback rate, live rate unavailable');
+  }
   var fmt = function(n){ return (n||0).toLocaleString('en-IN'); };
   var money = function(n){ return n >= 100000 ? '₹' + (n/100000).toFixed(2) + 'L' : '₹' + fmt(Math.round(n)); };
   function bars(el, vals){
@@ -114,8 +133,10 @@
   function paint(d){
     var c = d.counts || [];
     var newToday = +c[2] || 0, newYest = +c[9] || 0, activePro = +c[7] || 0, newProduct = +c[0] || 0;
+    var fxEl = document.getElementById('wFx');
+    if (fxEl) fxEl.textContent = fxNote();
     var revInr = +d.revInr || 0, revUsd = +d.revUsd || 0;
-    var total = Math.round(revInr + revUsd * USD);
+    var total = Math.round(revInr + revUsd * FX.rate);
     var payers = (+d.revPayers || 0) || activePro;
     var growth = (d.growth || []).map(function(r){ return +r[1] || 0; });
 
@@ -136,9 +157,24 @@
     bars(document.getElementById('wMiniRev'), (d.dailyPay || []).slice(-7).map(function(r){ return +r[1] || 0; }));
     if (newProduct) document.getElementById('wRangeLbl').textContent = 'Last 7 days';
   }
-  fetch('/api/overview?range=7d&view=overall')
-    .then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
-    .then(function(j){
+  // Both reads in parallel: the cached overview, and the one shared FX rate.
+  // /api/fx touches no PostHog data. If it has not answered within 1.5s we
+  // paint anyway and the note says the rate is a fallback.
+  var fxReq = new Promise(function(resolve){
+    var done = false;
+    var finish = function(v){ if (!done) { done = true; resolve(v); } };
+    setTimeout(function(){ finish(null); }, 1500);
+    fetch('/api/fx').then(function(r){ return r.ok ? r.json() : null; })
+      .then(finish, function(){ finish(null); });
+  });
+  Promise.all([
+    fetch('/api/overview?range=7d&view=overall')
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); }),
+    fxReq
+  ])
+    .then(function(both){
+      var j = both[0];
+      applyFx(both[1]);
       if (!j || !j.data) throw 0;
       paint(j.data);
       var age = Math.max(0, Math.round((Date.now() - (j.ts || Date.now())) / 60000));

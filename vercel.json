@@ -2,10 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
     "api/overview.js": { "maxDuration": 60 },
+    "api/screen.js": { "maxDuration": 60 },
     "api/cron.js": { "maxDuration": 60 },
     "api/influencer-names.js": { "maxDuration": 30 }
   },
   "crons": [
-    { "path": "/api/cron", "schedule": "30 0 * * *" }
+    { "path": "/api/cron", "schedule": "35 18 * * *" }
   ]
 }

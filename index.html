@@ -11,16 +11,81 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' rx='61' fill='%230065F4'/%3E%3Cpath d='M135.74 93.2c0 18.2-.4 33.1-.8 33.1-.5 0-1.4-2.4-2.1-5.2-3.4-14.7-16-31.9-30.5-41.3-7.3-4.9-19-9.3-26.9-10.3-2.5-.3-5.9-.8-7.6-1.1l-3.3-.5-.2 16.1-.3 16.1-16 .3L32 100.6v19.8 19.7h16.3 16.3v-19.9-19.9l4.7.7c6 .8 15.5 5.4 21.3 10.5 5.6 4.9 11 15.4 11.9 23.1l.7 5.5h32.1 32l-.2-39.8-.3-39.7-15.5-.3-15.6-.3v33.2z' fill='white'/%3E%3C/svg%3E" />
   <!-- speed: pre-open TCP connections to APIs we always call on load -->
   <link rel="preconnect" href="https://us.posthog.com" />
-  <link rel="preconnect" href="https://open.er-api.com" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="preconnect" href="https://api.fontshare.com" />
-  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700,800&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.1/dist/apexcharts.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script>
+    /* ── Boot critical path ───────────────────────────────────────────────
+       Runs before the 316KB <style> and the 597KB of inline script below are
+       parsed. Wrapped in an IIFE on purpose: the main script block is 507KB and
+       is NOT an IIFE, so its top-level const/let are lexical globals, and a var
+       leaked from here that collided with one of them would be a SyntaxError
+       that kills that whole block, not a silent bug. Exactly three names leave
+       this function, all explicitly on window.
+
+       1. nrApexQ — a ready queue for ApexCharts. Every chart site guards on
+          window.ApexCharts inside a setTimeout(...,30); with the library no
+          longer parser-blocking it can land after that, so a site that misses
+          re-queues itself and is replayed on load. Keyed per screen, so a second
+          render of the same screen replaces a pending first one instead of
+          stacking two charts in one element.
+       2. The overview prefetch — the SAME request loadOverview() would issue,
+          started here instead of at DOMContentLoaded (~387ms into this 1MB
+          document). Never an extra PostHog read: see the freshness gate below.
+       ─────────────────────────────────────────────────────────────────── */
+    (function () {
+      window.nrApexQ = function (fn, key) {
+        if (window.ApexCharts) { try { fn(); } catch (_) {} return; }
+        var q = (window.__apexQ = window.__apexQ || []);
+        if (key) for (var i = q.length - 1; i >= 0; i--) if (q[i].k === key) q.splice(i, 1);
+        q.push({ k: key, f: fn });
+      };
+      window.__nrApexFlush = function () {
+        var q = window.__apexQ || []; window.__apexQ = [];
+        for (var i = 0; i < q.length; i++) { try { q[i].f(); } catch (_) {} }
+      };
+      try {
+        // Mirrors the `if (!cfg('apiKey')) { openSettings(); return; }` guard that
+        // otherwise stops loadOverview() running at all.
+        if (!(localStorage.getItem('nr_apiKey') || '')) return;
+        // Any other hash routes through switchTab and never reaches loadOverview.
+        var hash = (location.hash || '').replace('#', '');
+        if (hash && hash !== 'overview') return;
+        // Same resolution order as initBucketView(): ?view= then storage then overall.
+        var view = new URLSearchParams(location.search).get('view')
+                || localStorage.getItem('nr_bucket_view') || 'overall';
+        if (['influencer', 'perf', 'overall'].indexOf(view) < 0) view = 'overall';
+        // BUDGET GATE, do not remove. loadOverview() returns BEFORE it ever calls
+        // the API when the snapshot for this range is under OV_FRESH_TTL (3 min):
+        //   if (!force && (Date.now() - _snap.ts) < OV_FRESH_TTL) return;
+        // On those loads the page makes NO /api/overview request today. Prefetching
+        // anyway would be a net-new request, and 7d/influencer and 7d/perf are not
+        // cron-warmed, so an edge MISS there is a real ClickHouse recompute. Key
+        // shape mirrors ovCacheKey(): OV_CACHE_BASE + '_' + view + '_' + range.
+        // Safe in one direction only, and it is the right one: this runs earlier
+        // than DOMContentLoaded and snapshot age only grows, so stale here means
+        // stale there. A skipped prefetch loses speed, it never duplicates.
+        var snap = null;
+        try { snap = JSON.parse(localStorage.getItem('nr_ov_cache3_' + view + '_7d') || 'null'); }
+        catch (_) {}
+        if (snap && snap.ts && (Date.now() - snap.ts) < 3 * 60 * 1000) return;
+        // Range is always 7d at boot (_tabRangesBase literal, never restored from
+        // storage), so this URL is byte-for-byte what fetchOverviewFromAPI builds.
+        var u = '/api/overview?range=7d&view=' + view;
+        // .catch so an unconsumed or failed prefetch is never an unhandled
+        // rejection; the consumer treats null as "no prefetch" and fetches normally.
+        window.__nrOvPrefetch = { url: u, p: fetch(u).catch(function () { return null; }) };
+      } catch (_) {}
+    })();
+  </script>
+  <!-- Charts and motion are never needed for first paint. Async + low priority,
+       and deliberately NO preconnect to jsdelivr: off the critical path, an early
+       handshake would only compete with the document download. -->
+  <script async fetchpriority="low"
+    src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.1/dist/apexcharts.min.js"
+    onload="window.__nrApexFlush()"></script>
+  <script async fetchpriority="low"
+    src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <style>
     :root {
       color-scheme: light;
@@ -2598,7 +2663,7 @@
     html[data-theme="light"] .spinner{ border-color:var(--border) !important; border-top-color:var(--blue) !important; }
 
     /* Launch screen wordmark: editorial ink, not warm slate */
-    html[data-theme="light"] #nrLaunch .nrl-word{ font-family:'General Sans',system-ui,sans-serif !important; color:var(--ink) !important; }
+    html[data-theme="light"] #nrLaunch .nrl-word{ font-family:'Plus Jakarta Sans',system-ui,sans-serif !important; color:var(--ink) !important; }
 
     /* Mobile drawer: white, hairline (was warm cream); keep NO backdrop-filter (iOS) */
     @media (max-width:900px){
@@ -3197,6 +3262,21 @@
     /* the one place a mono still belongs: raw keys and shortcuts */
     html[data-theme="light"] :is(.cmdk-kbd,code,kbd,pre){
       font-family:ui-monospace,SFMono-Regular,'SF Mono',Menlo,monospace !important; }
+    /* Chart text was the last live user of General Sans and IBM Plex Mono. The
+       :is() list above covers div and span, which is why the .acq-v, .nb-ai-k,
+       .nb-updated and .apexcharts-tooltip rules that still name those faces are
+       already dead. It has no SVG <text> selector, and ApexCharts writes its
+       fontFamily option as an inline style on those nodes, so the 13 chart
+       fontFamily:'Plus Jakarta Sans' / 'IBM Plex Mono' options were still rendering.
+       !important outranks a non-important inline style, so this one rule retires
+       both faces without touching 13 JS call sites and puts chart type on the
+       single family design/README.md asks for. */
+    html[data-theme="light"] :is(.apexcharts-canvas text,.apexcharts-text,
+      .apexcharts-legend-text,.apexcharts-tooltip,.apexcharts-tooltip *,
+      .apexcharts-xaxistooltip,.apexcharts-yaxistooltip){
+      font-family:'Plus Jakarta Sans','Plus Jakarta Sans Fallback',-apple-system,
+        BlinkMacSystemFont,'Segoe UI',sans-serif !important;
+      font-variant-numeric:tabular-nums; }
     /* hero metrics: 48/800/-.03em desktop, 40/800/-.03em phone (README type table) */
     html[data-theme="light"] .ndc-big{
       font-size:48px !important; font-weight:800 !important; letter-spacing:-.03em !important;
@@ -5941,24 +6021,64 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
   // The product relaunched on 1 May 2026 — users created before this are
   // from the old product ("Legacy"); stats and filters segment on this date.
   const PRODUCT_LAUNCH = '2026-05-01';
-  // USD→INR rate — fetched live from open.er-api.com on load; falls back to 86.
-  let USD_TO_INR = (() => {
+  // ── USD→INR: one rate, one source ─────────────────────────────────
+  // The rate is resolved ONCE server-side (lib/fx.js) and served by /api/fx,
+  // which is edge-cached and reads no PostHog data at all. index.html and
+  // widget.html both read that one endpoint, so no surface carries a rate of
+  // its own any more.
+  // FX_FALLBACK stands in only until /api/fx answers, or when it cannot be
+  // reached, and every combined figure then SAYS "fallback rate" instead of
+  // passing a guess off as today's rate.
+  const FX_FALLBACK = 84;   // design/README.md: the documented default, ₹84 per $1
+  function normFx(f) {
+    return (f && +f.rate > 50 && +f.rate < 200)
+      ? { rate: Math.round(+f.rate * 100) / 100, asOf: f.asOf || null, source: f.source || 'server' }
+      : { rate: FX_FALLBACK, asOf: null, source: 'fallback' };
+  }
+  // Seeded from the last rate /api/fx gave this browser, so the first paint is
+  // not a fallback. This is a cache of the ONE server value, not a second
+  // source: it keeps the server's own asOf date, which is printed next to every
+  // combined figure, so a stale seed is visible rather than silent.
+  let FX = (() => {
     try {
-      const c = JSON.parse(localStorage.getItem('nr_fx_usd_inr') || 'null');
-      if (c && c.rate && Date.now() - c.ts < 6 * 3600 * 1000) return c.rate; // 6-hour cache
+      const c = JSON.parse(localStorage.getItem('nr_fx') || 'null');
+      if (c && c.ts && Date.now() - c.ts < 12 * 3600 * 1000 && c.fx && c.fx.source !== 'fallback') return normFx(c.fx);
     } catch (_) {}
-    return 94;
+    return normFx(null);
   })();
-  async function fetchFxRate() {
+  let USD_TO_INR = FX.rate;
+  function applyFx(f) {
+    const next = normFx(f);
+    // Never downgrade a real rate to the fallback: a bad or empty answer leaves
+    // the rate we already have, whose own asOf date keeps showing how old it is.
+    if (next.source === 'fallback' && FX.source !== 'fallback') return;
+    FX = next;
+    USD_TO_INR = FX.rate;
+    if (FX.source !== 'fallback') {
+      try { localStorage.setItem('nr_fx', JSON.stringify({ fx: FX, ts: Date.now() })); } catch (_) {}
+    }
+  }
+  // One request on load, for every screen. Report, Monetization and Creators do
+  // not go through loadOverview(), so the rate cannot ride on the overview
+  // payload or those tabs would convert at the fallback for ever.
+  async function initFx() {
     try {
-      const r = await fetch('https://open.er-api.com/v6/latest/USD');
-      const d = await r.json();
-      const rate = d && d.rates && d.rates.INR;
-      if (rate && rate > 50 && rate < 200) {
-        USD_TO_INR = Math.round(rate * 100) / 100;
-        try { localStorage.setItem('nr_fx_usd_inr', JSON.stringify({rate: USD_TO_INR, ts: Date.now()})); } catch (_) {}
-      }
-    } catch (_) {} // silently ignore — network may be unavailable
+      const r = await fetch('/api/fx');
+      if (r.ok) applyFx(await r.json());
+    } catch (_) {}   // offline: the seeded or fallback rate stands, and says so
+  }
+  // "2026-09-17" → "17 Sep 2026"; empty string when there is no as-of date.
+  function fxAsOf() {
+    const p = FX.asOf ? String(FX.asOf).slice(0, 10).split('-') : [];
+    const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return (p.length === 3 && MN[+p[1] - 1]) ? (+p[2]) + ' ' + MN[+p[1] - 1] + ' ' + p[0] : '';
+  }
+  // Goes next to any combined INR+USD figure so a reader knows what the
+  // conversion was: "₹88.42/$ · rate as of 17 Sep 2026", or
+  // "₹84/$ · fallback rate, live rate unavailable" when none was resolved.
+  function fxNote() {
+    const on = fxAsOf();
+    return '₹' + USD_TO_INR + '/$ · ' + (on ? 'rate as of ' + on : 'fallback rate, live rate unavailable');
   }
   // Combine native INR + USD revenue into one rupee figure, formatted "₹1,23,456".
   function inrTotal(inr, usd) { return '₹' + Math.round((inr||0) + (usd||0) * USD_TO_INR).toLocaleString('en-IN'); }
@@ -6979,7 +7099,10 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
   // Cache key is scoped by BUCKET_VIEW so each view (Influencer/Perf/Overall)
   // keeps its own snapshot and switching views never shows another view's numbers.
   function ovCacheKey(range) { return OV_CACHE_BASE + '_' + BUCKET_VIEW + '_' + (range || _tabRanges['overview']); }
-  function saveOvCache(d, range) { try { localStorage.setItem(ovCacheKey(range), JSON.stringify({ ts: Date.now(), d })); } catch(_) {} }
+  // ts is when the numbers were COMPUTED (the server sends computedAt), not when
+  // we fetched them, so the real age survives a reload. The client-side fallback
+  // path calls this with two args and keeps the old meaning (fetch == compute).
+  function saveOvCache(d, range, ts) { try { localStorage.setItem(ovCacheKey(range), JSON.stringify({ ts: ts || Date.now(), d })); } catch(_) {} }
   function loadOvCache() { try { const r = JSON.parse(localStorage.getItem(ovCacheKey())||'null'); return r && (Date.now()-r.ts < OV_CACHE_TTL) ? r.d : null; } catch(_) { return null; } }
   // Raw snapshot for the current range, IGNORING TTL — used to paint instantly
   // (stale-while-revalidate) so the heavy live queries never block first paint.
@@ -7359,7 +7482,23 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       // bust=true → cache-buster + no-store: bypass the edge cache and recompute
       // live (used by Refresh), otherwise Refresh just re-shows the edge-cached
       // copy and the numbers look like they aren't syncing.
-      const r = await fetch(base + (bust ? '&fresh=' + Date.now() : ''), bust ? { cache: 'no-store' } : undefined);
+      const url = base + (bust ? '&fresh=' + Date.now() : '');
+      // Reuse the <head> prefetch when it is for this exact URL. It started before
+      // the 1MB document finished parsing, so on a warm edge HIT the response is
+      // already here. Consumed once, then dropped. Its .catch resolves to null on a
+      // network failure, and a URL mismatch leaves it untouched, so both cases fall
+      // straight through to a normal fetch. Never an extra request: same URL, same
+      // cache semantics, and the head script skips the prefetch entirely whenever
+      // loadOverview() would short-circuit on a fresh snapshot.
+      let r = null;
+      if (!bust) {
+        const pf = window.__nrOvPrefetch;
+        if (pf && pf.url === url) {
+          window.__nrOvPrefetch = null;
+          try { r = await pf.p; } catch (_) { r = null; }
+        }
+      }
+      if (!r) r = await fetch(url, bust ? { cache: 'no-store' } : undefined);
       if (!r.ok) {
         let j = null; try { j = await r.json(); } catch (_) {}
         // Server says PostHog's read budget is exhausted: pause, keep snapshot.
@@ -7375,13 +7514,66 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
         throw err;
       }
       const j = await r.json();
+      if (j && j.computing && !(j.data && Array.isArray(j.data.counts))) {
+        // The server is already computing this range/view for someone else, or it
+        // has hit its own hourly recompute cap. Keep the snapshot on screen and
+        // come back for the result. Falling through to the client-side query path
+        // is the single most expensive thing this app can do to the read budget.
+        const busy = new Error('overview compute in progress');
+        busy.name = 'OverviewComputingError';
+        busy.retryIn = Math.max(3, Number(j.retryIn) || 8);
+        throw busy;
+      }
       if (!j || !j.data || !Array.isArray(j.data.counts)) return null;
+      // j.ts is the server's computedAt, not the time this response was written.
       return { data: j.data, ts: j.ts || Date.now() };
     };
     if (force) {
       // The live recompute is heavy and can occasionally hit ClickHouse's limit;
       // fall back to the latest cached copy so Refresh still updates to something
       // recent instead of dropping to the slow client-side query path.
+      try { const fresh = await hit(true); if (fresh) return fresh; }
+      catch (e) {
+        if (e && e.name === 'BudgetPausedError') throw e;
+        // Already computing, or capped for this hour: a second un-forced request
+        // would get the same answer, so surface it now instead of spending
+        // another round trip on it.
+        if (e && e.name === 'OverviewComputingError') throw e;
+      }
+      return hit(false);
+    }
+    return hit(false);
+  }
+
+  // Same fast path as fetchOverviewFromAPI, for the heavy screens (report /
+  // daily / insights). Returns the server payload, or null when the server has
+  // no PostHog key (503) — the caller then falls back to its own client-side
+  // HogQL, exactly as loadOverview does.
+  async function fetchScreenFromAPI(name, rangeKey, cust, force) {
+    let base = '/api/screen?name=' + encodeURIComponent(name) + '&range=' + encodeURIComponent(rangeKey || '7d');
+    if (rangeKey === 'custom' && cust && cust.from && cust.to)
+      base += '&from=' + cust.from + '&to=' + cust.to;
+    base += '&view=' + BUCKET_VIEW;   // the server caches each attribution view separately
+    const hit = async (bust) => {
+      const r = await fetch(base + (bust ? '&fresh=' + Date.now() : ''), bust ? { cache: 'no-store' } : undefined);
+      if (!r.ok) {
+        let j = null; try { j = await r.json(); } catch (_) {}
+        // Server says PostHog's read budget is exhausted: pause, keep what we have.
+        if (r.status === 429 && j && j.code === 'budget') {
+          const secs = Number(j.retryAfter || r.headers.get('Retry-After') || 900);
+          const until = Date.now() + Math.min(secs, 3600) * 1000 + 5000;
+          setBudgetPause(until);
+          throw new BudgetPausedError(until, j.error);
+        }
+        // Server key not configured → legacy client-side fallback path.
+        if (r.status === 503 && j && /PH_API_KEY/.test(String(j.error || ''))) return null;
+        const err = new Error((j && j.error) || ('HTTP ' + r.status)); err.status = r.status;
+        throw err;
+      }
+      const j = await r.json();
+      return (j && j.data) ? j.data : null;
+    };
+    if (force) {
       try { const fresh = await hit(true); if (fresh) return fresh; } catch (e) { if (e && e.name === 'BudgetPausedError') throw e; }
       return hit(false);
     }
@@ -7430,7 +7622,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
         if (api && stillCurrent()) {
           _ovData = api.data;
           _ovDataTs = api.ts;
-          saveOvCache(_ovData, reqRange);
+          saveOvCache(_ovData, reqRange, api.ts);
           (document.getElementById('skTabBadge')||{}).textContent = _ovData.counts[1];
           renderOverview();
           _warmOverviewTabs();
@@ -7443,6 +7635,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
         if (api) return; // range changed mid-fetch — a newer load owns the screen
       } catch(e) {
         if (e && e.name === 'BudgetPausedError') { _ovBudgetPaused(e.until); return; }
+        if (e && e.name === 'OverviewComputingError') { _ovComputing(e.retryIn); return; }
         /* any other API error → legacy direct-query fallback below */
       }
     }
@@ -7660,16 +7853,38 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
               HAVING ${evRangeHaving}
             ) WHERE 1=1${ovEvBkt}
           ) GROUP BY campaign ORDER BY c DESC LIMIT 40`),
-        // postgres.users is the source of truth for Active Pro/Basic (PostHog person props lag)
+        // ── Pro subscriber state · ONE authoritative definition ──────────────
+        // SYNC: identical to nr-overview:pgSubscribers in lib/overview.js.
+        // postgres.subscriptions is the only table carrying a status and an
+        // end_date per subscription; users.plan_cache mirrors the ACTIVE row
+        // only, so expired Pro reverts to 'free' and cancelled disappears —
+        // that is why the old active_basic and expired_pro tiles were always 0
+        // (and no 'basic' plan exists in this product at all).
+        // All figures are DISTINCT USERS, never rows. Active Pro = has an
+        // active Pro row. Expired Pro = has an expired or cancelled Pro row and
+        // NO active one. Lapsed 30d = an Expired Pro whose latest end_date is
+        // within 30 days. Cancelled is a subset of Expired Pro.
         runHogQL(`
           SELECT
-            countIf((plan_cache LIKE '%pro%' OR plan_cache LIKE '%Pro%') AND sub_status='active') AS active_pro,
-            countIf((plan_cache LIKE '%basic%') AND sub_status='active') AS active_basic,
-            countIf((plan_cache LIKE '%pro%' OR plan_cache LIKE '%Pro%') AND sub_status='expired') AS expired_pro
-          FROM postgres.users
-          WHERE email NOT LIKE '%@nextraise.ai'
-            AND email NOT LIKE '%@creditdharma.in'
-            AND lower(email) NOT LIKE '%test%'${bucketEmailFilter('email', _ovGdr.scanDays)}`).catch(()=>({results:[]})),
+            uniqExactIf(uid, is_active = 1) AS active_pro,
+            uniqExactIf(uid, is_active = 0 AND is_ended = 1
+              AND last_end >= now() - INTERVAL 30 DAY) AS lapsed_30d,
+            uniqExactIf(uid, is_active = 0 AND is_ended = 1) AS expired_pro,
+            uniqExactIf(uid, is_active = 0 AND is_cancelled = 1) AS cancelled_pro
+          FROM (
+            SELECT toString(s.user_id) AS uid,
+              max(if(s.status = 'active', 1, 0)) AS is_active,
+              max(if(s.status IN ('expired','cancelled'), 1, 0)) AS is_ended,
+              max(if(s.status = 'cancelled', 1, 0)) AS is_cancelled,
+              max(s.end_date) AS last_end
+            FROM postgres.subscriptions s
+            JOIN postgres.users u ON toString(u.id) = toString(s.user_id)
+            WHERE s.plan LIKE '%pro%'
+              AND u.email NOT LIKE '%@nextraise.ai'
+              AND u.email NOT LIKE '%@creditdharma.in'
+              AND lower(u.email) NOT LIKE '%test%'${bucketEmailFilter('u.email', _ovGdr.scanDays)}
+            GROUP BY uid
+          )`).catch(()=>({results:[]})),
         // Today snapshot: payments / distinct payers / revenue for today +
         // yesterday (IST), independent of the selected range. Tiny postgres read.
         runHogQL(`
@@ -7711,18 +7926,25 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
           )`).catch(()=>({results:[]})),
       ]);
       const revRow = (revenue.results||[])[0] || [0,0];
-      // Override Active Pro/Basic with postgres (more accurate than PostHog person props)
+      // Pro tiles come from postgres.subscriptions and nowhere else. When that
+      // query returns nothing we do NOT fall back to the persons-property
+      // counts — a different, lagging definition. Zero the slots, set
+      // subsOk:false, and let every Pro figure render a dash.
       const pgSubRow = (pgSubscribers.results||[])[0] || [];
       const rawCounts = (counts.results||[])[0] || [0,0,0,0,0,0,0,0,0];
       const mergedCounts = [...rawCounts];
       if (pgSubRow.length) {
-        mergedCounts[7] = +pgSubRow[0]||0; // active_pro
-        mergedCounts[8] = +pgSubRow[1]||0; // active_basic
-        mergedCounts[11] = +pgSubRow[2]||0; // expired_pro
-        mergedCounts[12] = +pgSubRow[2]||0; // lapsed_30d
+        mergedCounts[7]  = +pgSubRow[0]||0; // active Pro, distinct users
+        mergedCounts[8]  = +pgSubRow[1]||0; // lapsed in the last 30 days (slot was the dead active_basic)
+        mergedCounts[11] = +pgSubRow[2]||0; // expired or cancelled Pro, no active sub
+        mergedCounts[12] = +pgSubRow[1]||0; // lapsed_30d — feeds the 30-day churn KPI
+      } else {
+        mergedCounts[7] = 0; mergedCounts[8] = 0; mergedCounts[11] = 0; mergedCounts[12] = 0;
       }
       const built = {
         counts:      mergedCounts,
+        subsOk:      pgSubRow.length > 0,                          // false → Pro figures render a dash
+        proCancelled: pgSubRow.length ? (+pgSubRow[3]||0) : null,  // subset of counts[11]
         signups:     signups.results  || [],
         payments:    payments.results || [],
         revInr:      Number(revRow[0]||0),
@@ -7732,6 +7954,12 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
         revUsdPayers: Number(revRow[4]||0),
         sources:     sources.results     || [],
         growth:      growth.results      || [],
+        // SYNC: lib/overview.js supplies a real prior-period signup total. This
+        // emergency client path deliberately does not widen its growth scan to a
+        // second window (that scan reads person.properties per event, which is
+        // what exhausted the read budget once), so it reports "no comparable
+        // prior window" and the renderers show the range label instead.
+        prevSignups: null,
         dailyPay:    dailyPay.results    || [],
         todayPay:    todayPay.results   || [],   // [day, cnt, payers, inr, usd] for yest+today (IST)
         sameWin:     (sameWin.results || [])[0] || null,   // [cur, prev] signed-up-AND-paid in window
@@ -7785,12 +8013,28 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     }
     up.classList.add(state === 'stale' ? 'is-stale' : 'is-fresh');
     up.title = '';
-    up.innerHTML = (state === 'stale' ? '<i></i> Updated ' + _ovAgeText(ts || Date.now())
+    up.innerHTML = (state === 'stale' ? '<i></i> Updated ' + hhmm(ts || Date.now()) + ' · ' + _ovAgeText(ts || Date.now())
                                       : '<i></i> Live · ' + hhmm(ts || Date.now()));
   }
   // Budget pause: keep the snapshot, say so honestly, and schedule ONE automatic
   // retry for when the pause window ends (un-forced → cheap edge-cached read).
   let _ovRetryT = null;
+  // The server is already computing this range/view for somebody else, or it has
+  // hit its own hourly recompute cap. Keep what is on screen, keep the honest age
+  // on the pill, and come back for the result. Never fall through to the
+  // client-side query path from here.
+  function _ovComputing(retryIn) {
+    const secs = Math.max(3, retryIn || 8);
+    if (_ovData) renderOvPill('stale', _ovDataTs || Date.now());
+    else {
+      const area = document.getElementById('overviewArea');
+      if (area) area.innerHTML = `<div class="state-box"><div class="spinner sp-blue"></div>
+        <p>Building the overview. This runs once per range, then it is instant.<br>
+        Retrying in ${secs}s.</p></div>`;
+    }
+    clearTimeout(_ovRetryT);
+    _ovRetryT = setTimeout(() => { try { loadOverview(); } catch (_) {} }, secs * 1000);
+  }
   function _ovBudgetPaused(until) {
     if (!_ovData) {
       const area = document.getElementById('overviewArea');
@@ -7827,6 +8071,16 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
   // Implements design/DesktopOverview.dc.html from the same live _ovData.
   const ndIsDesk = () => { try { return matchMedia('(min-width:901px)').matches; } catch(_) { return false; } };
 
+  // ── Pro subscriber figures · one source, one guard ──────────────────
+  // counts[7] / counts[8] / counts[11] / counts[12] come from
+  // nr-overview:pgSubscribers (postgres.subscriptions) and nowhere else. When
+  // that query did not land, the snapshot carries subsOk:false and every Pro
+  // figure renders a dash instead of a zero, so a lagging persons-property
+  // number can never pass for the real one. Snapshots written before this
+  // change carry no flag, so only an explicit false counts as "did not land".
+  function ndSubsOk() { return !(_ovData && _ovData.subsOk === false); }
+  function ndProNum(n) { return ndSubsOk() ? (+n || 0).toLocaleString('en-IN') : ND_PG_DASH; }
+
   // ── shared data shaping (used by desktop + mobile + widgets) ──
   function ndOverviewModel() {
     const c = (_ovData && _ovData.counts) || [];
@@ -7834,16 +8088,19 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
           activePro = +c[7] || 0, newYesterday = +c[9] || 0, newWeekPrev = +c[10] || 0;
     const revInr = +(_ovData && _ovData.revInr) || 0, revUsd = +(_ovData && _ovData.revUsd) || 0;
     const totalRevInr = Math.round(revInr + revUsd * USD_TO_INR);
-    const revPayers = (+(_ovData && _ovData.revPayers) || 0) || activePro;
+    const revPayers = +(_ovData && _ovData.revPayers) || 0;
     const arpu = revPayers ? Math.round(totalRevInr / revPayers) : 0;
     const rangeLabel = tabGdrPreset('overview').label, key = tabGdrKey('overview');
     const growth = ((_ovData && _ovData.growth) || []).map(r => ({ d: r[0], v: +r[1] || 0 }));
-    const rangeSignups = growth.reduce((a, b) => a + b.v, 0) ||
-      (key === 'today' ? newToday : key === 'yest' ? newYesterday : key === '7d' ? newWeek : newProduct);
+    const rangeSignups = growth.reduce((a, b) => a + b.v, 0);
     const payCount = ((_ovData && _ovData.dailyPay) || []).reduce((a, r) => a + (+r[1] || 0), 0);
+    // Prior period comes from the same query as rangeSignups, over the same
+    // number of elapsed days. 0 or missing (old cached snapshot, All time, or the
+    // client fallback path) means no delta, rather than a delta computed off a
+    // different window with different exclusions.
+    const prevSignups = +(_ovData && _ovData.prevSignups) || 0;
     let dPct = null, prevN = null;
-    if (key === 'today' && newYesterday) { dPct = (newToday - newYesterday) / newYesterday * 100; prevN = newYesterday; }
-    else if (key === '7d' && newWeekPrev) { dPct = (newWeek - newWeekPrev) / newWeekPrev * 100; prevN = newWeekPrev; }
+    if (prevSignups) { dPct = (rangeSignups - prevSignups) / prevSignups * 100; prevN = prevSignups; }
     const sw = _ovData && _ovData.sameWin;
     const swCur = sw ? +sw[0] || 0 : null, swPrev = sw ? +sw[1] || 0 : 0;
     const swDelta = (swCur != null && swPrev) ? (swCur - swPrev) / swPrev * 100 : null;
@@ -8106,7 +8363,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       return '<div class="ndc-row"><span class="nd-ini">' + esc(ndIni(name || email)) + '</span>' +
         '<span class="nd-rmid"><b>' + esc(name || email.split('@')[0]) + '</b><s>' + esc(email) + '</s></span>' +
         '<span class="nd-rend"><b>' + esc(planLabel(r[2] || 'free')) + '</b><s>' + ndAgo(r[3]) + '</s></span></div>';
-    }).join('') || '<div class="nd-empty">No signups in this range</div>';
+    }).join('') || '<div class="nd-empty">No signups in the last 21 days</div>';
 
     const payRows = ((_ovData.payments) || []).slice(0, 5).map(r => {
       const email = r[0] || '', amt = +r[4] || 0, cur = r[5];
@@ -8114,7 +8371,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       return '<div class="ndc-row"><span class="nd-rmid"><b>' + esc(email) + '</b><s>' +
         esc(planLabel(r[2] || 'pro')) + ' · ' + ndAgo(r[3]) + '</s></span>' +
         '<span class="nd-rend"><b class="amt">' + amtTxt + '</b></span></div>';
-    }).join('') || '<div class="nd-empty">No payments in this range</div>';
+    }).join('') || '<div class="nd-empty">No payments since 1 May</div>';
 
     area.innerHTML =
       '<div class="ndc nd-s8 ndc-hero">' +
@@ -8130,12 +8387,13 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       '<div class="ndc-kpis">' +
         '<button class="ndc ndc-kpi" onclick="ndOpenDrill(\'payments\')"><span class="nd-lbl">Revenue</span>' +
           '<b>₹' + M.totalRevInr.toLocaleString('en-IN') + '</b><s>' +
-          (M.revUsd > 0 ? '+ $' + Math.round(M.revUsd).toLocaleString('en-US') + ' · ' : '') +
+          (M.revUsd > 0 ? 'incl. $' + Math.round(M.revUsd).toLocaleString('en-US') + ' · ' : '') +
           (M.payCount ? M.payCount.toLocaleString('en-IN') + ' payments' : 'completed') + '</s></button>' +
         '<button class="ndc ndc-kpi" onclick="ndOpenDrill(\'pro\')"><span class="nd-lbl">Active Pro</span>' +
-          '<b>' + M.activePro.toLocaleString('en-IN') + '</b><s>' +
-          (M.newProduct ? (M.activePro / M.newProduct * 100).toFixed(2) : '0') + '% of ' +
-          (M.newProduct >= 1000 ? (M.newProduct / 1000).toFixed(1) + 'K' : M.newProduct) + ' users</s></button>' +
+          '<b>' + ndProNum(M.activePro) + '</b><s>' +
+          (!ndSubsOk() ? 'subscription table unavailable'
+            : (M.newProduct ? (M.activePro / M.newProduct * 100).toFixed(2) : '0') + '% of ' +
+              (M.newProduct >= 1000 ? (M.newProduct / 1000).toFixed(1) + 'K' : M.newProduct) + ' users') + '</s></button>' +
         '<button class="ndc ndc-kpi" onclick="ndOpenDrill(\'pro\')"><span class="nd-lbl">Signed up &amp; paid</span>' +
           '<b>' + (M.swCur == null ? '—' : M.swCur.toLocaleString('en-IN')) + '</b>' +
           '<s class="' + (M.swDelta == null ? '' : M.swDelta >= 0 ? 'up' : 'down') + '">' +
@@ -8152,9 +8410,9 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
           '<div class="nd-prog"><i style="width:' + Math.round(x[1] / chMax * 100) + '%"></i></div></div>').join('')
           || '<div class="nd-empty">No channel data in this range</div>') +
       '</div>' +
-      '<div class="ndc nd-s4 ndc-panel ndc-list"><div class="ndc-ph"><b>Recent signups</b>' +
+      '<div class="ndc nd-s4 ndc-panel ndc-list"><div class="ndc-ph"><b>Recent signups · last 21 days</b>' +
         '<button class="nd-see" onclick="ndOpenDrill(\'signups\')">See all ›</button></div>' + signupRows + '</div>' +
-      '<div class="ndc nd-s4 ndc-panel ndc-list"><div class="ndc-ph"><b>Recent payments</b>' +
+      '<div class="ndc nd-s4 ndc-panel ndc-list"><div class="ndc-ph"><b>Recent payments · since 1 May</b>' +
         '<button class="nd-see" onclick="ndOpenDrill(\'payments\')">See all ›</button></div>' + payRows + '</div>' +
       ndConvCardHtml(true) +
       ndProCardHtml();
@@ -8203,7 +8461,12 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     const c = _ovData.counts || [];
     const newToday = +c[2] || 0, newYest = +c[9] || 0;
     const tp = _ovData.todayPay || [];
-    const yRow = tp.length ? tp[0] : null, tRow = tp.length > 1 ? tp[1] : null;
+    // GROUP BY day only emits days that HAD payments, so tp[0] is not reliably
+    // yesterday: on a day with no payments it is today, and the digest then
+    // reported today's revenue and payers under "Yesterday".
+    const _istD = off => new Date(Date.now() + 5.5 * 3600000 + off * 86400000).toISOString().slice(0, 10);
+    const _tpFind = d => tp.find(r => String(r[0]) === d) || null;
+    const yRow = _tpFind(_istD(-1)), tRow = _tpFind(_istD(0));
     const yRev = yRow ? Math.round((+yRow[3] || 0) + (+yRow[4] || 0) * USD_TO_INR) : null;
     const pausedUntil = (typeof budgetPauseUntil === 'function') && budgetPauseUntil();
     if (pausedUntil) out.push({ tone: 'warn', title: 'PostHog read budget exhausted',
@@ -8337,17 +8600,16 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
           activePro = +c[7] || 0, newYesterday = +c[9] || 0, newWeekPrev = +c[10] || 0;
     const revInr = +_ovData.revInr || 0, revUsd = +_ovData.revUsd || 0;
     const totalRevInr = Math.round(revInr + revUsd * USD_TO_INR);
-    const revPayers = (+_ovData.revPayers || 0) || activePro;
+    const revPayers = +_ovData.revPayers || 0;
     const arpu = revPayers ? Math.round(totalRevInr / revPayers) : 0;
     const rangeLabel = tabGdrPreset('overview').label, key = tabGdrKey('overview');
     const growth = (_ovData.growth || []).map(r => ({ d: r[0], v: +r[1] || 0 }));
-    const rangeSignups = growth.reduce((a, b) => a + b.v, 0) ||
-      (key === 'today' ? newToday : key === 'yest' ? newYesterday : key === '7d' ? newWeek : newProduct);
+    const rangeSignups = growth.reduce((a, b) => a + b.v, 0);
     const payCount = (_ovData.dailyPay || []).reduce((a, r) => a + (+r[1] || 0), 0);
 
+    const prevSignups = +_ovData.prevSignups || 0;
     let dPct = null, prevN = null;
-    if (key === 'today' && newYesterday) { dPct = (newToday - newYesterday) / newYesterday * 100; prevN = newYesterday; }
-    else if (key === '7d' && newWeekPrev) { dPct = (newWeek - newWeekPrev) / newWeekPrev * 100; prevN = newWeekPrev; }
+    if (prevSignups) { dPct = (rangeSignups - prevSignups) / prevSignups * 100; prevN = prevSignups; }
     const dCls = dPct == null ? 'flat' : dPct >= 0 ? 'up' : 'down';
     const dTxt = dPct == null ? rangeLabel : (dPct >= 0 ? '+' : '') + dPct.toFixed(1) + '%';
 
@@ -8390,7 +8652,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       return '<div class="nd-row"><span class="nd-ini">' + esc(ini(name || email)) + '</span>' +
         '<span class="nd-rmid"><b>' + esc(name || email.split('@')[0]) + '</b><s>' + esc(email) + '</s></span>' +
         '<span class="nd-rend"><b>' + esc(planLabel(plan)) + '</b><s>' + ago(r[3]) + '</s></span></div>';
-    }).join('') || '<div class="nd-empty">No signups in this range</div>';
+    }).join('') || '<div class="nd-empty">No signups in the last 21 days</div>';
 
     const payRows = (_ovData.payments || []).slice(0, 4).map(r => {
       const email = r[0] || '', name = r[1] || '', amt = +r[4] || 0, cur = r[5];
@@ -8399,7 +8661,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       return '<div class="nd-row">' +
         '<span class="nd-rmid"><b>' + esc(email || name) + '</b><s>' + esc(planTxt) + ' · ' + ago(r[3]) + '</s></span>' +
         '<span class="nd-rend"><b class="amt">' + amtTxt + '</b></span></div>';
-    }).join('') || '<div class="nd-empty">No payments in this range</div>';
+    }).join('') || '<div class="nd-empty">No payments since 1 May</div>';
 
     area.innerHTML =
       '<div class="nd-card nd-hero">' +
@@ -8416,9 +8678,10 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
           (revUsd > 0 ? 'incl. $' + Math.round(revUsd).toLocaleString('en-US') + ' · ' : '') +
           (payCount ? payCount.toLocaleString('en-IN') + ' payments' : 'completed') + '</s></button>' +
         '<button class="nd-card nd-kpi" onclick="ndOpenDrill(\'pro\')"><span class="nd-lbl">Active Pro</span>' +
-          '<b>' + activePro.toLocaleString('en-IN') + '</b><s>' +
-          (newProduct ? (activePro / newProduct * 100).toFixed(2) : '0') + '% of ' +
-          (newProduct >= 1000 ? (newProduct / 1000).toFixed(1) + 'K' : newProduct) + ' users</s></button>' +
+          '<b>' + ndProNum(activePro) + '</b><s>' +
+          (!ndSubsOk() ? 'subscription table unavailable'
+            : (newProduct ? (activePro / newProduct * 100).toFixed(2) : '0') + '% of ' +
+              (newProduct >= 1000 ? (newProduct / 1000).toFixed(1) + 'K' : newProduct) + ' users') + '</s></button>' +
         '<button class="nd-card nd-kpi" onclick="ndOpenDrill(\'pro\')"><span class="nd-lbl">Signed up &amp; paid</span>' +
           '<b>' + (swCur == null ? '—' : swCur.toLocaleString('en-IN')) + '</b>' +
           '<s class="' + (swDelta == null ? '' : swDelta >= 0 ? 'up' : 'down') + '">' +
@@ -8436,9 +8699,9 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
           '<div class="nd-prog"><i style="width:' + Math.round(x[1] / chMax * 100) + '%"></i></div></div>').join('')
           || '<div class="nd-empty">No channel data in this range</div>') +
       '</div>' +
-      '<div class="nd-card nd-list"><div class="nd-list-h"><b>Recent signups</b>' +
+      '<div class="nd-card nd-list"><div class="nd-list-h"><b>Recent signups · last 21 days</b>' +
         '<button class="nd-see" onclick="ndOpenDrill(\'signups\')">See all ›</button></div>' + signupRows + '</div>' +
-      '<div class="nd-card nd-list"><div class="nd-list-h"><b>Recent payments</b>' +
+      '<div class="nd-card nd-list"><div class="nd-list-h"><b>Recent payments · since 1 May</b>' +
         '<button class="nd-see" onclick="ndOpenDrill(\'payments\')">See all ›</button></div>' + payRows + '</div>' +
       ndConvCardHtml(false) +
       ndOvFootHtml();
@@ -8457,7 +8720,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     if (ndIsDesk()) { try { renderOverviewConsole(); return; } catch(e) { console.warn('console render fell back', e); } }
     const c = _ovData.counts;
     const newProduct = +c[0]||0, newToday = +c[2]||0, newWeek = +c[3]||0, newMonth = +c[4]||0,
-          activePro = +c[7]||0, activeBasic = +c[8]||0,
+          activePro = +c[7]||0,
           newYesterday = +c[9]||0, newWeekPrev = +c[10]||0;
     const revInr = _ovData.revInr, revUsd = _ovData.revUsd;
     const totalRevInr = Math.round(revInr + revUsd * USD_TO_INR);
@@ -8470,9 +8733,11 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     const convGauge   = _gRC ? _gRC.rate    : convPct;
     const gaugeSignups= _gRC ? _gRC.signups : newProduct;
     const gaugePro    = _gRC ? _gRC.pro     : activePro;
-    // ARPU = revenue in range ÷ distinct paying users in range. Old cached
-    // snapshots predate revPayers — fall back to active Pro subs for those.
-    const revPayers = (+_ovData.revPayers || 0) || activePro;
+    // ARPU = revenue in range / distinct paying users in range. No fallback: a
+    // range with no payments has 0 payers, and `||` could not tell a missing
+    // field from a genuine zero, so quiet days reported the active-Pro count as
+    // the payer count.
+    const revPayers = +_ovData.revPayers || 0;
     const arpu = revPayers ? Math.round(totalRevInr/revPayers) : 0;
     const revInrPayers = +_ovData.revInrPayers || 0;
     const revUsdPayers = +_ovData.revUsdPayers || 0;
@@ -8506,10 +8771,10 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     const usersShort = newProduct>=1000 ? (newProduct/1000).toFixed(1)+'K' : String(newProduct);
     const rangeSignups = (_ovData.growth||[]).reduce((a,r)=>a+(+r[1]||0),0);
     const kpis = [
-      okpi('i-users','var(--blue)','New Signups', rangeLabel, rangeSignups.toLocaleString('en-IN'), tabGdrKey('overview')==='7d' ? oDeltaPct(newWeek,newWeekPrev) : ''),
-      okpi('i-star','var(--teal)','Active Pro',`of ${usersShort} users`, activePro.toLocaleString('en-IN'), oDelta(true, convPct.toFixed(2)+'%')),
-      okpi('i-coins','var(--violet)','Revenue', rangeLabel, inrTotal(revInr, revUsd), revUsd>0 ? oDelta(true,'+$'+Math.round(revUsd).toLocaleString('en-US')) : ''),
-      okpi('i-check-circle','var(--indigo)','Paying Users',`₹${arpu.toLocaleString('en-IN')} ARPU`, activePro.toLocaleString('en-IN'), ''),
+      okpi('i-users','var(--blue)','New Signups', rangeLabel, rangeSignups.toLocaleString('en-IN'), oDeltaPct(rangeSignups, +_ovData.prevSignups || 0)),
+      okpi('i-star','var(--teal)','Active Pro',`${convPct.toFixed(2)}% of ${usersShort} users`, activePro.toLocaleString('en-IN'), ''),
+      okpi('i-coins','var(--violet)','Revenue', revUsd>0 ? `${rangeLabel} · incl. $${Math.round(revUsd).toLocaleString('en-US')}` : rangeLabel, inrTotal(revInr, revUsd), ''),
+      okpi('i-check-circle','var(--indigo)','Paying Users',`${rangeLabel} · ₹${arpu.toLocaleString('en-IN')} ARPU`, revPayers.toLocaleString('en-IN'), ''),
     ].join('');
 
     // Growth chart
@@ -8564,7 +8829,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
         <span class="ov-card-title"><svg class="ic-sm"><use href="#i-coins"/></svg> Revenue</span>
         <span class="ov-card-note">${revCardNote}</span></div>
         <div class="rev-big">${inrTotal(revInr, revUsd)}</div>
-        <div class="rev-cap">completed payments · USD converted at ₹${USD_TO_INR}/$</div>
+        <div class="rev-cap">completed payments · USD converted at ${fxNote()}</div>
         <div class="rev-tiles">
           <div class="rev-tile"><div class="rt-num">₹${Math.round(revInr).toLocaleString('en-IN')}</div><div class="rt-label">INR paid</div></div>
           <div class="rev-tile"><div class="rt-num">$${Math.round(revUsd).toLocaleString('en-US')}</div><div class="rt-label">USD paid</div></div>
@@ -8573,10 +8838,13 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
         </div></div>`;
 
     // Plan mix donut
-    const freeCount = Math.max(0, newProduct - activePro - activeBasic);
+    // Plan mix donut. There is no Basic plan in this product (postgres holds
+    // only free, resume-builder-pro and full-pro), so the third slice was always
+    // a zero-width wedge with a legend row reading 0. Free is everyone who is
+    // not an active Pro.
+    const freeCount = Math.max(0, newProduct - activePro);
     const planParts = [
       { label: 'Free',  value: freeCount,   color: 'var(--border-strong)' },
-      { label: 'Basic', value: activeBasic, color: 'var(--teal)' },
       { label: 'Pro',   value: activePro,   color: 'var(--violet)' },
     ];
     const planTotal = planParts.reduce((a,p)=>a+p.value,0) || 1;
@@ -8625,18 +8893,18 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     // have a clean prior-period count for Today (vs yesterday) and 7d (vs the
     // previous 7d); for other ranges show the range label instead of a delta
     // that doesn't correspond to the number above it.
-    const _nsRange = tabGdrKey('overview');
-    const nsDelta = _nsRange==='today' ? sDelta(newToday, newYesterday)
-                  : _nsRange==='7d'    ? sDelta(newWeek, newWeekPrev)
-                  : '';
-    const nsSub = nsDelta ? 'vs previous period' : tabGdrPreset('overview').label;
+    // One delta definition: this range's signups against the same number of
+    // elapsed days immediately before it, from the same query.
+    const _nsPrev = +_ovData.prevSignups || 0;
+    const nsDelta = _nsPrev ? sDelta(rangeSignups, _nsPrev) : '';
+    const nsSub = nsDelta ? `vs ${_nsPrev.toLocaleString('en-IN')} in the previous period` : tabGdrPreset('overview').label;
     const kpis2=[
       kpi('New signups', rangeSignups.toLocaleString('en-IN'), nsDelta, nsSub, 'acquire', 'Unique users who completed signup in this range. Click for acquisition channels.'),
       kpi('Gross revenue', inrTotal(revInr,revUsd), '',
         `₹${Math.round(revInr).toLocaleString('en-IN')} INR` +
         (revUsd>0?` + $${Math.round(revUsd).toLocaleString('en-US')} USD`:'') +
         (arpu?` · avg ₹${arpu.toLocaleString('en-IN')}/payer`:''),
-        'revenue', 'Completed Pro payments in this range. INR and USD collected separately; total shown in INR at ₹'+USD_TO_INR+'/$. Avg = revenue ÷ distinct paying users in this range. Click for revenue analytics.'),
+        'revenue', 'Completed Pro payments in this range. INR and USD collected separately; total shown in INR at ' + fxNote() + '. Avg = revenue ÷ distinct paying users in this range. Click for revenue analytics.'),
       kpi('Active Pro subscribers', activePro.toLocaleString('en-IN'), '', `${convPct.toFixed(2)}% of ${usersShort} users`, 'pro', 'Users on an active Pro subscription right now. Click for the list.'),
       (() => {
         const sw = _ovData.sameWin;                    // [cur, prev] or null (old cache)
@@ -8691,7 +8959,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     }).join('') || `<div class="panel-empty">No cohort data</div>`;
     const convPeriodCard=`<div class="nb-card nb-full"><div class="nb-cardh"><div>
         <div class="nb-t">Pro-plan rate by period</div>
-        <div class="nb-note">signup cohort · share of each window's signups now on a Pro plan</div></div></div>
+        <div class="nb-note">signup cohort · share of each window's signups with a live Pro subscription today</div></div></div>
       <div class="nb-ranks cvp">${convRows}</div>
       <div class="nb-note cvp-foot">Recent short windows read low because upgrades lag signup by days. Compare against last month and all-time for a settled rate.</div></div>`;
 
@@ -8710,16 +8978,16 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
 
     // render live ApexCharts
     (window._ovCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}}); window._ovCharts=[];
-    setTimeout(()=>{
-      if(!window.ApexCharts) return;
+    setTimeout(function nrOvApex(){
+      if(!window.ApexCharts) return void nrApexQ(nrOvApex,'ov');
       const DK=ndIsDark();
       const BLUE='#0065F4', GRN='#0f7a3d';
-      const AX={chart:{toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:'rgba(10,10,10,.55)',animations:{enabled:true,speed:900}},grid:{borderColor:'#ededea',strokeDashArray:0},tooltip:{theme:DK?'dark':'light'}};
+      const AX={chart:{toolbar:{show:false},zoom:{enabled:false},fontFamily:'Plus Jakarta Sans',foreColor:'rgba(10,10,10,.55)',animations:{enabled:true,speed:900}},grid:{borderColor:'#ededea',strokeDashArray:0},tooltip:{theme:DK?'dark':'light'}};
       const push=(sel,opt)=>{const el=document.querySelector(sel);if(!el)return;const ch=new ApexCharts(el,opt);ch.render();window._ovCharts.push(ch);};
       // gauge — the whole element carries the state: amber arc + amber value when below goal (B2)
       const below = convGauge < 5;
       const stateCol = !below ? GRN : '#b45309';
-      push('#nbGauge',{chart:{type:'radialBar',height:210,fontFamily:'IBM Plex Mono',animations:{enabled:true,speed:1100}},series:[goalPct],plotOptions:{radialBar:{startAngle:-120,endAngle:120,hollow:{size:'60%'},track:{background:'#efefec'},dataLabels:{name:{show:true,offsetY:20,color:'#8a8a92',fontSize:'11px',fontFamily:'General Sans'},value:{offsetY:-12,fontSize:'26px',fontWeight:700,color:stateCol,formatter:()=>convGauge.toFixed(2)+'%'}}}},colors:[stateCol],stroke:{lineCap:'round'},labels:['vs 5% goal']});
+      push('#nbGauge',{chart:{type:'radialBar',height:210,fontFamily:'IBM Plex Mono',animations:{enabled:true,speed:1100}},series:[goalPct],plotOptions:{radialBar:{startAngle:-120,endAngle:120,hollow:{size:'60%'},track:{background:'#efefec'},dataLabels:{name:{show:true,offsetY:20,color:'#8a8a92',fontSize:'11px',fontFamily:'Plus Jakarta Sans'},value:{offsetY:-12,fontSize:'26px',fontWeight:700,color:stateCol,formatter:()=>convGauge.toFixed(2)+'%'}}}},colors:[stateCol],stroke:{lineCap:'round'},labels:['vs 5% goal']});
       // daily line — zero-baseline y-axis so the chart doesn't dramatise (A3)
       push('#nbLine',{...AX,chart:{...AX.chart,type:'area',height:230},series:[{name:'Signups',data:dailyVals}],stroke:{curve:'smooth',width:3,colors:[BLUE]},fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.32,opacityTo:0,stops:[0,95]}},colors:[BLUE],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},xaxis:{categories:dailyCats,axisBorder:{show:false},axisTicks:{show:false},labels:{style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}}},yaxis:{min:0,labels:{formatter:v=>v>=1000?(v/1000).toFixed(1)+'k':Math.round(v),style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}}}});
     }, 30);
@@ -10947,7 +11215,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
                   const breakdownStr = u.payCount > 1 && parts
                     ? parts.replace(/(\d+) INR/g,'₹$1').replace(/(\d+) USD/g,'$$1')
                     : (planDuration(u.paidPlan)||'');
-                  const tooltip = `${u.payCount||1} payment${(u.payCount||1)>1?'s':''}` + (u.revUsd?` · ₹${Math.round(u.revInr).toLocaleString('en-IN')} + $${Math.round(u.revUsd)} (≈₹${USD_TO_INR}/$)`:'');
+                  const tooltip = `${u.payCount||1} payment${(u.payCount||1)>1?'s':''}` + (u.revUsd?` · ₹${Math.round(u.revInr).toLocaleString('en-IN')} + $${Math.round(u.revUsd)} (${fxNote()})`:'');
                   return `<span class="paid-val" title="${h(tooltip)}">${inrTotal(u.revInr||0, u.revUsd||0)}<span class="paid-sub">${breakdownStr||'&nbsp;'}</span></span>`;
                 })()
               : `<span class="paid-val paid-none">—</span>`}
@@ -10999,7 +11267,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
             <div class="infl-metric"><span class="m-num m-rose">${r.referrals}</span><span class="m-lbl">Referrals</span></div>
             <div class="infl-metric"><span class="m-num">${r.pro}</span><span class="m-lbl">On Pro</span></div>
             <div class="infl-metric"><span class="m-num ${cvCls}">${r.convRate}%</span><span class="m-lbl">Conv.</span></div>
-            <div class="infl-metric" title="${r.revenueUsd>0?`₹${Math.round(r.revenue).toLocaleString('en-IN')} + $${Math.round(r.revenueUsd).toLocaleString('en-US')} @ ₹${USD_TO_INR}/$`:'Referral revenue'}"><span class="m-num ${(r.revenue>0||r.revenueUsd>0)?'cv-good':''}">${inrTotal(r.revenue, r.revenueUsd)}</span><span class="m-lbl">Revenue</span></div>
+            <div class="infl-metric" title="${r.revenueUsd>0?`₹${Math.round(r.revenue).toLocaleString('en-IN')} + $${Math.round(r.revenueUsd).toLocaleString('en-US')} @ ${fxNote()}`:'Referral revenue'}"><span class="m-num ${(r.revenue>0||r.revenueUsd>0)?'cv-good':''}">${inrTotal(r.revenue, r.revenueUsd)}</span><span class="m-lbl">Revenue</span></div>
             <svg class="ic infl-chevron"><use href="#i-chevron-down"/></svg>
           </div>
           <div class="infl-conv-track" title="${r.convRate}% of referrals converted to Pro"><div class="infl-conv-fill ${cvCls}" style="width:${Math.max(r.convRate,2)}%"></div></div>
@@ -11951,13 +12219,20 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     // Total reconciled to the Overview figure: Pro revenue since the 1 May relaunch.
     const totalRev = rows.filter(r=>r[0] >= '2026-05').reduce((a,r)=>a+monthRev(r),0);
     const payingUsers = _ovData ? (+_ovData.counts[6]||0) : 0;
+    // Pro sub state only means anything when the postgres.subscriptions query
+    // landed. Snapshots from before this change carry no flag, so only an
+    // explicit false suppresses these KPIs.
+    const subsOk      = ndSubsOk();
     const activeProC  = _ovData ? (+_ovData.counts[7]||0) : 0;
     const expiredProC = _ovData ? (+_ovData.counts[11]||0) : 0;
+    // counts[12] is now genuinely "Pro subs whose end_date fell in the last 30
+    // days". It used to be a copy of the all-time expired total, which made the
+    // 30-day churn KPI below report lifetime churn under a 30-day label.
     const lapsed30    = _ovData ? (+_ovData.counts[12]||0) : 0;
-    const retentionPct = (activeProC + expiredProC) ? (activeProC/(activeProC+expiredProC)*100) : null;
+    const retentionPct = (subsOk && (activeProC + expiredProC)) ? (activeProC/(activeProC+expiredProC)*100) : null;
     // Approx monthly churn: Pro subs that lapsed in the last 30 days ÷ subs active
     // at the start of that window (≈ active now + those that lapsed).
-    const churnPct = (activeProC + lapsed30) ? (lapsed30/(activeProC+lapsed30)*100) : null;
+    const churnPct = (subsOk && (activeProC + lapsed30)) ? (lapsed30/(activeProC+lapsed30)*100) : null;
 
     const momChip = momPct===null ? '' :
       `<span style="color:${momPct>=0?'var(--green)':'var(--red)'}">${momPct>=0?'▲':'▼'} ${Math.abs(momPct).toFixed(1)}% vs last month</span>`;
@@ -11981,17 +12256,17 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       <div class="rev-kpi rk-teal" title="Active Pro ÷ (active + expired) Pro subscriptions">
         <div class="rev-kpi-num">${retentionPct===null?'—':retentionPct.toFixed(0)+'%'}</div>
         <div class="rev-kpi-label">Pro Retention</div>
-        <div class="rev-kpi-sub">${activeProC} active · ${expiredProC} lapsed</div>
+        <div class="rev-kpi-sub">${subsOk ? activeProC + ' active · ' + expiredProC + ' expired' : 'subscription table unavailable'}</div>
       </div>
       <div class="rev-kpi rk-red" title="Pro subs that lapsed in the last 30 days ÷ subs active at the start of the window">
         <div class="rev-kpi-num">${churnPct===null?'—':churnPct.toFixed(1)+'%'}</div>
         <div class="rev-kpi-label">30-Day Churn</div>
-        <div class="rev-kpi-sub">${lapsed30} lapsed in last 30d</div>
+        <div class="rev-kpi-sub">${subsOk ? lapsed30 + ' lapsed in last 30d' : 'subscription table unavailable'}</div>
       </div>
-      <div class="rev-kpi rk-amber" title="Distinct users with at least one successful Pro payment since 1 May 2026. Higher than Active Pro because some have since lapsed or were one-off.">
+      <div class="rev-kpi rk-amber" title="Signed-up users who have a live Pro subscription in postgres.subscriptions. This is the acquisition-side count, so it only covers users with a signup event in the last 400 days.">
         <div class="rev-kpi-num">${payingUsers.toLocaleString('en-IN')}</div>
-        <div class="rev-kpi-label">Paying Users</div>
-        <div class="rev-kpi-sub">Successful payment since 1 May</div>
+        <div class="rev-kpi-label">Pro Subscribers</div>
+        <div class="rev-kpi-sub">Live Pro subscription · signup cohort</div>
       </div>
     </div>`;
 
@@ -12030,7 +12305,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     const monthLbls = chartRows.map(r=>MN[parseInt(r[0].slice(5),10)] || r[0].slice(5));
     const chartCard = `<div class="ov-card"><div class="ov-card-head">
         <span class="ov-card-title"><svg class="ic-sm"><use href="#i-coins"/></svg> Monthly revenue</span>
-        <span class="ov-card-note">INR equiv · ≈₹${USD_TO_INR}/$</span></div>
+        <span class="ov-card-note">INR equiv · ${fxNote()}</span></div>
         <div id="revMonthlyChart" style="margin:6px -6px -8px"></div></div>`;
 
     // Conversion funnel (percentages clamped to 100 — cohort denominators can
@@ -12161,19 +12436,19 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
 
     // live ApexCharts (revenue trend + plan donut)
     (window._revCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}}); window._revCharts=[];
-    setTimeout(()=>{
-      if(!window.ApexCharts) return;
+    setTimeout(function nrRevApex(){
+      if(!window.ApexCharts) return void nrApexQ(nrRevApex,'rev');
       const DK=ndIsDark();
       const BLUE='#0065F4';
       const fmtInr=v=>v>=100000?'₹'+(v/100000).toFixed(1)+'L':v>=1000?'₹'+(v/1000).toFixed(0)+'k':'₹'+Math.round(v);
       const put=(sel,opt)=>{const el=document.querySelector(sel);if(!el)return;const ch=new ApexCharts(el,opt);ch.render();window._revCharts.push(ch);};
-      put('#revMonthlyChart',{chart:{type:'area',height:220,toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:'rgba(10,10,10,.55)',animations:{enabled:true,speed:900}},
+      put('#revMonthlyChart',{chart:{type:'area',height:220,toolbar:{show:false},zoom:{enabled:false},fontFamily:'Plus Jakarta Sans',foreColor:'rgba(10,10,10,.55)',animations:{enabled:true,speed:900}},
         series:[{name:'Revenue',data:monthVals}],stroke:{curve:'smooth',width:3,colors:[BLUE]},
         fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.32,opacityTo:0,stops:[0,95]}},colors:[BLUE],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},
         grid:{borderColor:'#ededea',strokeDashArray:0},tooltip:{theme:DK?'dark':'light',y:{formatter:fmtInr}},
         xaxis:{categories:monthLbls,axisBorder:{show:false},axisTicks:{show:false},labels:{style:{fontSize:'11px'}}},
         yaxis:{labels:{formatter:fmtInr,style:{fontSize:'11px'}}}});
-      if(document.querySelector('#revPlanDonut')) put('#revPlanDonut',{chart:{type:'donut',height:260,fontFamily:'General Sans',animations:{enabled:true,speed:900}},
+      if(document.querySelector('#revPlanDonut')) put('#revPlanDonut',{chart:{type:'donut',height:260,fontFamily:'Plus Jakarta Sans',animations:{enabled:true,speed:900}},
         series:planData,labels:planLbls,colors:['oklch(0.60 0.185 260)','oklch(0.60 0.19 277)','oklch(0.60 0.205 292)','oklch(0.68 0.125 218)','oklch(0.68 0.115 205)','oklch(0.72 0.10 190)'],
         stroke:{width:0},dataLabels:{enabled:false},legend:{position:'bottom',labels:{colors:DK?'rgba(240,243,250,.7)':'rgba(17,23,38,.7)'},fontSize:'12px',markers:{width:9,height:9}},
         tooltip:{theme:DK?'dark':'light',y:{formatter:fmtInr}},
@@ -12776,7 +13051,11 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
 
   window.addEventListener('DOMContentLoaded', () => {
     renderRecentChips();
-    fetchFxRate();
+    // FX: this paint already uses the 6-hour localStorage cache or the fallback,
+    // and nothing awaits the live lookup — its result only lands on the next
+    // render, exactly as before. So it has no business competing with
+    // /api/overview for a connection at boot. Idle it.
+    (window.requestIdleCallback || function (f) { return setTimeout(f, 1200); })(initFx);
     initBucketView();
     if (!cfg('apiKey')) { openSettings(); return; }
     // Honour URL hash — lets "Open in New Tab" land on the right tab
@@ -12804,6 +13083,20 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       const active = document.querySelector('.page.active');
       if (active) autoFetch(active.id.replace('page-', ''));
     });
+  });
+
+  // Splash release. A second DOMContentLoaded listener rather than a line inside
+  // the handler above, because that handler has early returns (no API key →
+  // openSettings, and the hash-route branch) that a single call site would miss,
+  // and because listeners are independent: this still fires even if that handler
+  // throws. Registered here, fired after it. loadOverview() paints the snapshot
+  // synchronously before its first await, so two rAFs land after the frame that
+  // actually shows it. __nrSplashDone is defined by the splash block further
+  // down the document, which parses before DOMContentLoaded fires.
+  window.addEventListener('DOMContentLoaded', () => {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      try { window.__nrSplashDone && window.__nrSplashDone(); } catch (_) {}
+    }));
   });
 
   /* ══ toast ══ */
@@ -12904,24 +13197,29 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
   // desktop only: the spec puts this card on the 12-col console at span 5.
   function ndProCardHtml() {
     const c = (_ovData && _ovData.counts) || [];
-    const activePro = +c[7] || 0, activeBasic = +c[8] || 0, expiredPro = +c[11] || 0, users = +c[0] || 0;
-    const pct = users ? activePro / users * 100 : null;
+    const subsOk = ndSubsOk();
+    const activePro = +c[7] || 0, lapsed30 = +c[8] || 0, expiredPro = +c[11] || 0, users = +c[0] || 0;
+    const pct = (subsOk && users) ? activePro / users * 100 : null;
     const pctTxt = pct == null ? '–' : pct.toFixed(2) + '%';
     // bar is scaled 10x so a ~1% share stays readable, exactly as the
     // prototype renders it (1.23% share drawn as a 12.2% fill). The label
     // and caption both carry the true figure.
     const barW = pct == null ? 0 : Math.min(100, Math.max(2, pct * 10));
-    const cap = users
-      ? 'active Pro · ' + pctTxt + ' of ' + users.toLocaleString('en-IN')
-      : 'active Pro · total users unavailable';
-    const tiles = [[activePro, 'Active Pro'], [activeBasic, 'Active Basic'], [expiredPro, 'Expired Pro']];
+    const cap = !subsOk
+      ? 'active Pro · subscription table unavailable'
+      : users
+        ? 'active Pro · ' + pctTxt + ' of ' + users.toLocaleString('en-IN')
+        : 'active Pro · total users unavailable';
+    // No Basic plan exists in this product, so the middle tile now carries the
+    // 30-day lapse count — the figure the churn KPI is built on.
+    const tiles = [[activePro, 'Active Pro'], [lapsed30, 'Lapsed 30d'], [expiredPro, 'Expired Pro']];
     let tHtml = '';
     for (let i = 0; i < tiles.length; i++) {
-      tHtml += '<div class="nd-pro-t"><b>' + tiles[i][0].toLocaleString('en-IN') +
+      tHtml += '<div class="nd-pro-t"><b>' + ndProNum(tiles[i][0]) +
         '</b><s>' + tiles[i][1] + '</s></div>';
     }
     return '<div class="ndc nd-s5 nd-pro">' +
-        '<div class="nd-pro-top"><span class="nd-pro-n">' + activePro.toLocaleString('en-IN') + '</span>' +
+        '<div class="nd-pro-top"><span class="nd-pro-n">' + ndProNum(activePro) + '</span>' +
           '<span class="nd-pro-c">' + h(cap) + '</span></div>' +
         '<div class="nd-pro-bar">' +
           '<div class="nd-pro-bl"><b>Pro share of all users</b><s>' + pctTxt + '</s></div>' +
@@ -12936,7 +13234,8 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
   // topbar uses at index.html:6947, so it is never a hard-coded figure.
   function ndOvFootHtml() {
     return '<div class="nd-foot">PostHog project ' + h(cfg('projectId') || '399417') +
-      ' · Asia/Kolkata · internal and test accounts excluded</div>';
+      ' · Asia/Kolkata · internal and test accounts excluded' +
+      ' · USD converted at ' + h(fxNote()) + '</div>';
   }
 
   /* ══ chart-bars ══ */
@@ -13302,18 +13601,20 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
   function ndDrillPro() {
     var esc = function(s) { return h(s == null ? '' : s); };
     var c = (_ovData && _ovData.counts) || [];
-    var users = +c[0] || 0, pro = +c[7] || 0, basic = +c[8] || 0, expired = +c[11] || 0;
-    var share = users ? pro / users * 100 : 0;
+    var subsOk = ndSubsOk();
+    var users = +c[0] || 0, pro = +c[7] || 0, lapsed = +c[8] || 0, expired = +c[11] || 0;
+    var hasShare = subsOk && users > 0;
+    var share = hasShare ? pro / users * 100 : 0;
     var head = '<div class="nd-dcard nd-dpad20">' +
-      '<div class="nd-dbig"><b>' + pro.toLocaleString('en-IN') + '</b><s>active Pro' +
-        (users ? ' · ' + share.toFixed(2) + '% of ' + users.toLocaleString('en-IN') + ' users' : '') + '</s></div>' +
+      '<div class="nd-dbig"><b>' + ndProNum(pro) + '</b><s>active Pro' +
+        (hasShare ? ' · ' + share.toFixed(2) + '% of ' + users.toLocaleString('en-IN') + ' users' : '') + '</s></div>' +
       '<div class="nd-dbar"><div class="cap"><span>Pro share of all users</span><span>' +
-        (users ? share.toFixed(2) + '%' : 'no user total yet') + '</span></div>' +
-        '<div class="nd-prog"><i style="width:' + (users ? Math.max(1, Math.min(100, share)) : 0) + '%"></i></div></div>' +
+        (hasShare ? share.toFixed(2) + '%' : (subsOk ? 'no user total yet' : 'subscription table unavailable')) + '</span></div>' +
+        '<div class="nd-prog"><i style="width:' + (hasShare ? Math.max(1, Math.min(100, share)) : 0) + '%"></i></div></div>' +
       '<div class="nd-dstats">' +
-        '<div class="nd-dstat"><b>' + pro.toLocaleString('en-IN') + '</b><s>Active Pro</s></div>' +
-        '<div class="nd-dstat"><b>' + basic.toLocaleString('en-IN') + '</b><s>Active Basic</s></div>' +
-        '<div class="nd-dstat"><b>' + expired.toLocaleString('en-IN') + '</b><s>Expired Pro</s></div></div></div>';
+        '<div class="nd-dstat"><b>' + ndProNum(pro) + '</b><s>Active Pro</s></div>' +
+        '<div class="nd-dstat"><b>' + ndProNum(lapsed) + '</b><s>Lapsed 30d</s></div>' +
+        '<div class="nd-dstat"><b>' + ndProNum(expired) + '</b><s>Expired Pro</s></div></div></div>';
     var periods = (_ovData && _ovData.convByPeriod) || [];
     var rows = periods.map(function(p) {
       var rate = +p.rate || 0;
@@ -13692,7 +13993,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     var rv  = _revData || {};
     var pr  = rv.periodRev || [0, 0, 0, 0];
     var cnt = +pr[0] || 0, payers = +pr[1] || 0, inr = +pr[2] || 0, usd = +pr[3] || 0;
-    var rate     = (typeof USD_TO_INR === 'number') ? USD_TO_INR : 84;
+    var rate     = USD_TO_INR;   // one rate for the whole app, set from /api/fx
     var totalInr = Math.round(inr + usd * rate);
     var arpu     = payers ? Math.round(totalInr / payers) : null;
     var rl       = ndPgRangeLabel('revenue');
@@ -13714,7 +14015,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     });
 
     return {
-      blurb: 'Completed Razorpay and Stripe payments in the window. INR and USD stay separate; only ARPU combines them at ₹' + rate + ' per $1.',
+      blurb: 'Completed Razorpay and Stripe payments in the window. INR and USD stay separate; only ARPU combines them at ' + fxNote() + '.',
       kpis: [
         { l: 'INR',  v: '₹' + ndPgNum(Math.round(inr)), d: ndPgNum(cnt) + ' payment' + (cnt === 1 ? '' : 's') },
         { l: 'USD',  v: '$' + ndPgNum(Math.round(usd)),      d: ndPgNum(payers) + ' payer' + (payers === 1 ? '' : 's') },
@@ -13793,10 +14094,12 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
   /* ── 8 · Pro Users ── source: _ovData.counts + _proRows */
   function ndPgPro(){
     var counts = (_ovData && _ovData.counts) || [];
+    var subsOk      = ndSubsOk();
     var totalUsers  = +counts[0]  || 0;
     var activePro   = +counts[7]  || 0;
-    var activeBasic = +counts[8]  || 0;
+    var lapsed30    = +counts[8]  || 0;
     var expiredPro  = +counts[11] || 0;
+    var cancelled   = (_ovData && _ovData.proCancelled != null) ? +_ovData.proCancelled : null;
     var pl = function(p){ return (typeof planLabel === 'function') ? planLabel(p) : String(p || ''); };
     var rows = (_proRows || []).slice()
       .sort(function(a, b){ return String(b.startDate || '').localeCompare(String(a.startDate || '')); })
@@ -13808,11 +14111,13 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
         ] };
       });
     return {
-      blurb: 'Subscription state from postgres.users, live.',
+      blurb: subsOk
+        ? 'Pro subscription state from postgres.subscriptions, live. Distinct users, not subscription rows.'
+        : 'Pro subscription state is unavailable: the postgres.subscriptions query did not return for this snapshot.',
       kpis: [
-        { l: 'Active Pro',   v: ndPgNum(activePro),   d: totalUsers ? (activePro / totalUsers * 100).toFixed(2) + '% of users' : 'of all users' },
-        { l: 'Active Basic', v: ndPgNum(activeBasic), d: 'on the free plan' },
-        { l: 'Expired Pro',  v: ndPgNum(expiredPro),  d: 'not renewed' }
+        { l: 'Active Pro',  v: subsOk ? ndPgNum(activePro)  : null, d: (subsOk && totalUsers) ? (activePro / totalUsers * 100).toFixed(2) + '% of users' : 'of all users' },
+        { l: 'Lapsed 30d',  v: subsOk ? ndPgNum(lapsed30)   : null, d: 'Pro subs that ended in the last 30 days' },
+        { l: 'Expired Pro', v: subsOk ? ndPgNum(expiredPro) : null, d: (subsOk && cancelled != null) ? ndPgNum(cancelled) + ' of them cancelled' : 'expired or cancelled, no active sub' }
       ],
       sections: [{
         title: 'Recent Pro', cols: ['Plan', 'Started'], rows: rows,
@@ -13874,6 +14179,11 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     var manual = (typeof manualTotals === 'function' && d.startD)
       ? manualTotals(d.startD, d.endD) : { budget: 0, views: 0, likes: 0, comments: 0, shares: 0 };
     var budget = view === 'influencer' ? manual.budget : view === 'perf' ? perfSpend : manual.budget + perfSpend;
+    // Creator budgets are manual KV entries. When none exist for the range the
+    // sum is 0, and 0 here means "not entered", not "spent nothing". Any view
+    // that depends on them marks its spend incomplete and refuses to derive
+    // ROAS or CAC from it. Perf is unaffected: its spend comes from the ad tables.
+    var spendUnknown = view !== 'perf' && ndCreatorSpendMissing(manual.budget);
     var signups = +d.signups || 0, sales = +d.sales || 0, payers = +d.payers || 0;
     var posts = (_creatorData || []).filter(function (e) {
       return d.startD && e.date >= d.startD && e.date < d.endD;
@@ -13884,8 +14194,9 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       rangeLabel: tabGdrPreset('report').label,
       signups: signups, sales: sales, payers: payers, inr: inr, usd: usd, revenue: revenue,
       budget: budget, perfSpend: perfSpend, manual: manual, posts: posts,
+      spendUnknown: spendUnknown, creatorSpendNote: ndCreatorSpendNote(),
       conv: signups ? sales / signups * 100 : null,
-      cac: sales ? budget / sales : null,
+      cac: (sales && !spendUnknown) ? budget / sales : null,
       google: google, meta: meta, compare: d.compare || null,
       creators: d.creators || null, creatorRev: d.creatorRev || null,
       startD: d.startD, endD: d.endD
@@ -13907,19 +14218,20 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       var PW = "user_email NOT LIKE '%@nextraise.ai' AND user_email NOT LIKE '%@creditdharma.in' AND lower(user_email) NOT LIKE '%test%'";
       var mapR = await runHogQL(
         "SELECT code, em FROM ( SELECT person_id, " +
-        "argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS code, " +
+        "ifNull(argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!=''), '') AS code, " +
         "lower(argMaxIf(toString(person.properties.email), timestamp, person.properties.email!='')) AS em, " +
         "max(event='payment_completed') AS paid " +
         "FROM events WHERE " + EXCL +
         " AND timestamp >= " + tabGdrStart('report') + " AND timestamp < " + tabGdrEnd('report') +
         " AND person_id IN (" + bucketPersonSet('influencer', sd) + ") GROUP BY person_id ) " +
-        "WHERE code != '' AND em != '' AND paid = 1 LIMIT 2000"
+        "WHERE em != '' AND paid = 1 LIMIT 2000"
       ).catch(function () { return { results: [] }; });
       var codeByEmail = {}, emails = [];
       (mapR.results || []).forEach(function (r) {
-        var code = r[0], em = r[1];
-        if (!code || !em) return;
-        if (!codeByEmail[em]) { codeByEmail[em] = code; emails.push(em); }
+        // '' is a real bucket key now, so test for presence, not truthiness.
+        var code = r[0] == null ? '' : String(r[0]), em = r[1];
+        if (!em) return;
+        if (codeByEmail[em] === undefined) { codeByEmail[em] = code; emails.push(em); }
       });
       var revByCode = {};
       for (var i = 0; i < emails.length; i += 200) {
@@ -13934,7 +14246,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
         ).catch(function () { return { results: [] }; });
         (payR.results || []).forEach(function (r) {
           var code = codeByEmail[r[0]];
-          if (!code) return;
+          if (code === undefined) return;
           revByCode[code] = (revByCode[code] || 0) + Math.round((+r[1] || 0) + (+r[2] || 0) * USD_TO_INR);
         });
       }
@@ -13947,15 +14259,27 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
   }
 
   function ndReportKpis(M) {
-    var roas = ndRoasTxt(M.revenue, M.budget);
+    // A spend total missing its creator half cannot produce an honest ROAS or
+    // CAC, so both fall back to a dash and say what they are waiting on rather
+    // than quoting a ratio built on an unentered zero.
+    var roas = M.spendUnknown ? null : ndRoasTxt(M.revenue, M.budget);
+    var spendV = M.spendUnknown
+      ? (M.view === 'influencer' ? '—' : ndInr(M.perfSpend))
+      : ndInr(M.budget);
+    var spendD = M.spendUnknown
+      ? (M.view === 'influencer' ? 'creator budgets not entered' : 'Google + Meta only · creator budgets not entered')
+      : (M.view === 'overall' ? 'creators + ads' : M.view === 'perf' ? 'Google + Meta' : 'creator budgets');
+    var ratioD = M.spendUnknown ? 'needs creator spend'
+      : M.cac == null ? 'no sales in range'
+      : ndInr(M.cac) + ' per sale';
     return [
       { l: 'Signups', v: ndNum(M.signups), d: 'in ' + M.rangeLabel.toLowerCase(), c: '' },
       { l: 'Sales', v: ndNum(M.sales), d: M.payers ? ndNum(M.payers) + ' payers' : 'completed payments', c: '' },
       { l: 'Conv', v: M.conv == null ? '—' : M.conv.toFixed(2) + '%', d: 'signup → paid', c: '' },
       { l: 'Revenue', v: ndInr(M.revenue), d: ndInr(M.inr) + ' + $' + Math.round(M.usd), c: '' },
-      { l: 'Spend', v: ndInr(M.budget), d: M.view === 'overall' ? 'creators + ads' : M.view === 'perf' ? 'Google + Meta' : 'creator budgets', c: '' },
-      { l: 'ROAS · CAC', v: roas || '—', d: M.cac == null ? 'no sales in range' : ndInr(M.cac) + ' per sale',
-        c: ndRoasCls(M.revenue, M.budget) }
+      { l: 'Spend', v: spendV, d: spendD, c: '' },
+      { l: 'ROAS · CAC', v: roas || '—', d: ratioD,
+        c: M.spendUnknown ? 'mute' : ndRoasCls(M.revenue, M.budget) }
     ];
   }
 
@@ -13971,6 +14295,12 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
         if (codes.indexOf(e.code) < 0) codes.push(e.code);
       });
       codes.forEach(function (code) {
+        // '' is the no-first-touch-campaign bucket, rendered as its own row below.
+        // In Overall view the keyword campaign is rendered once in the campaign
+        // block instead, with its spend attached, so it is skipped here to stop
+        // the same campaign id appearing as both a creator and a campaign.
+        if (code === '') return;
+        if (M.view === 'overall' && code === BUCKET_KW_CAMPAIGN) return;
         var a = autoMap[code] || { signups: 0, sales: 0 };
         var m = manualForCode(code, M.startD, M.endD);
         var label = ndCreatorLabel(code);
@@ -13978,14 +14308,35 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
           signups: +a.signups || 0, sales: +a.sales || 0, spend: m.budget,
           revenue: rev ? (rev[code] || 0) : null });
       });
+      // The untagged bucket: real signups inside this attribution bucket that
+      // carry no utm_campaign on first touch. They are inside the Signups KPI
+      // above, so they are shown under an honest label rather than dropped.
+      // There is no creator behind them, so spend stays null and ROAS dashes.
+      var untagged = autoMap[''];
+      if (untagged && ((+untagged.signups || 0) || (+untagged.sales || 0))) {
+        rows.push({ kind: 'untagged', name: 'Direct or organic',
+          code: 'no utm_campaign on first touch', platform: '',
+          signups: +untagged.signups || 0, sales: +untagged.sales || 0,
+          spend: null, revenue: rev ? (rev[''] || 0) : null });
+      }
     }
     if (M.view === 'perf' || M.view === 'overall') {
+      // The keyword campaign lives in the influencer bucket, so the per-creator
+      // query already returned its signups and sales. Reuse them here instead of
+      // firing another query or leaving the row's cells blank. No extra reads.
+      var kwAuto = null;
+      if (M.view === 'overall') {
+        (M.creators || []).forEach(function (c) { if (c.code === BUCKET_KW_CAMPAIGN) kwAuto = c; });
+      }
       (M.google || []).forEach(function (r) {
         if (M.view === 'perf' && r.cid === BUCKET_KW_CAMPAIGN) return;
         var kw = r.cid === BUCKET_KW_CAMPAIGN;
         rows.push({ kind: 'campaign', name: kw ? 'Keyword search' : 'Google · ' + r.cid,
           code: kw ? r.cid + ' · budget routed to influencer' : 'Google Ads · ' + r.cid,
-          signups: null, sales: null, spend: +r.spend || 0, revenue: null });
+          signups: kw && kwAuto ? (+kwAuto.signups || 0) : null,
+          sales: kw && kwAuto ? (+kwAuto.sales || 0) : null,
+          spend: +r.spend || 0,
+          revenue: kw && rev ? (rev[BUCKET_KW_CAMPAIGN] || 0) : null });
       });
       if ((+M.meta.spend || 0) > 0) {
         rows.push({ kind: 'campaign', name: 'Meta · all ad sets', code: 'Meta Ads · aggregate',
@@ -14005,6 +14356,10 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
   // Creator display name + platform for a utm/referral code, from the KV
   // entries and the loaded influencer rows. Falls back to the raw code.
   function ndCreatorLabel(code) {
+    // The keyword campaign is a Google campaign, not a creator. In Influencer
+    // view it still belongs in the creator table (that is its bucket), so give
+    // it a readable name instead of falling back to the bare campaign id.
+    if (code === BUCKET_KW_CAMPAIGN) return { name: 'Keyword search', platform: 'Google Ads' };
     var lc = String(code || '').toLowerCase(), name = '', platform = '';
     (_creatorData || []).forEach(function (e) {
       if (String(e.code || '').toLowerCase() !== lc) return;
@@ -14060,13 +14415,18 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
             '<span>Engagement <strong>' + (eng == null ? '—' : eng.toFixed(1) + '%') + '</strong></span>' +
             '<span>Cost per view <strong>' + (cpv == null ? '—' : '₹' + cpv.toFixed(3)) + '</strong></span>' +
           '</div>' +
-          (mt.views ? '' : '<div class="nd-rep-note">No post entries logged for this range. Add them with Influencer data.</div>') +
+          (mt.views ? '' : '<div class="nd-rep-note">' + h(_creatorKvOk
+            ? 'No post entries logged for this range. Add them with Add post data on the Creators screen.'
+            : 'The manual entry store is not reachable, so views, budget, engagement and cost per view are unknown for this range.') + '</div>') +
         '</div>';
     }
 
     var compare = '';
     if (M.view === 'overall' && M.compare) {
       var inf = M.compare.influencer, pf = M.compare.perf;
+      // inf.spend is the manual creator budget sum. Missing entries make it 0,
+      // which must not be printed as a spend figure or fed into CAC or ROAS.
+      var infUnknown = ndCreatorSpendMissing(inf.spend);
       var cRow = function (label, a, b) {
         return '<div class="nd-rep-cmp-r"><span>' + label + '</span><span>' + a + '</span><span>' + b + '</span></div>';
       };
@@ -14074,12 +14434,13 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
         '<div class="ndc nd-rep-cmp">' +
           '<div class="nd-rep-sh"><b>Influencer vs Perf</b></div>' +
           '<div class="nd-rep-cmp-h"><span></span><span class="infl">Influencer</span><span class="perf">Perf</span></div>' +
-          cRow('Spend', ndInr(inf.spend), ndInr(pf.spend)) +
+          cRow('Spend', infUnknown ? ndDash() : ndInr(inf.spend), ndInr(pf.spend)) +
           cRow('Signups', ndNum(inf.signups), ndNum(pf.signups)) +
           cRow('Sales', ndNum(inf.sales), ndNum(pf.sales)) +
           cRow('Revenue', ndInr(inf.revenue), ndInr(pf.revenue)) +
-          cRow('CAC', inf.sales ? ndInr(inf.spend / inf.sales) : ndDash(), pf.sales ? ndInr(pf.spend / pf.sales) : ndDash()) +
-          cRow('ROAS', ndRoasTxt(inf.revenue, inf.spend) || ndDash(), ndRoasTxt(pf.revenue, pf.spend) || ndDash()) +
+          cRow('CAC', (inf.sales && !infUnknown) ? ndInr(inf.spend / inf.sales) : ndDash(), pf.sales ? ndInr(pf.spend / pf.sales) : ndDash()) +
+          cRow('ROAS', (infUnknown ? null : ndRoasTxt(inf.revenue, inf.spend)) || ndDash(), ndRoasTxt(pf.revenue, pf.spend) || ndDash()) +
+          (infUnknown ? '<div class="nd-rep-note">' + h(M.creatorSpendNote) + '</div>' : '') +
         '</div>';
     }
 
@@ -14091,6 +14452,8 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       var roas = ndRoasTxt(r.revenue, r.spend);
       var tap = r.kind === 'creator'
         ? 'switchTab(\'influencers\')'
+        : r.kind === 'untagged'
+        ? 'ndToastSafe(\'Signups with no utm_campaign on first touch. The Acquire screen has the source and medium split.\')'
         : 'ndToastSafe(\'Campaign detail lives in Google Ads and Meta Ads Manager\')';
       return '<button class="nd-tblr nd-rep-cols" onclick="' + tap + '">' +
         '<span class="nd-tbl-name"><b>' + h(r.name) + '</b><s>' + h(r.code) + '</s></span>' +
@@ -14106,9 +14469,13 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       notes.push(hasRev
         ? 'Creator ROAS uses revenue from payments by users whose first UTM campaign matches the code.'
         : 'Per-creator revenue has not loaded, so creator ROAS shows a dash.');
+      if (rows.some(function (r) { return r.kind === 'untagged'; })) {
+        notes.push('The Direct or organic row holds signups in this bucket that carry no utm_campaign on first touch. They are counted in the Signups total above and cannot be attributed to a creator.');
+      }
+      if (M.spendUnknown) notes.push(M.creatorSpendNote);
     }
     if (M.view !== 'influencer') {
-      notes.push('Campaign rows carry spend from Google Ads and Meta Ads. Per-campaign signups, sales and revenue are not attributed yet, so those cells show a dash.');
+      notes.push('Google and Meta rows carry spend only. Apart from the keyword campaign, per-campaign signups, sales and revenue are not attributed yet, so those cells show a dash.');
     }
 
     var table =
@@ -14121,7 +14488,8 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
 
     var foot = '<div class="nd-rep-foot">PostHog project ' + h(cfg('projectId') || '399417') +
       ' · Asia/Kolkata · internal and test accounts excluded. Ad spend from googleads_campaign_stats and metaads_ad_stats. ' +
-      'Creator budgets and social counts from the manual Influencer data entries.</div>';
+      'Creator budgets and social counts from the manual Influencer data entries. ' +
+      'Revenue and ROAS combine INR and USD at ' + h(fxNote()) + '.</div>';
 
     area.innerHTML = head + social + compare + table + foot;
 
@@ -14170,7 +14538,8 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     var kpis = [
       { l: 'Creators', v: ndNum(model.length), s: total !== model.length ? 'of ' + ndNum(total) + ' total' : 'with referrals in range' },
       { l: 'Signups', v: ndNum(sumSig), s: 'referred users in range' },
-      { l: 'ROAS', v: roasAll || '—', s: sumBud ? ndInr(sumRev) + ' on ' + ndInr(sumBud) : 'no creator budget logged' }
+      { l: 'ROAS', v: roasAll || '—', s: sumBud ? ndInr(sumRev) + ' on ' + ndInr(sumBud)
+          : ndInr(sumRev) + ' revenue · ' + (_creatorKvOk ? 'no creator budget entered' : 'budget store unreachable') }
     ].map(function (k) {
       return '<div class="ndc nd-crt-kpi"><span class="nd-lbl">' + h(k.l) + '</span>' +
         '<b>' + k.v + '</b><s>' + h(k.s) + '</s></div>';
@@ -14206,7 +14575,8 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     }).join('') : '<div class="nd-empty">No creators match the current filters</div>';
 
     var note = sumBud ? '' :
-      '<div class="nd-rep-note">Views and budget come from the manual Influencer data entries. None are logged for this range, so those columns show a dash.</div>';
+      '<div class="nd-rep-note">' + h('Views and budget come from the manual Add post data entries. ' +
+        ndCreatorSpendNote('creator spend and ROAS')) + '</div>';
 
     area.innerHTML = kpis +
       '<div class="ndc nd-crt-tbl">' +
@@ -14317,9 +14687,14 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
                : BUCKET_VIEW === 'perf' ? perfSpend
                : manual.budget + perfSpend;
     var conv = d.signups ? d.sales / d.signups * 100 : 0;
-    var roas = budget ? revenue / budget : null;
-    var cac = d.sales && budget ? budget / d.sales : null;
-    var spendSub = BUCKET_VIEW === 'influencer' ? 'creator budgets'
+    // Same rule as the desktop report: a missing creator budget is unknown, not
+    // zero, so spend, ROAS and CAC read a dash instead of a derived number.
+    var spendUnknown = BUCKET_VIEW !== 'perf' && ndCreatorSpendMissing(manual.budget);
+    var roas = (budget && !spendUnknown) ? revenue / budget : null;
+    var cac = (d.sales && budget && !spendUnknown) ? budget / d.sales : null;
+    var spendSub = spendUnknown
+                 ? (BUCKET_VIEW === 'influencer' ? 'creator budgets not entered' : 'Google + Meta only · creator budgets not entered')
+                 : BUCKET_VIEW === 'influencer' ? 'creator budgets'
                  : BUCKET_VIEW === 'perf' ? 'Google + Meta' : 'creators + ads';
 
     var tile = function (l, v, m) {
@@ -14331,8 +14706,8 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       tile('Sales', _nf(d.sales), _nf(d.payers) + ' payers') +
       tile('Conv', conv.toFixed(2) + '%', 'signup → paid') +
       tile('Revenue', ndmInr(revenue), (+d.usd ? ndmInr(d.inr) + ' + $' + _nf(Math.round(d.usd)) : 'completed')) +
-      tile('Spend', ndmInr(budget), spendSub) +
-      tile('ROAS · CAC', ndmRoasTxt(roas), cac == null ? 'no spend or sales' : ndmInr(cac) + ' per sale') +
+      tile('Spend', (spendUnknown && BUCKET_VIEW === 'influencer') ? '—' : ndmInr(spendUnknown ? perfSpend : budget), spendSub) +
+      tile('ROAS · CAC', ndmRoasTxt(roas), cac == null ? (spendUnknown ? 'needs creator spend' : 'no spend or sales') : ndmInr(cac) + ' per sale') +
       '</div></div>';
 
     // Creator content (hidden in Perf, and only when the manual entries carry it)
@@ -14359,16 +14734,19 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       var row = function (lbl, a, b) {
         return '<div class="r"><span>' + h(lbl) + '</span><span>' + a + '</span><span>' + b + '</span></div>';
       };
-      var cacOf = function (b) { return b.sales ? ndmInr(b.spend / b.sales) : '—'; };
-      var roasOf = function (b) { return b.spend ? (b.revenue / b.spend).toFixed(2) + '×' : '—'; };
+      // inf.spend is the manual creator budget sum, so 0 can mean "not entered".
+      var infUnknown = ndCreatorSpendMissing(inf.spend);
+      var cacOf = function (b, unknown) { return (b.sales && !unknown) ? ndmInr(b.spend / b.sales) : '—'; };
+      var roasOf = function (b, unknown) { return (b.spend && !unknown) ? (b.revenue / b.spend).toFixed(2) + '×' : '—'; };
       cmp = '<div class="nd-card ndm-cmp"><div class="hd">Influencer vs Perf</div>' +
         '<div class="r hh"><span></span><span>Influencer</span><span>Perf</span></div>' +
-        row('Spend', ndmInr(inf.spend), ndmInr(pf.spend)) +
+        row('Spend', infUnknown ? '—' : ndmInr(inf.spend), ndmInr(pf.spend)) +
         row('Signups', _nf(inf.signups), _nf(pf.signups)) +
         row('Sales', _nf(inf.sales), _nf(pf.sales)) +
         row('Revenue', ndmInr(inf.revenue), ndmInr(pf.revenue)) +
-        row('CAC', cacOf(inf), cacOf(pf)) +
-        row('ROAS', roasOf(inf), roasOf(pf)) + '</div>';
+        row('CAC', cacOf(inf, infUnknown), cacOf(pf, false)) +
+        row('ROAS', roasOf(inf, infUnknown), roasOf(pf, false)) +
+        (infUnknown ? '<div class="ndm-note">' + h(ndCreatorSpendNote()) + '</div>' : '') + '</div>';
     }
 
     // Table: name/code · Spend · Sales · ROAS
@@ -14396,7 +14774,8 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       : ' Per-row ROAS needs revenue by creator, which the report query only returns for All time, so it reads — here.';
     host.innerHTML = head + social + cmp + tbl +
       '<div class="ndm-note">PostHog project 399417 · Asia/Kolkata · internal and test accounts excluded. ' +
-      'Creator budgets and social counts are manual entries.' + roasNote + '</div>';
+      'Creator budgets and social counts are manual entries.' + roasNote +
+      ' Revenue and ROAS combine INR and USD at ' + h(fxNote()) + '.</div>';
   }
 
   function ndmReportRows(d) {
@@ -14413,7 +14792,24 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       }
       var seen = {};
       var cs = d.creators || [];
-      for (i = 0; i < cs.length; i++) if (cs[i].code) seen[cs[i].code] = cs[i];
+      // code '' is the no-utm_campaign bucket. The old truthy test dropped it
+      // from a table whose Signups tile counts it, so it is kept under an honest
+      // label instead. No creator behind it, so spend and ROAS stay null.
+      var kwAuto = null;
+      for (i = 0; i < cs.length; i++) {
+        var cc = cs[i].code == null ? '' : String(cs[i].code);
+        if (cc === '') {
+          if ((+cs[i].signups || 0) || (+cs[i].sales || 0)) {
+            out.push({ kind: 'untagged', name: 'Direct or organic',
+              sub: 'no utm_campaign · ' + _nf(cs[i].signups) + ' signups',
+              spend: null, sales: cs[i].sales, roas: null });
+          }
+          continue;
+        }
+        // Overall view renders the keyword campaign once, in the campaign block.
+        if (BUCKET_VIEW === 'overall' && cc === BUCKET_KW_CAMPAIGN) { kwAuto = cs[i]; continue; }
+        seen[cc] = cs[i];
+      }
       var man = (typeof _creatorData !== 'undefined' && _creatorData) ? _creatorData : [];
       for (i = 0; i < man.length; i++) {
         var e = man[i];
@@ -14432,9 +14828,13 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     if (BUCKET_VIEW === 'perf' || BUCKET_VIEW === 'overall') {
       var g = (d.google || []).filter(function (x) { return BUCKET_VIEW === 'perf' ? x.cid !== BUCKET_KW_CAMPAIGN : true; });
       for (i = 0; i < g.length; i++) {
-        out.push({ kind: 'campaign', name: 'Google · ' + g[i].cid,
-          sub: _nf(g[i].clicks) + ' clicks · ' + _nf(g[i].impr) + ' impressions',
-          spend: g[i].spend, sales: null, roas: null });
+        // kwAuto is set above in Overall view: the keyword campaign sits in the
+        // influencer bucket, so its signups and sales are already in hand.
+        var isKw = g[i].cid === BUCKET_KW_CAMPAIGN;
+        out.push({ kind: 'campaign', name: isKw ? 'Keyword search' : 'Google · ' + g[i].cid,
+          sub: ((isKw && kwAuto) ? _nf(kwAuto.signups) + ' signups · ' : '') +
+            _nf(g[i].clicks) + ' clicks · ' + _nf(g[i].impr) + ' impressions',
+          spend: g[i].spend, sales: (isKw && kwAuto) ? kwAuto.sales : null, roas: null });
       }
       if (d.meta && d.meta.spend) {
         out.push({ kind: 'campaign', name: 'Meta · all ads',
@@ -14572,7 +14972,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       }).join('') || '<div class="nd-empty">No lookups yet. Search a name, email or plan above.</div>';
 
       var ov = (typeof _ovData !== 'undefined') ? _ovData : null;
-      var proN = ov && ov.counts ? (+ov.counts[7] || 0) : null;
+      var proN = (ov && ov.counts && ndSubsOk()) ? (+ov.counts[7] || 0) : null;
       var inflN = null;
       if (ov && ov.sources) {
         inflN = ov.sources.reduce(function (s, row) {
@@ -14809,15 +15209,30 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
   }
 
   /* ---- CREATOR DATA (manual influencer metrics) ---- */
-  var _creatorData = null, _creatorLoaded = false;
+  var _creatorData = null, _creatorLoaded = false, _creatorKvOk = true;
   async function fetchCreatorData(force) {
     if (_creatorLoaded && !force) return _creatorData;
     try {
       const r = await fetch('/api/creator-data', { cache: 'no-store' });
       const j = await r.json();
       _creatorData = j.entries || [];
-    } catch (_) { _creatorData = []; }
+      // api/creator-data answers kv:false when the Vercel KV store is not
+      // provisioned. Without this flag an unreachable store is indistinguishable
+      // from "no budgets entered", and every creator spend figure silently
+      // reads 0 as though nothing had been spent.
+      _creatorKvOk = j.kv !== false;
+    } catch (_) { _creatorData = []; _creatorKvOk = false; }
     _creatorLoaded = true; return _creatorData;
+  }
+  // True when creator spend is UNKNOWN for a range, as opposed to genuinely zero.
+  function ndCreatorSpendMissing(budget) { return !_creatorKvOk || !(+budget > 0); }
+  // One sentence saying why creator spend is missing, for a screen showing a dash.
+  // `what` names only the figures that screen actually renders.
+  function ndCreatorSpendNote(what) {
+    var w = what || 'creator spend, ROAS and CAC';
+    return _creatorKvOk
+      ? 'No creator budgets have been entered for this range, so ' + w + ' cannot be calculated.'
+      : 'Creator budgets are unavailable: the manual entry store is not reachable, so ' + w + ' cannot be calculated.';
   }
   async function saveCreatorEntry(entry) {
     const r = await fetch('/api/creator-data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entry) });
@@ -14848,8 +15263,57 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
   async function fetchCeoReport() {
     const area = document.getElementById('reportArea'); if (!area) return;
     if (typeof updateTabGdrBtn === 'function') updateTabGdrBtn('report');
-    if (!cfg('apiKey')) { area.innerHTML = stateBox(null,'Add your PostHog key in Settings to load data.','sp-blue'); return; }
     if (!_reportData) area.innerHTML = stateBox(null,'Loading report…','sp-blue');
+    // Fast path: server-precomputed, edge-cached, keyless — same contract as the
+    // Overview. This moves 7 client HogQL queries off the browser (11 in Overall
+    // view), including the two unbounded person.properties scans the compare
+    // panel used to run. ndReportCreatorRevenue() below still queries PostHog
+    // from the browser for the per-creator ROAS column; with no key it is
+    // caught and that column renders as dashes.
+    // Falls through to the client-side path below ONLY on 503 (no server key)
+    // or on a server error.
+    try {
+      const api = await fetchScreenFromAPI('report', _tabRanges['report'] || '7d', _tabCustom['report'], _bypassQueryCache);
+      if (api) {
+        await fetchCreatorData();                 // manual creator budgets live in KV, not PostHog
+        const rate = USD_TO_INR;                  // the USD rate stays a client concern
+        _reportData = {
+          signups: +api.signups || 0, sales: +api.sales || 0, payers: +api.payers || 0,
+          inr: +api.inr || 0, usd: +api.usd || 0,
+          google: api.google || [], meta: api.meta || { spend:0, impr:0, clicks:0 },
+          startD: api.startD, endD: api.endD,
+          creators: api.creators || [],
+          trend: {
+            signups: (api.trend && api.trend.signups) || [],
+            revenue: ((api.trend && api.trend.revenueParts) || []).map(p => [p[0], (+p[1]||0) + (+p[2]||0) * rate]),
+          },
+          compare: null,
+        };
+        if (BUCKET_VIEW === 'overall' && api.bucket) {
+          const googleSpendExclKw = (_reportData.google||[]).filter(r=>r.cid!==BUCKET_KW_CAMPAIGN).reduce((a,r)=>a+r.spend,0);
+          const manualT = manualTotals(_reportData.startD, _reportData.endD);
+          const bI = api.bucket.influencer || {}, bP = api.bucket.perf || {};
+          _reportData.compare = {
+            influencer: { signups:+bI.signups||0, sales:+bI.sales||0,
+              revenue: Math.round((+bI.inr||0) + (+bI.usd||0)*rate), spend: manualT.budget },
+            perf:       { signups:+bP.signups||0, sales:+bP.sales||0,
+              revenue: Math.round((+bP.inr||0) + (+bP.usd||0)*rate), spend: googleSpendExclKw + (_reportData.meta.spend||0) },
+          };
+        }
+        _reportLoaded = true;
+        renderCeoReport();
+        renderReportSections();
+        if (typeof ndReportCreatorRevenue === 'function') ndReportCreatorRevenue();
+        return;
+      }
+    } catch (e) {
+      if (e && e.name === 'BudgetPausedError') {
+        if (!_reportData) area.innerHTML = stateBox(null,'PostHog read budget is exhausted. Showing the last snapshot.','sp-blue');
+        return;
+      }
+      /* any other server error → the client-side query path below */
+    }
+    if (!cfg('apiKey')) { area.innerHTML = stateBox(null,'Add your PostHog key in Settings to load data.','sp-blue'); return; }
     try {
       const sd = tabGdrPreset('report').scanDays;
       const startD = tabGdrStartDate('report'), endD = tabGdrEndDate('report');
@@ -14877,14 +15341,14 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
         // 1. Per-creator: signups + sales by utm_campaign (influencer persons only)
         runHogQL(`SELECT code, count() AS signups, sum(paid) AS sales FROM (
           SELECT person_id,
-            argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!='') AS code,
+            ifNull(argMaxIf(toString(person.properties.$initial_utm_campaign), timestamp, person.properties.$initial_utm_campaign!=''), '') AS code,
             max(event='payment_completed') AS paid,
             max(event='signup_complete') AS signed
           FROM events
           WHERE ${EXCL} AND timestamp >= ${tabGdrStart('report')} AND timestamp < ${tabGdrEnd('report')}
             AND person_id IN (${bucketPersonSet('influencer', sd)})
           GROUP BY person_id
-        ) WHERE code != '' AND signed=1 GROUP BY code ORDER BY signups DESC LIMIT 100`).catch(()=>({results:[]})),
+        ) WHERE signed=1 GROUP BY code ORDER BY signups DESC LIMIT 100`).catch(()=>({results:[]})),
         // 2a. Daily signups trend
         runHogQL(`SELECT toDate(toTimeZone(timestamp,'Asia/Kolkata')) AS d, count(DISTINCT person_id) AS n
           FROM events WHERE event='signup_complete' AND ${EXCL}
@@ -14922,7 +15386,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
 
       const [creatorsR, trendSuR, trendRevR, ...cmpRaw] = await Promise.all([...extraQueries, ...compareQueries]);
 
-      _reportData.creators = (creatorsR.results||[]).map(r=>({code:r[0], signups:+r[1]||0, sales:+r[2]||0}));
+      _reportData.creators = (creatorsR.results||[]).map(r=>({code:r[0]==null?'':String(r[0]), signups:+r[1]||0, sales:+r[2]||0}));
       _reportData.trend = {
         signups: (trendSuR.results||[]).map(r=>[r[0], +r[1]||0]),
         revenue: (trendRevR.results||[]).map(r=>[r[0], +r[1]||0]),
@@ -15042,14 +15506,17 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       const rows = [...allCodes].map(code => {
         const auto = autoMap.get(code) || { signups:0, sales:0 };
         const m = manualForCode(code, startD, endD);
-        return { code, budget:m.budget, views:m.views, likes:m.likes, comments:m.comments, shares:m.shares,
+        // '' is the no-first-touch-campaign bucket, not a creator. Label it so
+        // the fallback table cannot print an empty or "null" first cell either.
+        const label = (code === '' || code == null) ? 'Direct or organic (no utm_campaign)' : String(code);
+        return { code, label, budget:m.budget, views:m.views, likes:m.likes, comments:m.comments, shares:m.shares,
                  signups:auto.signups, sales:auto.sales,
                  conv: auto.signups ? (auto.sales/auto.signups*100) : 0,
                  cps: auto.signups && m.budget ? m.budget/auto.signups : null };
       }).sort((a,b)=>b.signups-a.signups);
 
       const tbody = rows.map(r=>`<tr>
-        <td style="font-weight:600">${h(r.code)}</td>
+        <td style="font-weight:600">${h(r.label || r.code)}</td>
         <td style="text-align:right">${r.budget ? inrFmt(r.budget) : '<span style="color:var(--text-3)">—</span>'}</td>
         <td style="text-align:right">${r.views ? _nf(r.views) : '<span style="color:var(--text-3)">—</span>'}</td>
         <td style="text-align:right">${r.likes ? _nf(r.likes) : '<span style="color:var(--text-3)">—</span>'}</td>
@@ -15165,8 +15632,8 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     // Destroy any prior trend chart, then render
     (window._reportCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}});
     window._reportCharts = [];
-    setTimeout(()=>{
-      if (!window.ApexCharts) return;
+    setTimeout(function nrReportApex(){
+      if (!window.ApexCharts) return void nrApexQ(nrReportApex,'report');
       const trendEl = document.getElementById('reportTrendChart');
       if (!trendEl) return;
       const DK2 = ndIsDark();
@@ -15177,7 +15644,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       const revData = (trend&&trend.revenue||[]).map(p=>({x:p[0], y:p[1]}));
       const ch = new ApexCharts(trendEl, {
         chart:{ type:'area', height:240, toolbar:{show:false}, zoom:{enabled:false},
-          fontFamily:'General Sans', foreColor:'rgba(10,10,10,.55)',
+          fontFamily:'Plus Jakarta Sans', foreColor:'rgba(10,10,10,.55)',
           animations:{enabled:true,speed:900} },
         series:[
           {name:'Signups', data:suData},
@@ -15412,8 +15879,22 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
   async function fetchInsights(){
     const area=document.getElementById('insightsArea'); if(!area) return;
     if(typeof updateTabGdrBtn==='function') updateTabGdrBtn('insights');
-    if(!cfg('apiKey')){ area.innerHTML=stateBox(null,'Add your PostHog key in Settings to load data.','sp-blue'); return; }
     if(!_insData) area.innerHTML=stateBox(null,'Loading funnel…','sp-blue');
+    // Fast path: server-precomputed, edge-cached, keyless. The client-side funnel
+    // below is a 400-day unfiltered events scan reading person.properties — the
+    // exact query class that took the project down on the read budget. It is now
+    // the fallback for a server with no key, not the normal path.
+    try{
+      const api = await fetchScreenFromAPI('insights', _tabRanges['insights'] || '7d', _tabCustom['insights'], _bypassQueryCache);
+      if (api && Array.isArray(api.funnel)) { _insData = api.funnel; _insLoaded = true; renderInsights(); return; }
+    }catch(e){
+      if (e && e.name === 'BudgetPausedError') {
+        if(!_insData) area.innerHTML=stateBox(null,'PostHog read budget is exhausted. Try again shortly.','sp-blue');
+        return;
+      }
+      /* any other server error → the client-side funnel below */
+    }
+    if(!cfg('apiKey')){ area.innerHTML=stateBox(null,'Add your PostHog key in Settings to load data.','sp-blue'); return; }
     try{
       const start=tabGdrStartDate('insights'), end=tabGdrEndDate('insights');
       // ORDERED funnel (matches PostHog): each step must happen AFTER the previous, in
@@ -15617,9 +16098,9 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
         <div class="nb-leg"><span><i style="background:var(--green)"></i>New</span><span><i style="background:var(--blue)"></i>Returning</span></div></div>
         <div id="lifeChart" style="margin:6px -6px -8px"></div></div>`;
     (window._lifCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}}); window._lifCharts=[];
-    setTimeout(()=>{ if(!window.ApexCharts) return; const el=document.querySelector('#lifeChart'); if(!el) return;
+    setTimeout(function nrLifeApex(){ if(!window.ApexCharts) return void nrApexQ(nrLifeApex,'life'); const el=document.querySelector('#lifeChart'); if(!el) return;
       const DK=ndIsDark(), BLUE=DK?'#8FA3FF':'#0065F4', GRN=DK?'#4BD69B':'#0f7a3d';
-      const ch=new ApexCharts(el,{chart:{type:'bar',height:240,stacked:true,toolbar:{show:false},fontFamily:'General Sans',foreColor:'rgba(10,10,10,.55)',animations:{enabled:true,speed:900}},
+      const ch=new ApexCharts(el,{chart:{type:'bar',height:240,stacked:true,toolbar:{show:false},fontFamily:'Plus Jakarta Sans',foreColor:'rgba(10,10,10,.55)',animations:{enabled:true,speed:900}},
         series:[{name:'New',data:lNew},{name:'Returning',data:lRet}],colors:[GRN,BLUE],
         plotOptions:{bar:{borderRadius:6,columnWidth:'56%',borderRadiusApplication:'end'}},dataLabels:{enabled:false},legend:{show:false},
         grid:{borderColor:'#ededea',strokeDashArray:0},tooltip:{theme:DK?'dark':'light'},
@@ -15900,8 +16381,29 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
   var _dlyLoaded=false, _dlyData=null;
   async function fetchDaily(){
     const area=document.getElementById('dailyArea'); if(!area) return;
-    if(!cfg('apiKey')){ area.innerHTML=stateBox(null,'Add your PostHog key in Settings.','sp-blue'); return; }
     if(!_dlyData) area.innerHTML=stateBox(null,'Loading daily metrics…','sp-blue');
+    // Fast path: server-precomputed, edge-cached, keyless. Daily is a rolling
+    // 30-day window and ignores the range selector, so the range key is a
+    // constant — every visitor shares ONE cache entry per attribution view
+    // instead of one per range preset.
+    try{
+      const api = await fetchScreenFromAPI('daily', 'fixed30', null, _bypassQueryCache);
+      if (api && api.ev) {
+        const rate = USD_TO_INR;   // server returns INR and USD separately; we apply our own rate
+        _dlyData = {
+          ev: api.ev,
+          pay: (api.pay||[]).map(r => [r[0], (+r[1]||0) + (+r[2]||0)*rate, +r[3]||0]),
+        };
+        _dlyLoaded = true; renderDaily(); return;
+      }
+    }catch(e){
+      if (e && e.name === 'BudgetPausedError') {
+        if(!_dlyData) area.innerHTML=stateBox(null,'PostHog read budget is exhausted. Try again shortly.','sp-blue');
+        return;
+      }
+      /* any other server error → the client-side queries below */
+    }
+    if(!cfg('apiKey')){ area.innerHTML=stateBox(null,'Add your PostHog key in Settings.','sp-blue'); return; }
     try{
       // Bucket attribution: events query is a simple FROM events, so append bucketPersonFilter.
       // Payments query is email-keyed (postgres.payments), so append bucketEmailFilter.
@@ -15964,9 +16466,9 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       <div class="ocard" style="margin-top:16px;"><div class="ocard-h"><div class="ocard-t">Daily breakdown</div></div>
         <div style="padding:8px 20px 16px;"><table style="width:100%"><thead><tr><th style="text-align:left">Day</th><th style="text-align:right">Signups</th><th style="text-align:right">Activations</th><th style="text-align:right">Payments</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
     (window._dlyCharts||[]).forEach(c=>{try{c.destroy()}catch(_){}}); window._dlyCharts=[];
-    setTimeout(()=>{ if(!window.ApexCharts) return; const el=document.querySelector('#dailyChart'); if(!el) return;
+    setTimeout(function nrDailyApex(){ if(!window.ApexCharts) return void nrApexQ(nrDailyApex,'daily'); const el=document.querySelector('#dailyChart'); if(!el) return;
       const DK=ndIsDark(), BLUE=DK?'#8FA3FF':'#0065F4', GRN=DK?'#4BD69B':'#0f7a3d';
-      const ch=new ApexCharts(el,{chart:{type:'area',height:260,toolbar:{show:false},zoom:{enabled:false},fontFamily:'General Sans',foreColor:'rgba(10,10,10,.55)',animations:{enabled:true,speed:900}},
+      const ch=new ApexCharts(el,{chart:{type:'area',height:260,toolbar:{show:false},zoom:{enabled:false},fontFamily:'Plus Jakarta Sans',foreColor:'rgba(10,10,10,.55)',animations:{enabled:true,speed:900}},
         series:[{name:'Signups',data:dSign},{name:'Activated',data:dAct}],stroke:{curve:'smooth',width:[3,2.5],colors:[BLUE,GRN]},
         fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.3,opacityTo:0,stops:[0,95]}},colors:[BLUE,GRN],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},legend:{show:false},
         grid:{borderColor:'#ededea',strokeDashArray:0},tooltip:{theme:DK?'dark':'light'},
@@ -16031,7 +16533,20 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       if(window.__nrLaunched) return; window.__nrLaunched=1;
       var o=document.createElement('div'); o.id='nrLaunch';
       o.innerHTML='<div class="nrl-mark"><svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M135.74 93.1967C135.74 111.376 135.345 126.295 134.95 126.295C134.456 126.295 133.566 123.924 132.875 121.058C129.516 106.436 116.869 89.2447 102.346 79.7599C95.0344 74.9187 83.376 70.4727 75.472 69.4847C73.002 69.1883 69.544 68.6943 67.8644 68.3979L64.604 67.9039L64.4064 84.0083L64.11 100.113L48.1044 100.409L32 100.607V120.367V140.127H48.302H64.604V120.268V100.31L69.3464 101.002C75.3732 101.792 84.858 106.436 90.5884 111.475C96.22 116.415 101.654 126.888 102.543 134.594L103.235 140.127H135.345H167.356L167.158 100.31L166.862 60.5927L151.35 60.2963L135.74 59.9999V93.1967Z" fill="#fff"/></svg></div><div class="nrl-word">Next<span>Raise</span></div><div class="nrl-bar"><i></i></div>';
-      var mount=function(){ if(document.body){ document.body.appendChild(o); setTimeout(function(){ o.classList.add('hide'); setTimeout(function(){ o.remove(); }, 460); }, 1250); } else { requestAnimationFrame(mount); } };
+      /* The splash is fixed, opaque and z-index 99999, so it IS the user's first
+         paint. On a 1250ms timer it hid a 549ms boot and capped every speed-up at
+         zero visible gain. Hide it the frame after the first screen actually
+         paints instead. MIN keeps it from flashing on a fast warm load; CAP is
+         the old timer, kept as a ceiling so the worst case is today's behaviour.
+         The mounted flag matters: without it a release that somehow ran before
+         the overlay was appended would leave a permanently hidden #nrLaunch node
+         in the DOM. If that ever happened we fall back to CAP, which is today. */
+      var MIN=420, CAP=1250, t0=Date.now(), gone=false, mounted=false;
+      var bye=function(){ if(gone||!mounted) return; gone=true;
+        setTimeout(function(){ o.classList.add('hide'); setTimeout(function(){ o.remove(); }, 460); },
+          Math.max(0, MIN-(Date.now()-t0))); };
+      window.__nrSplashDone=bye;
+      var mount=function(){ if(document.body){ document.body.appendChild(o); mounted=true; setTimeout(bye, CAP); } else { requestAnimationFrame(mount); } };
       mount();
     }catch(e){}
   })();

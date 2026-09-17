@@ -189,7 +189,7 @@ loading / refreshing: boolean
 toast: string|null
 tick: number               // minute counter for the Live badge
 ```
-Derivation notes: all figures come from one `/api/overview`-shaped payload per (range, bucket); the prototype scales a 7-day baseline, the real app should query. Currency: INR and USD are kept separate everywhere and only combined for ARPU/ROAS at ₹84 per $1 — make that rate configurable. Numbers format with `en-IN` grouping; large social counts abbreviate to K / L.
+Derivation notes: all figures come from one `/api/overview`-shaped payload per (range, bucket); the prototype scales a 7-day baseline, the real app should query. Currency: INR and USD are kept separate everywhere and only combined for ARPU/ROAS at one rate, resolved server-side in `lib/fx.js` and served by `/api/fx` as `{ rate, asOf, source }`. Every surface reads that endpoint and no surface carries its own number. Configure with the `FX_USD_INR` env var. Documented fallback ₹84 per $1, and any figure converted at the fallback says so in the UI. Numbers format with `en-IN` grouping; large social counts abbreviate to K / L.
 
 ## Data sources (from the repo)
 - PostHog project 399417, Asia/Kolkata, internal and test accounts excluded (`lib/overview.js`).
