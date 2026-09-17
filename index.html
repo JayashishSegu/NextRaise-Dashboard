@@ -4441,6 +4441,88 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       html[data-theme="light"] .page > .ov-sub{ display:none !important; }
     }
 
+    /* ── KPI tile footers · turn the empty half into signal ─────────────
+       The tiles stretch to the hero's height, so roughly half of each was
+       blank. The footer is pinned to the bottom and absorbs whatever slack
+       the row has, at any height, without the head of the card moving.    */
+    html[data-theme="light"] .ndc-kpi{
+      justify-content:flex-start; gap:4px;
+      padding:16px 18px 14px !important; min-height:0 !important; }
+    html[data-theme="light"] .ndc-kpi .nd-lbl{ margin-bottom:2px; }
+    /* let the sub-line wrap rather than ellipsing a real figure away; the
+       footer is bottom-pinned, so a two-line head does not misalign the row */
+    html[data-theme="light"] .ndc-kpi > s{ margin-bottom:2px; line-height:1.35; }
+    /* both KPI rows share a height so the 2x2 reads as one block */
+    html[data-theme="light"] .ndc-kpis{ grid-auto-rows:1fr; }
+    html[data-theme="light"] .ndk-foot{
+      margin-top:auto; padding-top:10px; width:100%;
+      display:flex; flex-direction:column; gap:6px; min-width:0; }
+
+    /* sparkline */
+    html[data-theme="light"] .ndk-spark{
+      display:block; width:100%; height:34px; overflow:visible; }
+    html[data-theme="light"] .ndk-spark .a{ fill:var(--nd-act-50, rgba(41,82,255,.10)); }
+    html[data-theme="light"] .ndk-spark .l{
+      fill:none; stroke:var(--nd-act-500); stroke-width:2;
+      stroke-linejoin:round; stroke-linecap:round; }
+
+    /* proportional split */
+    html[data-theme="light"] .ndk-split{
+      display:flex; height:6px; border-radius:999px; overflow:hidden;
+      background:var(--nd-100); }
+    html[data-theme="light"] .ndk-split > i{ display:block; height:100%; }
+    html[data-theme="light"] .ndk-split > i.ok{ background:var(--nd-act-500); }
+    html[data-theme="light"] .ndk-split > i.alt{ background:var(--nd-ok-500,#19B672); }
+    html[data-theme="light"] .ndk-split > i.warn{ background:var(--nd-amber-500,#F59E0C); }
+    html[data-theme="light"] .ndk-split > i.dim{ background:var(--nd-300); }
+
+    /* single-value meter */
+    html[data-theme="light"] .ndk-meter{
+      height:6px; border-radius:999px; background:var(--nd-100); overflow:hidden; }
+    html[data-theme="light"] .ndk-meter{ position:relative; }
+    html[data-theme="light"] .ndk-meter > i{
+      display:block; height:100%; border-radius:999px; background:var(--nd-act-500);
+      transition:width 720ms cubic-bezier(.34,1.25,.64,1); }
+    html[data-theme="light"] .ndk-meter.hit > i{ background:var(--nd-ok-500,#19B672); }
+    /* the target sits at the end of the track, so full bar = target met */
+    html[data-theme="light"] .ndk-meter::after{
+      content:""; position:absolute; right:0; top:-2px; bottom:-2px; width:2px;
+      border-radius:1px; background:var(--nd-300); }
+
+    /* captions and legend */
+    html[data-theme="light"] .ndk-cap,
+    html[data-theme="light"] .ndk-none{
+      font-size:11px; font-weight:500; line-height:1.35; color:var(--nd-400);
+      overflow-wrap:anywhere; }
+    html[data-theme="light"] .ndk-none{ font-style:normal; }
+    html[data-theme="light"] .ndk-legend{
+      display:flex; flex-wrap:wrap; gap:2px 10px;
+      font-size:11px; font-weight:500; line-height:1.35; color:var(--nd-400); }
+    html[data-theme="light"] .ndk-legend > span{
+      display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
+    html[data-theme="light"] .ndk-legend > span::before{
+      content:""; width:6px; height:6px; border-radius:2px; background:var(--nd-300); }
+    html[data-theme="light"] .ndk-legend > span.ok::before{ background:var(--nd-act-500); }
+    html[data-theme="light"] .ndk-legend > span.alt::before{ background:var(--nd-ok-500,#19B672); }
+    html[data-theme="light"] .ndk-legend > span.warn::before{ background:var(--nd-amber-500,#F59E0C); }
+    /* .ndc-kpi b is the 26px headline number; the legend must not inherit it */
+    html[data-theme="light"] .ndk-legend > span b{
+      font-size:11px !important; font-weight:700 !important; letter-spacing:0 !important;
+      line-height:1.3 !important; color:var(--nd-700); font-variant-numeric:tabular-nums; }
+
+    html[data-theme="light"][data-appearance="dark"] .ndk-spark .a{ fill:rgba(92,121,255,.16); }
+    html[data-theme="light"][data-appearance="dark"] :is(.ndk-split,.ndk-meter){ background:rgba(255,255,255,.08); }
+    html[data-theme="light"][data-appearance="dark"] .ndk-legend > span b{ color:var(--nd-900); }
+
+    /* the tiles are a touch shorter than the hero is tall on a one-bar range,
+       so the row no longer has to invent 90px of nothing */
+    @media (min-width:901px){
+      html[data-theme="light"] .ndc-kpis{ align-content:stretch; }
+    }
+    @media (prefers-reduced-motion:reduce){
+      html[data-theme="light"] .ndk-meter > i{ transition:none; }
+    }
+
   </style>
 </head>
 <body>
@@ -8444,6 +8526,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
         '<span class="nd-rend"><b class="amt">' + amtTxt + '</b></span></div>';
     }).join('') || '<div class="nd-empty">No payments since 1 May</div>';
 
+    const _feet = ndKpiFeet(M);
     area.innerHTML =
       '<div class="ndc nd-s8 ndc-hero">' +
         '<div class="ndc-hero-top"><div style="display:flex;flex-direction:column;gap:6px">' +
@@ -8459,20 +8542,24 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
         '<button class="ndc ndc-kpi" onclick="ndOpenDrill(\'payments\')"><span class="nd-lbl">Revenue</span>' +
           '<b>₹' + M.totalRevInr.toLocaleString('en-IN') + '</b><s>' +
           (M.revUsd > 0 ? 'incl. $' + Math.round(M.revUsd).toLocaleString('en-US') + ' · ' : '') +
-          (M.payCount ? M.payCount.toLocaleString('en-IN') + ' payments' : 'completed') + '</s></button>' +
+          (M.payCount ? M.payCount.toLocaleString('en-IN') + ' payments' : 'completed') + '</s>' +
+          _feet.revFoot + '</button>' +
         '<button class="ndc ndc-kpi" onclick="ndOpenDrill(\'pro\')"><span class="nd-lbl">Active Pro</span>' +
           '<b>' + ndProNum(M.activePro) + '</b><s>' +
           (!ndSubsOk() ? 'subscription table unavailable'
             : (M.newProduct ? (M.activePro / M.newProduct * 100).toFixed(2) : '0') + '% of ' +
-              (M.newProduct >= 1000 ? (M.newProduct / 1000).toFixed(1) + 'K' : M.newProduct) + ' users') + '</s></button>' +
+              (M.newProduct >= 1000 ? (M.newProduct / 1000).toFixed(1) + 'K' : M.newProduct) + ' users') + '</s>' +
+          _feet.proFoot + '</button>' +
         '<button class="ndc ndc-kpi" onclick="ndOpenDrill(\'pro\')"><span class="nd-lbl">Signed up &amp; paid</span>' +
           '<b>' + (M.swCur == null ? '—' : M.swCur.toLocaleString('en-IN')) + '</b>' +
           '<s class="' + (M.swDelta == null ? '' : M.swDelta >= 0 ? 'up' : 'down') + '">' +
           (M.swCur == null ? 'after next refresh'
             : M.swDelta != null ? (M.swDelta >= 0 ? '+' : '') + M.swDelta.toFixed(0) + '% vs prior period'
-            : (M.rangeSignups ? (M.swCur / M.rangeSignups * 100).toFixed(1) + '% of signups' : 'same window')) + '</s></button>' +
+            : (M.rangeSignups ? (M.swCur / M.rangeSignups * 100).toFixed(1) + '% of signups' : 'same window')) + '</s>' +
+          _feet.paidFoot + '</button>' +
         '<button class="ndc ndc-kpi" onclick="ndOpenDrill(\'payments\')"><span class="nd-lbl">Payers · ARPU</span>' +
-          '<b>' + M.revPayers.toLocaleString('en-IN') + '</b><s>₹' + M.arpu.toLocaleString('en-IN') + ' per payer</s></button>' +
+          '<b>' + M.revPayers.toLocaleString('en-IN') + '</b><s>₹' + M.arpu.toLocaleString('en-IN') + ' per payer</s>' +
+          _feet.payFoot + '</button>' +
       '</div>' +
       '<div class="ndc nd-s4 ndc-panel"><div class="ndc-ph"><b>Acquisition</b>' +
         '<button class="nd-see" onclick="ndOpenDrill(\'sources\')">See all ›</button></div>' +
@@ -9062,9 +9149,9 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       // gauge — the whole element carries the state: amber arc + amber value when below goal (B2)
       const below = convGauge < 5;
       const stateCol = !below ? GRN : '#b45309';
-      push('#nbGauge',{chart:{type:'radialBar',height:210,fontFamily:'IBM Plex Mono',animations:{enabled:true,speed:1100}},series:[goalPct],plotOptions:{radialBar:{startAngle:-120,endAngle:120,hollow:{size:'60%'},track:{background:'#efefec'},dataLabels:{name:{show:true,offsetY:20,color:'#8a8a92',fontSize:'11px',fontFamily:'Plus Jakarta Sans'},value:{offsetY:-12,fontSize:'26px',fontWeight:700,color:stateCol,formatter:()=>convGauge.toFixed(2)+'%'}}}},colors:[stateCol],stroke:{lineCap:'round'},labels:['vs 5% goal']});
+      push('#nbGauge',{chart:{type:'radialBar',height:210,fontFamily:'Plus Jakarta Sans',animations:{enabled:true,speed:1100}},series:[goalPct],plotOptions:{radialBar:{startAngle:-120,endAngle:120,hollow:{size:'60%'},track:{background:'#efefec'},dataLabels:{name:{show:true,offsetY:20,color:'#8a8a92',fontSize:'11px',fontFamily:'Plus Jakarta Sans'},value:{offsetY:-12,fontSize:'26px',fontWeight:700,color:stateCol,formatter:()=>convGauge.toFixed(2)+'%'}}}},colors:[stateCol],stroke:{lineCap:'round'},labels:['vs 5% goal']});
       // daily line — zero-baseline y-axis so the chart doesn't dramatise (A3)
-      push('#nbLine',{...AX,chart:{...AX.chart,type:'area',height:230},series:[{name:'Signups',data:dailyVals}],stroke:{curve:'smooth',width:3,colors:[BLUE]},fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.32,opacityTo:0,stops:[0,95]}},colors:[BLUE],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},xaxis:{categories:dailyCats,axisBorder:{show:false},axisTicks:{show:false},labels:{style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}}},yaxis:{min:0,labels:{formatter:v=>v>=1000?(v/1000).toFixed(1)+'k':Math.round(v),style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}}}});
+      push('#nbLine',{...AX,chart:{...AX.chart,type:'area',height:230},series:[{name:'Signups',data:dailyVals}],stroke:{curve:'smooth',width:3,colors:[BLUE]},fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.32,opacityTo:0,stops:[0,95]}},colors:[BLUE],markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},xaxis:{categories:dailyCats,axisBorder:{show:false},axisTicks:{show:false},labels:{style:{fontSize:'11px',fontFamily:'Plus Jakarta Sans'}}},yaxis:{min:0,labels:{formatter:v=>v>=1000?(v/1000).toFixed(1)+'k':Math.round(v),style:{fontSize:'11px',fontFamily:'Plus Jakarta Sans'}}}});
     }, 30);
   }
 
@@ -15259,6 +15346,100 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     ndAutoPaint();
   })();
 
+  // ══ KPI MICRO-VISUALS ═══════════════════════════════════════════════
+  // Each Overview tile was 175px tall carrying 87px of content: half of every
+  // card was empty, because the tiles are grid siblings of the hero and stretch
+  // to its height. Rather than shrink them, the spare half now carries the
+  // context you would otherwise open a drill-down to get. Every value below
+  // comes from the payload already on screen; nothing new is queried.
+
+  // Area sparkline. non-scaling-stroke keeps the 2px line honest while the
+  // viewBox stretches to the tile width.
+  function ndSpark(vals, caption) {
+    const v = (vals || []).map(n => +n || 0);
+    if (v.length < 2) {
+      return '<div class="ndk-foot"><span class="ndk-none">' +
+        h(caption || 'Not enough history for a trend') + '</span></div>';
+    }
+    const W = 100, H = 30, max = Math.max.apply(null, v), min = Math.min.apply(null, v);
+    const span = (max - min) || 1;
+    const pts = v.map((n, i) => [(i / (v.length - 1)) * W, H - ((n - min) / span) * (H - 5) - 2.5]);
+    const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(2) + ' ' + p[1].toFixed(2)).join(' ');
+    const area = line + ' L' + W + ' ' + H + ' L0 ' + H + ' Z';
+    return '<div class="ndk-foot">' +
+      '<svg class="ndk-spark" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
+        '<path class="a" d="' + area + '"/>' +
+        '<path class="l" d="' + line + '" vector-effect="non-scaling-stroke"/>' +
+      '</svg>' +
+      (caption ? '<span class="ndk-cap">' + h(caption) + '</span>' : '') +
+    '</div>';
+  }
+
+  // Proportional bar with a legend. Segments with a zero value are dropped so a
+  // legend never claims a slice that is not drawn.
+  function ndSplitBar(parts, note) {
+    const live = (parts || []).filter(p => (+p.v || 0) > 0);
+    const tot = live.reduce((a, p) => a + (+p.v || 0), 0);
+    if (!tot) {
+      return '<div class="ndk-foot"><span class="ndk-none">' + h(note || 'No split to show yet') + '</span></div>';
+    }
+    return '<div class="ndk-foot">' +
+      '<div class="ndk-split">' + live.map(p =>
+        '<i class="' + (p.cls || '') + '" style="width:' + (p.v / tot * 100).toFixed(2) + '%"></i>').join('') + '</div>' +
+      '<div class="ndk-legend">' + live.map(p =>
+        '<span class="' + (p.cls || '') + '">' + h(p.label) + ' <b>' + (+p.v).toLocaleString('en-IN') + '</b></span>').join('') + '</div>' +
+    '</div>';
+  }
+
+  // Single-value meter, used where the interesting thing is a rate, not a mix.
+  // A signup-to-paid rate is a low single-digit percentage, so drawing it as a
+  // share of 100 renders an invisible sliver. Draw it against the product's own
+  // 5% Pro-plan target instead (the same target the Insights gauge uses), and
+  // mark that target on the track so the bar reads as progress, not as 1% of
+  // nothing.
+  const ND_PRO_TARGET = 5;
+  function ndMeter(pct, label) {
+    if (pct == null || !isFinite(pct)) {
+      return '<div class="ndk-foot"><span class="ndk-none">' + h(label || 'No rate yet') + '</span></div>';
+    }
+    const w = Math.max(2, Math.min(100, pct / ND_PRO_TARGET * 100));
+    const hit = pct >= ND_PRO_TARGET;
+    return '<div class="ndk-foot">' +
+      '<div class="ndk-meter' + (hit ? ' hit' : '') + '" role="img" aria-label="' +
+        h(pct.toFixed(2) + '% against a ' + ND_PRO_TARGET + '% target') + '">' +
+        '<i style="width:' + w.toFixed(2) + '%"></i></div>' +
+      '<span class="ndk-cap">' + h(label) + '</span>' +
+    '</div>';
+  }
+
+  // The four Overview tiles' footers, in render order.
+  function ndKpiFeet(M) {
+    const d = _ovData || {};
+    const fx = (typeof USD_TO_INR === 'number' && USD_TO_INR > 0) ? USD_TO_INR : 0;
+    // 1 · revenue per day across the selected range
+    const rev = (d.dailyPay || []).map(r => (+r[2] || 0) + (+r[3] || 0) * fx);
+    const revFoot = ndSpark(rev, rev.length > 1 ? rev.length + '-day revenue trend' : 'One day in range, no trend yet');
+    // 2 · where the Pro base actually sits
+    const proFoot = !ndSubsOk()
+      ? '<div class="ndk-foot"><span class="ndk-none">Subscription table unavailable</span></div>'
+      : ndSplitBar([
+          { v: M.activePro,            label: 'Active',  cls: 'ok' },
+          { v: +(d.counts || [])[8] || 0,  label: 'Lapsed 30d', cls: 'warn' },
+          { v: +(d.counts || [])[11] || 0, label: 'Expired',    cls: 'dim' },
+        ], 'No subscription history yet');
+    // 3 · how much of this window's signups actually paid
+    const rate = (M.swCur != null && M.rangeSignups) ? (M.swCur / M.rangeSignups * 100) : null;
+    const paidFoot = ndMeter(rate == null ? null : rate,
+      rate == null ? 'Rate lands after the next refresh'
+        : rate.toFixed(2) + '% of ' + M.rangeSignups.toLocaleString('en-IN') + ' signups · ' + ND_PRO_TARGET + '% target');
+    // 4 · the payer base split by the currency they paid in
+    const payFoot = ndSplitBar([
+      { v: +d.revInrPayers || 0, label: 'INR', cls: 'ok' },
+      { v: +d.revUsdPayers || 0, label: 'USD', cls: 'alt' },
+    ], 'Currency split lands with the next payment');
+    return { revFoot, proFoot, paidFoot, payFoot };
+  }
+
 </script>
 <nav class="mob-bottom-nav" id="mobBottomNav" aria-label="Mobile navigation">
   <button class="mob-nav-item active" id="mbn-overview" onclick="switchTab('overview')" aria-label="Overview">
@@ -15826,12 +16007,12 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
         tooltip:{ theme:DK2?'dark':'light', shared:true, intersect:false,
           y:[{formatter:v=>_nf(v)},{formatter:fmtInr}] },
         xaxis:{ type:'datetime', axisBorder:{show:false}, axisTicks:{show:false},
-          labels:{style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}, datetimeUTC:false} },
+          labels:{style:{fontSize:'11px',fontFamily:'Plus Jakarta Sans'}, datetimeUTC:false} },
         yaxis:[
           {seriesName:'Signups', title:{text:'Signups',style:{fontSize:'11px'}},
-           labels:{formatter:v=>_nf(Math.round(v)),style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}}},
+           labels:{formatter:v=>_nf(Math.round(v)),style:{fontSize:'11px',fontFamily:'Plus Jakarta Sans'}}},
           {seriesName:'Revenue (₹)', opposite:true, title:{text:'Revenue',style:{fontSize:'11px'}},
-           labels:{formatter:fmtInr,style:{fontSize:'11px',fontFamily:'IBM Plex Mono'}}},
+           labels:{formatter:fmtInr,style:{fontSize:'11px',fontFamily:'Plus Jakarta Sans'}}},
         ],
         legend:{ position:'top', fontSize:'12px', labels:{colors:DK2?'rgba(240,243,250,.7)':'rgba(17,23,38,.7)'} },
       });
