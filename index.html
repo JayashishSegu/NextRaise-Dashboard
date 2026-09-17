@@ -8091,7 +8091,14 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     const revPayers = +(_ovData && _ovData.revPayers) || 0;
     const arpu = revPayers ? Math.round(totalRevInr / revPayers) : 0;
     const rangeLabel = tabGdrPreset('overview').label, key = tabGdrKey('overview');
-    const growth = ((_ovData && _ovData.growth) || []).map(r => ({ d: r[0], v: +r[1] || 0 }));
+    // Clip to the selected window before summing. The series is whatever the
+    // server sent, and a server that returns a day outside the range would
+    // otherwise inflate the headline: a "Today" range once showed yesterday
+    // plus today because the growth query started at the prior window.
+    const _b = (typeof gdrBounds === 'function') ? gdrBounds(key, _tabCustom['overview']) : null;
+    const growth = ((_ovData && _ovData.growth) || [])
+      .map(r => ({ d: r[0], v: +r[1] || 0 }))
+      .filter(r => !_b || (r.d >= _b.startDate && r.d < _b.endDate));
     const rangeSignups = growth.reduce((a, b) => a + b.v, 0);
     const payCount = ((_ovData && _ovData.dailyPay) || []).reduce((a, r) => a + (+r[1] || 0), 0);
     // Prior period comes from the same query as rangeSignups, over the same
@@ -8315,9 +8322,15 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       if (!ok && err) console.warn('refresh failed on ' + tab, err);
       try {
         const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        ndToast(ok ? 'Refreshed · ' + now : 'Refresh failed · showing the last snapshot');
+        if (ok) { ndToast('Refreshed · ' + now); }
+        else if (tab === 'overview' && typeof _ovDataTs === 'number' && _ovDataTs) {
+          // Say which snapshot is on screen, so this agrees with the Live pill
+          // instead of contradicting it.
+          ndToast('Could not refresh · still showing '
+            + new Date(_ovDataTs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        } else { ndToast('Refresh failed · showing the last snapshot'); }
       } catch (_) {}
-      if (ok) { try { ndLiveEl(document.getElementById('ndDeskLive')); ndLiveEl(document.getElementById('ndLive')); } catch (_) {} }
+      try { ndLiveEl(document.getElementById('ndDeskLive')); ndLiveEl(document.getElementById('ndLive')); } catch (_) {}
     };
     // the glyph completes one full 900ms turn before the toast lands
     const done = (ok, err) => {
@@ -8332,7 +8345,18 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
       const pg = document.querySelector('[id^="page-"].active');
       return !(pg && pg.querySelector('.error-box'));
     };
-    Promise.resolve(work).then(() => done(painted()), (e) => done(false, e));
+    // On Overview the only honest test is whether the snapshot actually moved.
+    // A forced recompute can fail server-side (ClickHouse max execution time on
+    // the heavier buckets) and the fetcher then falls back to the edge-cached
+    // copy, which resolves cleanly while the numbers are unchanged. Reporting
+    // "Refreshed" there is a lie, and it is the one the Live pill contradicts.
+    const tsBefore = (typeof _ovDataTs === 'number') ? _ovDataTs : 0;
+    const advanced = () => {
+      if (tab !== 'overview') return painted();
+      const tsAfter = (typeof _ovDataTs === 'number') ? _ovDataTs : 0;
+      return tsAfter > tsBefore;
+    };
+    Promise.resolve(work).then(() => done(advanced()), (e) => done(false, e));
     setTimeout(() => done(false, 'timeout'), 20000);
   }
 
@@ -8603,7 +8627,11 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     const revPayers = +_ovData.revPayers || 0;
     const arpu = revPayers ? Math.round(totalRevInr / revPayers) : 0;
     const rangeLabel = tabGdrPreset('overview').label, key = tabGdrKey('overview');
-    const growth = (_ovData.growth || []).map(r => ({ d: r[0], v: +r[1] || 0 }));
+    // Same clip as ndOverviewModel: never sum a day outside the selected range.
+    const _mb = (typeof gdrBounds === 'function') ? gdrBounds(key, _tabCustom['overview']) : null;
+    const growth = (_ovData.growth || [])
+      .map(r => ({ d: r[0], v: +r[1] || 0 }))
+      .filter(r => !_mb || (r.d >= _mb.startDate && r.d < _mb.endDate));
     const rangeSignups = growth.reduce((a, b) => a + b.v, 0);
     const payCount = (_ovData.dailyPay || []).reduce((a, r) => a + (+r[1] || 0), 0);
 
