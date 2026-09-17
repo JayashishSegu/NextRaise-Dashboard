@@ -131,6 +131,33 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ range, view, computing: true, retryIn, reason: why, data: null });
   };
 
+  // ── No store attached: behave exactly like the pre-snapshot endpoint. ──
+  // Without this, acquireLock() returns ok:false, the code falls through to the
+  // wait-for-winner path that can never resolve without a store, and the edge
+  // gets s-maxage=120 instead of 1800 — which is how a 0.135s cached endpoint
+  // turned into repeated multi-second computes. Nothing below this point runs
+  // until a Redis store is actually provisioned.
+  if (!snapstore.enabled(env)) {
+    try {
+      const data = await computeOverview(range, env, cust, view);
+      const sMax = data.stale ? 300 : 1800;
+      res.setHeader('Cache-Control', `public, max-age=0, s-maxage=${sMax}, stale-while-revalidate=86400`);
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('x-nr-source', 'compute-nostore');
+      return res.status(200).json({ range, view, ts: Date.now(), stale: !!data.stale, data });
+    } catch (e) {
+      res.setHeader('Cache-Control', 'no-store');
+      if (e instanceof PostHogBudgetError || e.code === 'budget') {
+        res.setHeader('Retry-After', String(e.retryAfter || 900));
+        return res.status(429).json({
+          error: 'PostHog hourly API read budget exhausted',
+          code: 'budget', retryAfter: e.retryAfter || 900, range, view,
+        });
+      }
+      return res.status(500).json({ error: String((e && e.message) || e) });
+    }
+  }
+
   let snap = await snapstore.getSnapshot(env, key);
   if (snap && (Date.now() - snap.computedAt) > MAX_SERVE_MS) snap = null;
   const snapAge = snap ? (Date.now() - snap.computedAt) : Infinity;
