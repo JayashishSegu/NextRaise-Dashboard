@@ -8579,15 +8579,19 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
           '<div class="ndc-hnum"><span class="ndc-big stat-num">' + M.rangeSignups.toLocaleString('en-IN') + '</span>' +
           '<span class="nd-badge ' + dCls + '">' + esc(dTxt) + '</span>' +
           (M.prevN != null ? '<span class="nd-prev">vs ' + M.prevN.toLocaleString('en-IN') + ' prior period</span>' : '') +
-          // Per-range signup → Pro conversion, same measurement as the table
-          // below. Titled so it explains itself on hover.
-          (M.cbpPro != null && M.rangeSignups
-            ? '<span class="nd-conv" title="Of the ' + M.rangeSignups.toLocaleString('en-IN') +
-                ' signups in this range, ' + M.cbpPro + ' are now on a Pro plan.">' +
-                '<b>' + M.cbpPro.toLocaleString('en-IN') + '</b>' +
-                '<span>on Pro</span>' +
-                '<em>' + M.cbpRate.toFixed(2) + '%</em>' +
-              '</span>'
+          // Signup → Paid conversion, using the same "pair" number the Signed
+          // up & paid tile shows (sameWin cohort). Rate = paid / signups in
+          // this range.
+          (M.swCur != null && M.rangeSignups
+            ? (function () {
+                var rate = M.swCur / M.rangeSignups * 100;
+                return '<span class="nd-conv" title="Of the ' + M.rangeSignups.toLocaleString('en-IN') +
+                  ' signups in this range, ' + M.swCur + ' also paid (same as the Signed up and paid tile).">' +
+                  '<b>' + M.swCur.toLocaleString('en-IN') + '</b>' +
+                  '<span>signed up and paid</span>' +
+                  '<em>' + rate.toFixed(2) + '%</em>' +
+                '</span>';
+              })()
             : '') +
         '</div></div></div>' +
         '<div class="nd-chartwrap"><span class="nd-tip" hidden></span><div class="ndc-bars">' + barsHtml +
