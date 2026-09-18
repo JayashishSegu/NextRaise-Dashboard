@@ -8579,16 +8579,18 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
           '<div class="ndc-hnum"><span class="ndc-big stat-num">' + M.rangeSignups.toLocaleString('en-IN') + '</span>' +
           '<span class="nd-badge ' + dCls + '">' + esc(dTxt) + '</span>' +
           (M.prevN != null ? '<span class="nd-prev">vs ' + M.prevN.toLocaleString('en-IN') + ' prior period</span>' : '') +
-          // Signup → Paid conversion, using the same "pair" number the Signed
-          // up & paid tile shows (sameWin cohort). Rate = paid / signups in
-          // this range.
-          (M.swCur != null && M.rangeSignups
+          // Payers in the range as a share of signups in the range. Uses the
+          // same revPayers count the Revenue tile's "6 payments" and the
+          // Payers · ARPU tile show, so all three numbers reconcile. Anyone
+          // who paid, regardless of when they signed up.
+          (M.revPayers && M.rangeSignups
             ? (function () {
-                var rate = M.swCur / M.rangeSignups * 100;
-                return '<span class="nd-conv" title="Of the ' + M.rangeSignups.toLocaleString('en-IN') +
-                  ' signups in this range, ' + M.swCur + ' also paid (same as the Signed up and paid tile).">' +
-                  '<b>' + M.swCur.toLocaleString('en-IN') + '</b>' +
-                  '<span>signed up and paid</span>' +
+                var rate = M.revPayers / M.rangeSignups * 100;
+                return '<span class="nd-conv" title="' + M.revPayers +
+                  ' distinct people paid in this range. As a share of the ' +
+                  M.rangeSignups.toLocaleString('en-IN') + ' signups in the same range.">' +
+                  '<b>' + M.revPayers.toLocaleString('en-IN') + '</b>' +
+                  '<span>paid</span>' +
                   '<em>' + rate.toFixed(2) + '%</em>' +
                 '</span>';
               })()
