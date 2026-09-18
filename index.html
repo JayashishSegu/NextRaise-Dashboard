@@ -4495,6 +4495,24 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
       html[data-theme="light"] .ndk-bar > i{ transition:none; }
     }
 
+    /* ── Hero conversion chip · same measurement as the Signup → Pro table ── */
+    html[data-theme="light"] .ndc-hero .nd-conv{
+      display:inline-flex; align-items:baseline; gap:6px;
+      padding:4px 10px; border-radius:999px;
+      background:var(--nd-act-50, #EEF2FF);
+      font-size:12.5px; font-weight:500; color:var(--nd-700);
+      line-height:1.3; margin-left:2px;
+      font-variant-numeric:tabular-nums; }
+    html[data-theme="light"] .ndc-hero .nd-conv b{
+      font-weight:700; color:var(--nd-900); font-size:12.5px !important; letter-spacing:0 !important; }
+    html[data-theme="light"] .ndc-hero .nd-conv span{ color:var(--nd-500); }
+    html[data-theme="light"] .ndc-hero .nd-conv em{
+      font-style:normal; font-weight:600; color:var(--nd-act-500); margin-left:4px; }
+
+    html[data-theme="light"][data-appearance="dark"] .ndc-hero .nd-conv{
+      background:rgba(92,121,255,.18); color:var(--nd-700); }
+    html[data-theme="light"][data-appearance="dark"] .ndc-hero .nd-conv em{ color:#9DB2FF; }
+
   </style>
 </head>
 <body>
@@ -8242,9 +8260,18 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
       chConv[ch] = (chConv[ch] || 0) + (+row[3] || 0);
     }
     const chList = Object.keys(chMap).map(k => [k, chMap[k], chConv[k] || 0]).sort((a, b) => b[1] - a[1]);
+    // Signup → Pro for the CURRENT range, so the hero can carry the same
+    // per-range conversion the drill table shows. This is the "cohort" number
+    // (of the people who signed up in the range, how many are now on a Pro
+    // plan) — not the same as payCount, which counts payment events regardless
+    // of when the payer signed up.
+    const cbp = ((_ovData && _ovData.convByPeriod) || []).find(r => r && r.key === key);
+    const cbpPro    = cbp ? +cbp.pro    || 0 : null;
+    const cbpRate   = cbp ? +cbp.rate   || 0 : null;
     return { newProduct, newToday, newWeek, newYesterday, activePro, revInr, revUsd, totalRevInr,
       revPayers, arpu, rangeLabel, key, growth, rangeSignups, payCount, dPct, prevN,
-      swCur, swDelta, chList, viewLabel: (BUCKET_VIEW === 'overall' ? 'Overall' : BUCKET_VIEW === 'perf' ? 'Perf' : 'Influencer') };
+      swCur, swDelta, chList, cbpPro, cbpRate,
+      viewLabel: (BUCKET_VIEW === 'overall' ? 'Overall' : BUCKET_VIEW === 'perf' ? 'Perf' : 'Influencer') };
   }
   const ndIni = s => { const t = String(s || '?').trim(), p = t.split(/\s+/);
     return ((p[0] || '?')[0] || '?').toUpperCase() + ((p[1] || '')[0] || '').toUpperCase(); };
@@ -8552,6 +8579,16 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
           '<div class="ndc-hnum"><span class="ndc-big stat-num">' + M.rangeSignups.toLocaleString('en-IN') + '</span>' +
           '<span class="nd-badge ' + dCls + '">' + esc(dTxt) + '</span>' +
           (M.prevN != null ? '<span class="nd-prev">vs ' + M.prevN.toLocaleString('en-IN') + ' prior period</span>' : '') +
+          // Per-range signup → Pro conversion, same measurement as the table
+          // below. Titled so it explains itself on hover.
+          (M.cbpPro != null && M.rangeSignups
+            ? '<span class="nd-conv" title="Of the ' + M.rangeSignups.toLocaleString('en-IN') +
+                ' signups in this range, ' + M.cbpPro + ' are now on a Pro plan.">' +
+                '<b>' + M.cbpPro.toLocaleString('en-IN') + '</b>' +
+                '<span>on Pro</span>' +
+                '<em>' + M.cbpRate.toFixed(2) + '%</em>' +
+              '</span>'
+            : '') +
         '</div></div></div>' +
         '<div class="nd-chartwrap"><span class="nd-tip" hidden></span><div class="ndc-bars">' + barsHtml +
           '</div><div class="ndc-xlbl">' + xLbl + '</div></div>' +
@@ -8560,7 +8597,12 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
         '<button class="ndc ndc-kpi" onclick="ndOpenDrill(\'payments\')"><span class="nd-lbl">Revenue</span>' +
           '<b>₹' + M.totalRevInr.toLocaleString('en-IN') + '</b><s>' +
           (M.revUsd > 0 ? 'incl. $' + Math.round(M.revUsd).toLocaleString('en-US') + ' · ' : '') +
-          (M.payCount ? M.payCount.toLocaleString('en-IN') + ' payments' : 'completed') + '</s>' +
+          (M.payCount
+            ? '<span title="' + M.payCount + ' payment events completed in this range, by ' +
+                (M.revPayers ? M.revPayers.toLocaleString('en-IN') + ' distinct payers' : 'the payers below') +
+                '. Not the same as the Signup to Pro table, which counts payers who ALSO signed up in this range.">' +
+                M.payCount.toLocaleString('en-IN') + ' payments</span>'
+            : 'completed') + '</s>' +
           _feet.revFoot + '</button>' +
         '<button class="ndc ndc-kpi" onclick="ndOpenDrill(\'pro\')"><span class="nd-lbl">Active Pro</span>' +
           '<b>' + ndProNum(M.activePro) + '</b><s>' +
