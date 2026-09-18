@@ -3844,6 +3844,7 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
     html[data-theme="light"] .nd-dhead span + span{ text-align:right; }
     html[data-theme="light"] .nd-srcrow{ display:grid; grid-template-columns:1fr auto auto; gap:6px 16px;
       align-items:center; padding:12px 0; border-top:1px solid var(--nd-100,#EEF1F8); font-size:13px; }
+    html[data-theme="light"] .nd-srcrow.c4{ grid-template-columns:1fr auto auto auto; }
     html[data-theme="light"] .nd-srcrow .nm{ min-width:0; display:flex; flex-direction:column; gap:1px; }
     html[data-theme="light"] .nd-srcrow .nm b{ font-size:13px; font-weight:600; color:var(--nd-900,#0F1C3D);
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -8253,7 +8254,7 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
     const sw = _ovData && _ovData.sameWin;
     const swCur = sw ? +sw[0] || 0 : null, swPrev = sw ? +sw[1] || 0 : 0;
     const swDelta = (swCur != null && swPrev) ? (swCur - swPrev) / swPrev * 100 : null;
-    const chMap = {}, chConv = {}, chPayers = {};
+    const chMap = {}, chConv = {}, chPayers = {}, chVisitors = {};
     for (const row of ((_ovData && _ovData.sources) || [])) {
       const ch = channelOf(row[0], row[1]);
       chMap[ch] = (chMap[ch] || 0) + (+row[2] || 0);
@@ -8268,10 +8269,24 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
       const ch = channelOf(row[0], row[1]);
       chPayers[ch] = (chPayers[ch] || 0) + (+row[2] || 0);
     }
-    const chList = Object.keys(chMap).map(k => [
-      k, chMap[k],
-      hasPayersBySrc ? (chPayers[k] || 0) : (chConv[k] || 0)
-    ]).sort((a, b) => b[1] - a[1]);
+    // Visitors-in-range attributed to each channel — distinct persons who
+    // fired at least one $pageview during the range. Top of funnel.
+    const hasVisitorsBySrc = !!(_ovData && _ovData.visitorsBySource);
+    for (const row of ((_ovData && _ovData.visitorsBySource) || [])) {
+      const ch = channelOf(row[0], row[1]);
+      chVisitors[ch] = (chVisitors[ch] || 0) + (+row[2] || 0);
+    }
+    // [channel, signups, paid, visitors] — channels are the union of every
+    // source that shows up in signups OR visitors, so a visitor-only channel
+    // (no signups yet) still renders in the Acquisition table.
+    const chAllKeys = Object.keys(chMap);
+    for (const k of Object.keys(chVisitors)) if (!(k in chMap)) chAllKeys.push(k);
+    const chList = chAllKeys.map(k => [
+      k,
+      chMap[k] || 0,
+      hasPayersBySrc ? (chPayers[k] || 0) : (chConv[k] || 0),
+      chVisitors[k] || 0
+    ]).sort((a, b) => (b[3] || b[1]) - (a[3] || a[1]));
     // Signup → Pro for the CURRENT range, so the hero can carry the same
     // per-range conversion the drill table shows. This is the "cohort" number
     // (of the people who signed up in the range, how many are now on a Pro
@@ -8566,7 +8581,10 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
     const xLbl = bLbl.map(l => '<span>' + esc(l) + '</span>').join('');
     const dCls = M.dPct == null ? 'flat' : M.dPct >= 0 ? 'up' : 'down';
     const dTxt = M.dPct == null ? M.rangeLabel : (M.dPct >= 0 ? '+' : '') + M.dPct.toFixed(1) + '%';
-    const chMax = Math.max(1, ...M.chList.map(x => x[1]));
+    // Bar size against visitors when the snapshot has them (top of funnel),
+    // otherwise against signups so old snapshots still render.
+    const chHasVis = M.chList.some(x => (+x[3] || 0) > 0);
+    const chMax = Math.max(1, ...M.chList.map(x => chHasVis ? (+x[3] || 0) : (+x[1] || 0)));
 
     const signupRows = ((_ovData.signups) || []).slice(0, 5).map(r => {
       const email = r[0] || '', name = r[1] || '';
@@ -8641,10 +8659,16 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
       '</div>' +
       '<div class="ndc nd-s4 ndc-panel"><div class="ndc-ph"><b>Acquisition</b>' +
         '<button class="nd-see" onclick="ndOpenDrill(\'sources\')">See all ›</button></div>' +
-        (M.chList.slice(0, 5).map(x => '<div class="ndc-srow"><div class="ndc-stop"><b>' + esc(x[0]) + '</b><span>' +
-          x[1].toLocaleString('en-IN') + ' <s>· ' + x[2].toLocaleString('en-IN') + ' paid</s></span></div>' +
-          '<div class="nd-prog"><i style="width:' + Math.round(x[1] / chMax * 100) + '%"></i></div></div>').join('')
-          || '<div class="nd-empty">No channel data in this range</div>') +
+        (M.chList.slice(0, 5).map(x => {
+          const vis = +x[3] || 0, sig = +x[1] || 0, paid = +x[2] || 0;
+          const primary = chHasVis ? vis : sig;
+          const sub = chHasVis
+            ? sig.toLocaleString('en-IN') + ' signed &middot; ' + paid.toLocaleString('en-IN') + ' paid'
+            : paid.toLocaleString('en-IN') + ' paid';
+          return '<div class="ndc-srow"><div class="ndc-stop"><b>' + esc(x[0]) + '</b><span>' +
+            primary.toLocaleString('en-IN') + ' <s>&middot; ' + sub + '</s></span></div>' +
+            '<div class="nd-prog"><i style="width:' + Math.round(primary / chMax * 100) + '%"></i></div></div>';
+        }).join('') || '<div class="nd-empty">No channel data in this range</div>') +
       '</div>' +
       '<div class="ndc nd-s4 ndc-panel ndc-list"><div class="ndc-ph"><b>Recent signups · last 21 days</b>' +
         '<button class="nd-see" onclick="ndOpenDrill(\'signups\')">See all ›</button></div>' + signupRows + '</div>' +
@@ -8873,7 +8897,7 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
     const sw = _ovData.sameWin, swCur = sw ? +sw[0] || 0 : null, swPrev = sw ? +sw[1] || 0 : 0;
     const swDelta = (swCur != null && swPrev) ? (swCur - swPrev) / swPrev * 100 : null;
 
-    const chMap = {}, chConv = {}, chPayers = {};
+    const chMap = {}, chConv = {}, chPayers = {}, chVisitors = {};
     for (const row of (_ovData.sources || [])) {
       const ch = channelOf(row[0], row[1]);
       chMap[ch] = (chMap[ch] || 0) + (+row[2] || 0);
@@ -8885,9 +8909,20 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
       const ch = channelOf(row[0], row[1]);
       chPayers[ch] = (chPayers[ch] || 0) + (+row[2] || 0);
     }
+    // Visitors-in-range attributed to each channel — top of funnel.
+    const hasVisitorsBySrc = !!(_ovData && _ovData.visitorsBySource);
+    for (const row of ((_ovData && _ovData.visitorsBySource) || [])) {
+      const ch = channelOf(row[0], row[1]);
+      chVisitors[ch] = (chVisitors[ch] || 0) + (+row[2] || 0);
+    }
     const chPaid = k => hasPayersBySrc ? (chPayers[k] || 0) : (chConv[k] || 0);
-    const chList = Object.keys(chMap).map(k => [k, chMap[k]]).sort((a, b) => b[1] - a[1]).slice(0, 5);
-    const chMax = Math.max(1, ...chList.map(x => x[1]));
+    const chAllKeys = Object.keys(chMap);
+    for (const k of Object.keys(chVisitors)) if (!(k in chMap)) chAllKeys.push(k);
+    const chHasVis = hasVisitorsBySrc && Object.values(chVisitors).some(v => v > 0);
+    const chList = chAllKeys.map(k => [
+      k, chMap[k] || 0, chVisitors[k] || 0
+    ]).sort((a, b) => (chHasVis ? b[2] - a[2] : b[1] - a[1])).slice(0, 5);
+    const chMax = Math.max(1, ...chList.map(x => chHasVis ? x[2] : x[1]));
 
     const ini = s => { const t = String(s || '?').trim(); const p = t.split(/\s+/);
       return ((p[0] || '?')[0] || '?').toUpperCase() + ((p[1] || '')[0] || '').toUpperCase(); };
@@ -8943,10 +8978,16 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
       '<div class="nd-card nd-src">' +
         '<div class="nd-list-h" style="padding:0"><b>Acquisition</b>' +
         '<button class="nd-see" onclick="ndOpenDrill(\'sources\')">See all ›</button></div>' +
-        (chList.map(x => '<div class="nd-srow"><div class="nd-stop"><b>' + esc(x[0]) + '</b><span>' +
-          x[1].toLocaleString('en-IN') + ' <s>· ' + chPaid(x[0]).toLocaleString('en-IN') + ' paid</s></span></div>' +
-          '<div class="nd-prog"><i style="width:' + Math.round(x[1] / chMax * 100) + '%"></i></div></div>').join('')
-          || '<div class="nd-empty">No channel data in this range</div>') +
+        (chList.map(x => {
+          const sig = +x[1] || 0, vis = +x[2] || 0, paid = chPaid(x[0]);
+          const primary = chHasVis ? vis : sig;
+          const sub = chHasVis
+            ? sig.toLocaleString('en-IN') + ' signed · ' + paid.toLocaleString('en-IN') + ' paid'
+            : paid.toLocaleString('en-IN') + ' paid';
+          return '<div class="nd-srow"><div class="nd-stop"><b>' + esc(x[0]) + '</b><span>' +
+            primary.toLocaleString('en-IN') + ' <s>· ' + sub + '</s></span></div>' +
+            '<div class="nd-prog"><i style="width:' + Math.round(primary / chMax * 100) + '%"></i></div></div>';
+        }).join('') || '<div class="nd-empty">No channel data in this range</div>') +
       '</div>' +
       '<div class="nd-card nd-list"><div class="nd-list-h"><b>Recent signups · last 21 days</b>' +
         '<button class="nd-see" onclick="ndOpenDrill(\'signups\')">See all ›</button></div>' + signupRows + '</div>' +
@@ -13779,23 +13820,59 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
   // 1 · sources — full source × medium table with bucket, signups, conv, 4px bar
   function ndDrillSources() {
     var esc = function(s) { return h(s == null ? '' : s); };
+    // Visitors are keyed by source|medium in the snapshot; join by that key so
+    // rows can gain a visitors column without changing the sources shape.
+    var vKey = function(a, b) { return (a || '') + '|' + (b || ''); };
+    var vMap = {};
+    var vArr = (_ovData && _ovData.visitorsBySource) || [];
+    for (var j = 0; j < vArr.length; j++) vMap[vKey(vArr[j][0], vArr[j][1])] = +vArr[j][2] || 0;
+    var pMap = {};
+    var pArr = (_ovData && _ovData.payersBySource) || [];
+    for (var k = 0; k < pArr.length; k++) pMap[vKey(pArr[k][0], pArr[k][1])] = +pArr[k][2] || 0;
+    var seenKeys = {};
     var rows = ((_ovData && _ovData.sources) || []).map(function(r) {
-      return { s: r[0] || '', m: r[1] || '', n: +r[2] || 0, c: +r[3] || 0 };
-    }).sort(function(a, b) { return b.n - a.n; });
+      var s = r[0] || '', m = r[1] || '', kk = vKey(s, m);
+      seenKeys[kk] = true;
+      return { s: s, m: m, n: +r[2] || 0, c: +r[3] || 0, v: vMap[kk] || 0, pay: pMap[kk] || 0 };
+    });
+    // Include visitor-only source/medium pairs (no signups yet in this range).
+    for (var vk in vMap) {
+      if (!seenKeys[vk]) {
+        var sm = vk.split('|');
+        rows.push({ s: sm[0], m: sm[1], n: 0, c: 0, v: vMap[vk], pay: pMap[vk] || 0 });
+      }
+    }
     if (!rows.length) return '<div class="nd-dcard nd-dpad"><div class="nd-empty">No source data in this snapshot</div></div>';
+    var hasVis = false;
+    for (var i2 = 0; i2 < rows.length; i2++) if (rows[i2].v > 0) { hasVis = true; break; }
+    rows.sort(function(a, b) { return hasVis ? (b.v - a.v) : (b.n - a.n); });
     var max = 1;
-    for (var i = 0; i < rows.length; i++) if (rows[i].n > max) max = rows[i].n;
+    for (var i = 0; i < rows.length; i++) {
+      var key = hasVis ? rows[i].v : rows[i].n;
+      if (key > max) max = key;
+    }
+    var rowCls = hasVis ? 'nd-srcrow c4' : 'nd-srcrow';
     var body = rows.map(function(x) {
-      var conv = x.n ? x.c / x.n * 100 : 0;
-      return '<div class="nd-srcrow"><span class="nm"><b>' + esc(x.s || 'direct') + '</b><s>' +
+      var denom = hasVis ? x.v : x.n;
+      var conv = denom ? (hasVis ? x.pay : x.c) / denom * 100 : 0;
+      var vCell = hasVis ? '<span class="n">' + x.v.toLocaleString('en-IN') + '</span>' : '';
+      return '<div class="' + rowCls + '"><span class="nm"><b>' + esc(x.s || 'direct') + '</b><s>' +
         esc(x.m || 'none') + ' · ' + ndDrillBucket(x.s, x.m) + '</s></span>' +
+        vCell +
         '<span class="n">' + x.n.toLocaleString('en-IN') + '</span>' +
         '<span class="cv">' + (conv >= 10 ? conv.toFixed(0) : conv.toFixed(1)) + '%</span>' +
-        '<div class="nd-prog"><i style="width:' + Math.max(2, Math.round(x.n / max * 100)) + '%"></i></div></div>';
+        '<div class="nd-prog"><i style="width:' + Math.max(2, Math.round(denom / max * 100)) + '%"></i></div></div>';
     }).join('');
-    return '<div class="nd-dcard nd-dpad"><div class="nd-dhead"><span>Source · medium</span>' +
-      '<span>Signups</span><span>Conv</span></div>' + body + '</div>' +
-      '<p class="nd-dnote">Bucket rule: Direct, Chrome Extension, organic social and the Google brand-search campaign count as Influencer. ' +
+    var headCls = hasVis ? 'nd-dhead c4' : 'nd-dhead';
+    var head = '<div class="nd-dcard nd-dpad"><div class="' + headCls + '"><span>Source · medium</span>' +
+      (hasVis ? '<span>Visitors</span>' : '') +
+      '<span>Signups</span><span>' + (hasVis ? 'Paid %' : 'Conv') + '</span></div>' + body + '</div>';
+    var note = hasVis
+      ? 'Visitors = distinct persons with at least one $pageview in this range, joined to their source and medium. ' +
+        'Paid % = payers-in-range as a share of visitors on the same row. '
+      : '';
+    return head +
+      '<p class="nd-dnote">' + note + 'Bucket rule: Direct, Chrome Extension, organic social and the Google brand-search campaign count as Influencer. ' +
       'Google (non-brand) and Meta count as Perf. Email and referral appear only in Overall. ' +
       'The snapshot carries no campaign id, so every Google row is labelled Perf here.</p>';
   }
