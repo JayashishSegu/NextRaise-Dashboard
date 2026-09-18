@@ -8253,13 +8253,25 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
     const sw = _ovData && _ovData.sameWin;
     const swCur = sw ? +sw[0] || 0 : null, swPrev = sw ? +sw[1] || 0 : 0;
     const swDelta = (swCur != null && swPrev) ? (swCur - swPrev) / swPrev * 100 : null;
-    const chMap = {}, chConv = {};
+    const chMap = {}, chConv = {}, chPayers = {};
     for (const row of ((_ovData && _ovData.sources) || [])) {
       const ch = channelOf(row[0], row[1]);
       chMap[ch] = (chMap[ch] || 0) + (+row[2] || 0);
       chConv[ch] = (chConv[ch] || 0) + (+row[3] || 0);
     }
-    const chList = Object.keys(chMap).map(k => [k, chMap[k], chConv[k] || 0]).sort((a, b) => b[1] - a[1]);
+    // Payers-in-range attributed to each channel — this reconciles with the
+    // Payers · ARPU tile because it counts distinct payers regardless of when
+    // they signed up. Old snapshots without this field fall back to chConv
+    // (signup-cohort conversions) so the card still renders.
+    const hasPayersBySrc = !!(_ovData && _ovData.payersBySource);
+    for (const row of ((_ovData && _ovData.payersBySource) || [])) {
+      const ch = channelOf(row[0], row[1]);
+      chPayers[ch] = (chPayers[ch] || 0) + (+row[2] || 0);
+    }
+    const chList = Object.keys(chMap).map(k => [
+      k, chMap[k],
+      hasPayersBySrc ? (chPayers[k] || 0) : (chConv[k] || 0)
+    ]).sort((a, b) => b[1] - a[1]);
     // Signup → Pro for the CURRENT range, so the hero can carry the same
     // per-range conversion the drill table shows. This is the "cohort" number
     // (of the people who signed up in the range, how many are now on a Pro
@@ -8861,12 +8873,19 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
     const sw = _ovData.sameWin, swCur = sw ? +sw[0] || 0 : null, swPrev = sw ? +sw[1] || 0 : 0;
     const swDelta = (swCur != null && swPrev) ? (swCur - swPrev) / swPrev * 100 : null;
 
-    const chMap = {}, chConv = {};
+    const chMap = {}, chConv = {}, chPayers = {};
     for (const row of (_ovData.sources || [])) {
       const ch = channelOf(row[0], row[1]);
       chMap[ch] = (chMap[ch] || 0) + (+row[2] || 0);
       chConv[ch] = (chConv[ch] || 0) + (+row[3] || 0);
     }
+    // Payers-in-range attributed to each channel — reconciles with Payers · ARPU.
+    const hasPayersBySrc = !!(_ovData && _ovData.payersBySource);
+    for (const row of ((_ovData && _ovData.payersBySource) || [])) {
+      const ch = channelOf(row[0], row[1]);
+      chPayers[ch] = (chPayers[ch] || 0) + (+row[2] || 0);
+    }
+    const chPaid = k => hasPayersBySrc ? (chPayers[k] || 0) : (chConv[k] || 0);
     const chList = Object.keys(chMap).map(k => [k, chMap[k]]).sort((a, b) => b[1] - a[1]).slice(0, 5);
     const chMax = Math.max(1, ...chList.map(x => x[1]));
 
@@ -8925,7 +8944,7 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
         '<div class="nd-list-h" style="padding:0"><b>Acquisition</b>' +
         '<button class="nd-see" onclick="ndOpenDrill(\'sources\')">See all ›</button></div>' +
         (chList.map(x => '<div class="nd-srow"><div class="nd-stop"><b>' + esc(x[0]) + '</b><span>' +
-          x[1].toLocaleString('en-IN') + ' <s>· ' + (chConv[x[0]] || 0).toLocaleString('en-IN') + ' paid</s></span></div>' +
+          x[1].toLocaleString('en-IN') + ' <s>· ' + chPaid(x[0]).toLocaleString('en-IN') + ' paid</s></span></div>' +
           '<div class="nd-prog"><i style="width:' + Math.round(x[1] / chMax * 100) + '%"></i></div></div>').join('')
           || '<div class="nd-empty">No channel data in this range</div>') +
       '</div>' +
