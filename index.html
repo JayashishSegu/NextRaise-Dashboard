@@ -8253,6 +8253,10 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
     const sw = _ovData && _ovData.sameWin;
     const swCur = sw ? +sw[0] || 0 : null, swPrev = sw ? +sw[1] || 0 : 0;
     const swDelta = (swCur != null && swPrev) ? (swCur - swPrev) / swPrev * 100 : null;
+    // Prior-window distinct payers, from the same sameWin scan. Lets the Paid
+    // tile compare against a real prior window instead of the cohort-only prev.
+    const payersPrev = sw ? +sw[3] || 0 : 0;
+    const payersDelta = (revPayers != null && payersPrev) ? (revPayers - payersPrev) / payersPrev * 100 : null;
     const chMap = {}, chConv = {};
     for (const row of ((_ovData && _ovData.sources) || [])) {
       const ch = channelOf(row[0], row[1]);
@@ -8270,7 +8274,7 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
     const cbpRate   = cbp ? +cbp.rate   || 0 : null;
     return { newProduct, newToday, newWeek, newYesterday, activePro, revInr, revUsd, totalRevInr,
       revPayers, arpu, rangeLabel, key, growth, rangeSignups, payCount, dPct, prevN,
-      swCur, swDelta, chList, cbpPro, cbpRate,
+      swCur, swDelta, payersPrev, payersDelta, chList, cbpPro, cbpRate,
       viewLabel: (BUCKET_VIEW === 'overall' ? 'Overall' : BUCKET_VIEW === 'perf' ? 'Perf' : 'Influencer') };
   }
   const ndIni = s => { const t = String(s || '?').trim(), p = t.split(/\s+/);
@@ -8610,12 +8614,20 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
             : (M.newProduct ? (M.activePro / M.newProduct * 100).toFixed(2) : '0') + '% of ' +
               (M.newProduct >= 1000 ? (M.newProduct / 1000).toFixed(1) + 'K' : M.newProduct) + ' users') + '</s>' +
           _feet.proFoot + '</button>' +
-        '<button class="ndc ndc-kpi" onclick="ndOpenDrill(\'pro\')"><span class="nd-lbl">Signed up &amp; paid</span>' +
-          '<b>' + (M.swCur == null ? '—' : M.swCur.toLocaleString('en-IN')) + '</b>' +
-          '<s class="' + (M.swDelta == null ? '' : M.swDelta >= 0 ? 'up' : 'down') + '">' +
-          (M.swCur == null ? 'after next refresh'
-            : M.swDelta != null ? (M.swDelta >= 0 ? '+' : '') + M.swDelta.toFixed(0) + '% vs prior period'
-            : (M.rangeSignups ? (M.swCur / M.rangeSignups * 100).toFixed(1) + '% of signups' : 'same window')) + '</s>' +
+        // "Paid" = distinct people who paid in this range, from postgres.payments.
+        // Anyone, regardless of when they signed up. Kept the same drill target
+        // so the tile still opens the payer detail. Cohort context lives in the
+        // tooltip so both readings stay reachable.
+        '<button class="ndc ndc-kpi" onclick="ndOpenDrill(\'payments\')" title="' +
+          (M.swCur != null ? 'Of these ' + M.revPayers + ' payers, ' + M.swCur + ' also signed up in this range.' : '') +
+          '"><span class="nd-lbl">Paid</span>' +
+          '<b>' + M.revPayers.toLocaleString('en-IN') + '</b>' +
+          '<s class="' + (M.payersDelta == null ? '' : M.payersDelta >= 0 ? 'up' : 'down') + '">' +
+          (M.payersDelta != null
+            ? (M.payersDelta >= 0 ? '+' : '') + M.payersDelta.toFixed(0) + '% vs prior period'
+            : M.payersPrev
+              ? 'vs ' + M.payersPrev.toLocaleString('en-IN') + ' prior period'
+              : 'people paid in this range') + '</s>' +
           _feet.paidFoot + '</button>' +
         '<button class="ndc ndc-kpi" onclick="ndOpenDrill(\'payments\')"><span class="nd-lbl">Payers · ARPU</span>' +
           '<b>' + M.revPayers.toLocaleString('en-IN') + '</b><s>₹' + M.arpu.toLocaleString('en-IN') + ' per payer</s>' +
@@ -15459,11 +15471,13 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
     const rev = (d.dailyPay || []).map(r => (+r[2] || 0) + (+r[3] || 0) * fx);
     const pays = (d.dailyPay || []).map(r => +r[1] || 0);
     const proShare = (M.newProduct && ndSubsOk()) ? (M.activePro / M.newProduct * 100) : null;
-    const paidRate = (M.swCur != null && M.rangeSignups) ? (M.swCur / M.rangeSignups * 100) : null;
+    // Paid tile now shows all payers in the range, so the meter that scored the
+    // signup-cohort rate no longer fits. Use the daily payment sparkline so the
+    // tile's context matches the number on top of it.
     return {
       revFoot:  ndSpark(rev),
       proFoot:  ndBar(proShare, 100),
-      paidFoot: ndBar(paidRate, ND_PRO_TARGET),
+      paidFoot: ndSpark(pays),
       payFoot:  ndSpark(pays),
     };
   }
