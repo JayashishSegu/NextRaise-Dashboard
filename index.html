@@ -8657,7 +8657,7 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
           '<b>' + M.revPayers.toLocaleString('en-IN') + '</b><s>₹' + M.arpu.toLocaleString('en-IN') + ' per payer</s>' +
           _feet.payFoot + '</button>' +
       '</div>' +
-      '<div class="ndc nd-s4 ndc-panel"><div class="ndc-ph"><b>Acquisition</b>' +
+      '<div class="ndc nd-s4 ndc-panel"><div class="ndc-ph"><b title="Channel signups come from the PostHog signup_complete event, joined to persons for source and medium. The hero counts every postgres.users row created in the range, which is 15-20% higher because ad-blockers and OAuth redirects drop the client-side event. The gap is why totals here won\'t equal the hero.">Acquisition</b>' +
         '<button class="nd-see" onclick="ndOpenDrill(\'sources\')">See all ›</button></div>' +
         (M.chList.slice(0, 5).map(x => {
           const vis = +x[3] || 0, sig = +x[1] || 0, paid = +x[2] || 0;
