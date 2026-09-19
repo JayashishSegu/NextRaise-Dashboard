@@ -8242,7 +8242,13 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
     const growth = ((_ovData && _ovData.growth) || [])
       .map(r => ({ d: r[0], v: +r[1] || 0 }))
       .filter(r => !_b || (r.d >= _b.startDate && r.d < _b.endDate));
-    const rangeSignups = growth.reduce((a, b) => a + b.v, 0);
+    // Prefer curSignups (server aggregate from postgres.users) over summing
+    // the growth series: same source, but the aggregate survives a growth
+    // query that failed or returned empty, so the hero doesn't render as 0
+    // when only the daily bars are missing.
+    const _rsChart = growth.reduce((a, b) => a + b.v, 0);
+    const _rsAgg   = _ovData && Number.isFinite(+_ovData.curSignups) ? +_ovData.curSignups : null;
+    const rangeSignups = _rsAgg != null ? _rsAgg : _rsChart;
     const payCount = ((_ovData && _ovData.dailyPay) || []).reduce((a, r) => a + (+r[1] || 0), 0);
     // Prior period comes from the same query as rangeSignups, over the same
     // number of elapsed days. 0 or missing (old cached snapshot, All time, or the
@@ -8870,7 +8876,10 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
     const growth = (_ovData.growth || [])
       .map(r => ({ d: r[0], v: +r[1] || 0 }))
       .filter(r => !_mb || (r.d >= _mb.startDate && r.d < _mb.endDate));
-    const rangeSignups = growth.reduce((a, b) => a + b.v, 0);
+    // Prefer curSignups aggregate over summing the daily chart series.
+    const _mrsChart = growth.reduce((a, b) => a + b.v, 0);
+    const _mrsAgg   = Number.isFinite(+_ovData.curSignups) ? +_ovData.curSignups : null;
+    const rangeSignups = _mrsAgg != null ? _mrsAgg : _mrsChart;
     const payCount = (_ovData.dailyPay || []).reduce((a, r) => a + (+r[1] || 0), 0);
 
     const prevSignups = +_ovData.prevSignups || 0;
