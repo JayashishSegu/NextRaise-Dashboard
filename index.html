@@ -2921,15 +2921,29 @@
       html[data-theme="light"] .nd-badge.down{ background:var(--nd-red-100); color:var(--nd-red-700); }
       html[data-theme="light"] .nd-badge.flat{ background:var(--nd-100); color:var(--nd-500); }
       html[data-theme="light"] .nd-prev{ font-size:12px; font-weight:500; color:var(--nd-400); }
-      html[data-theme="light"] .ndc-bars{ height:220px; display:flex; align-items:flex-end; gap:8px; border-bottom:1px solid var(--nd-100); }
+      html[data-theme="light"] .ndc-bars{ height:180px; display:flex; align-items:flex-end; gap:6px; border-bottom:1px solid var(--nd-100); position:relative; }
       html[data-theme="light"] .ndc-bars{ justify-content:center; }
-      html[data-theme="light"] .ndc-bars > span{ flex:1 1 0; min-width:0; max-width:92px; height:100%; display:flex; align-items:flex-end; }
+      html[data-theme="light"] .ndc-bars > span{ flex:1 1 0; min-width:0; max-width:44px; height:100%; display:flex; align-items:flex-end; }
+      html[data-theme="light"] .ndc-bars.ndc-bars--dense{ gap:3px; }
+      html[data-theme="light"] .ndc-bars.ndc-bars--dense > span{ max-width:28px; }
       html[data-theme="light"] .ndc-xlbl{ justify-content:center; }
-      html[data-theme="light"] .ndc-xlbl span{ flex:1 1 0; max-width:92px; }
-      html[data-theme="light"] .ndc-bars i{ display:block; width:100%; border-radius:6px 6px 2px 2px; background:var(--nd-act-500);
+      html[data-theme="light"] .ndc-xlbl span{ flex:1 1 0; max-width:44px; }
+      html[data-theme="light"] .ndc-bars i{ display:block; width:100%; border-radius:5px 5px 2px 2px; background:var(--nd-act-500);
         transition:height 520ms cubic-bezier(.2,0,.2,1); }
-      html[data-theme="light"] .ndc-xlbl{ display:flex; gap:8px; margin-top:8px; }
-      html[data-theme="light"] .ndc-xlbl span{ flex:1; min-width:0; text-align:center; font-size:11px; font-weight:500; color:var(--nd-400); }
+      html[data-theme="light"] .ndc-xlbl{ display:flex; gap:6px; margin-top:8px; }
+      html[data-theme="light"] .ndc-xlbl span{ flex:1; min-width:0; text-align:center; font-size:11px; font-weight:500; color:var(--nd-400);
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      /* single-day / two-day hero: horizontal comparison replaces the bar chart */
+      html[data-theme="light"] .nd-compare{ display:flex; flex-direction:column; gap:22px; padding:8px 4px 12px; }
+      html[data-theme="light"] .nd-cmp-row{ display:grid; grid-template-columns:110px 1fr auto; gap:14px; align-items:center; }
+      html[data-theme="light"] .nd-cmp-lbl{ font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--nd-500);
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+      html[data-theme="light"] .nd-cmp-track{ height:10px; background:var(--nd-100); border-radius:999px; overflow:hidden; }
+      html[data-theme="light"] .nd-cmp-fill{ height:100%; border-radius:999px; transition:width 520ms cubic-bezier(.2,0,.2,1); }
+      html[data-theme="light"] .nd-cmp-fill.now{ background:var(--nd-act-500); }
+      html[data-theme="light"] .nd-cmp-fill.prev{ background:var(--nd-300,#CDD4E4); }
+      html[data-theme="light"] .nd-cmp-n{ font-size:18px; font-weight:800; font-variant-numeric:tabular-nums; color:var(--nd-900); min-width:64px; text-align:right; }
+      html[data-theme="light"] .nd-cmp-foot{ display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--nd-500); margin-top:4px; padding:0 4px; }
 
       html[data-theme="light"] .ndc-kpis{ grid-column:span 4; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
       html[data-theme="light"] .ndc-kpi{ padding:18px 20px; display:flex; flex-direction:column; gap:6px; text-align:left;
@@ -3167,6 +3181,9 @@
       html[data-theme="light"] .nd-bars{ height:120px; display:flex; align-items:flex-end; gap:8px; padding-top:22px; }
       html[data-theme="light"] .nd-bars{ justify-content:center; }
       html[data-theme="light"] .nd-bars > span{ flex:1 1 0; min-width:0; max-width:64px; height:100%; display:flex; align-items:flex-end; }
+      html[data-theme="light"] .nd-bars.ndc-bars--dense{ gap:3px; }
+      html[data-theme="light"] .nd-bars.ndc-bars--dense > span,
+      html[data-theme="light"] .nd-bars.ndc-bars--dense > .nd-bar{ max-width:22px; }
       html[data-theme="light"] .nd-xlbl{ justify-content:center; }
       html[data-theme="light"] .nd-xlbl span{ flex:1 1 0; max-width:64px; }
       html[data-theme="light"] .nd-bars i{ display:block; width:100%; border-radius:8px 8px 4px 4px; background:var(--nd-act-500);
@@ -3602,7 +3619,8 @@ html[data-theme="light"] .nd-foot{ text-align:center; font-size:11px; font-weigh
         appearance:none; -webkit-appearance:none; border:0; background:none; padding:0; margin:0;
         font:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent;
         flex:1 1 0; min-width:0; height:100%; display:flex; align-items:flex-end; }
-      html[data-theme="light"] .ndc-bars > .nd-bar{ max-width:92px; }
+      html[data-theme="light"] .ndc-bars > .nd-bar{ max-width:44px; }
+      html[data-theme="light"] .ndc-bars.ndc-bars--dense > .nd-bar{ max-width:28px; }
       html[data-theme="light"] .nd-bars > .nd-bar{ max-width:64px; }
       html[data-theme="light"] .ndc-bars > .nd-bar:focus-visible,
       html[data-theme="light"] .nd-bars > .nd-bar:focus-visible{
@@ -8573,10 +8591,23 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
     if (!area || !_ovData) return;
     const esc = s => h(s == null ? '' : s);
     const M = ndOverviewModel();
-    const bars = M.growth.slice(-14);
+    // Show every day in the range. Old code sliced the last 14, so a
+    // Last-month view lost half its story. The bar CSS caps individual bar
+    // width (~44px) and the .dense modifier tightens gap+width past 14
+    // bars, so 30 days fit cleanly without the layout stretching. Above
+    // 45 daily bars the strip loses information density, so clip to the
+    // most recent 45 days — the delta pill still reads from the full range.
+    const bars = M.growth.length > 45 ? M.growth.slice(-45) : M.growth;
+    const barsDense = bars.length > 14;
+    const barsCls = barsDense ? 'ndc-bars ndc-bars--dense' : 'ndc-bars';
     const bMax = Math.max(1, ...bars.map(b => b.v));
-    const bLbl = bars.map(b => { const d = new Date(b.d);
-      return isNaN(d.getTime()) ? String(b.d).slice(5) : d.toLocaleDateString('en-IN', { weekday: 'short' }); });
+    // For dense views the weekday code repeats too much (5+ Mondays); switch
+    // to the day-of-month so each label stays distinct without crowding.
+    const bLbl = bars.map(b => {
+      const d = new Date(b.d);
+      if (isNaN(d.getTime())) return String(b.d).slice(5);
+      return barsDense ? String(d.getDate()) : d.toLocaleDateString('en-IN', { weekday: 'short' });
+    });
     const barsHtml = bars.map((b, i) => {
       const n = b.v.toLocaleString('en-IN');
       return '<button type="button" class="nd-bar" data-i="' + i + '" data-n="' + esc(n) + '" data-label="' + esc(bLbl[i]) +
@@ -8584,7 +8615,42 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
         ' signups" onclick="ndSelectBar(' + i + ')"><i style="height:' + Math.max(3, Math.round(b.v / bMax * 100)) +
         '%"></i></button>';
     }).join('');
-    const xLbl = bLbl.map(l => '<span>' + esc(l) + '</span>').join('');
+    // For dense (>14) views, show only 6 evenly-spaced date labels so the
+    // axis doesn't wrap or overlap. Includes first and last so the range
+    // stays legible.
+    const xLbl = (barsDense && bars.length > 6)
+      ? bars.map((b, i) => {
+          const step = Math.max(1, Math.round((bars.length - 1) / 5));
+          const show = (i === 0) || (i === bars.length - 1) || (i % step === 0);
+          return '<span>' + (show ? esc(bLbl[i]) : '') + '</span>';
+        }).join('')
+      : bLbl.map(l => '<span>' + esc(l) + '</span>').join('');
+    // 1-2 data points look terrible as bars stranded in whitespace. Swap in
+    // a horizontal comparison against the prior period, using the numbers
+    // the hero already computes. Ranges: today, yesterday, custom-same-day.
+    const compactHero = bars.length <= 2;
+    const cmpCur = M.rangeSignups || 0;
+    const cmpPrev = (M.prevN != null && M.prevN >= 0) ? M.prevN : 0;
+    const cmpMax = Math.max(1, cmpCur, cmpPrev);
+    const compareHtml =
+      '<div class="nd-compare">' +
+        '<div class="nd-cmp-row">' +
+          '<div class="nd-cmp-lbl">' + esc(M.rangeLabel) + '</div>' +
+          '<div class="nd-cmp-track"><div class="nd-cmp-fill now" style="width:' + Math.round(cmpCur / cmpMax * 100) + '%"></div></div>' +
+          '<div class="nd-cmp-n">' + cmpCur.toLocaleString('en-IN') + '</div>' +
+        '</div>' +
+        '<div class="nd-cmp-row">' +
+          '<div class="nd-cmp-lbl">Prior period</div>' +
+          '<div class="nd-cmp-track"><div class="nd-cmp-fill prev" style="width:' + Math.round(cmpPrev / cmpMax * 100) + '%"></div></div>' +
+          '<div class="nd-cmp-n">' + (M.prevN != null ? cmpPrev.toLocaleString('en-IN') : '—') + '</div>' +
+        '</div>' +
+        (M.prevN != null && M.prevN > 0
+          ? '<div class="nd-cmp-foot"><span>' + (cmpCur >= cmpPrev ? '+' : '') +
+              (cmpCur - cmpPrev).toLocaleString('en-IN') + ' vs prior</span>' +
+            '<span>' + Math.abs((cmpCur - cmpPrev) / cmpPrev * 100).toFixed(1) + '% ' +
+              (cmpCur >= cmpPrev ? 'higher' : 'lower') + '</span></div>'
+          : '') +
+      '</div>';
     const dCls = M.dPct == null ? 'flat' : M.dPct >= 0 ? 'up' : 'down';
     const dTxt = M.dPct == null ? M.rangeLabel : (M.dPct >= 0 ? '+' : '') + M.dPct.toFixed(1) + '%';
     // Bar size against visitors when the snapshot has them (top of funnel),
@@ -8632,8 +8698,10 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
               })()
             : '') +
         '</div></div></div>' +
-        '<div class="nd-chartwrap"><span class="nd-tip" hidden></span><div class="ndc-bars">' + barsHtml +
-          '</div><div class="ndc-xlbl">' + xLbl + '</div></div>' +
+        (compactHero
+          ? compareHtml
+          : '<div class="nd-chartwrap"><span class="nd-tip" hidden></span><div class="' + barsCls + '">' + barsHtml +
+            '</div><div class="ndc-xlbl">' + xLbl + '</div></div>') +
       '</div>' +
       '<div class="ndc-kpis">' +
         '<button class="ndc ndc-kpi" onclick="ndOpenDrill(\'payments\')"><span class="nd-lbl">Revenue</span>' +
@@ -8888,11 +8956,15 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
     const dCls = dPct == null ? 'flat' : dPct >= 0 ? 'up' : 'down';
     const dTxt = dPct == null ? rangeLabel : (dPct >= 0 ? '+' : '') + dPct.toFixed(1) + '%';
 
-    const bars = growth.slice(-7);
+    // Mobile: keep the last 30 days at most so the strip fits, but always show
+    // every day in the range up to that cap (no fixed 7).
+    const bars = growth.length > 30 ? growth.slice(-30) : growth;
+    const barsDense = bars.length > 10;
     const bMax = Math.max(1, ...bars.map(b => b.v));
     const bLbl = bars.map(b => {
       const d = new Date(b.d);
-      return isNaN(d.getTime()) ? String(b.d).slice(5) : d.toLocaleDateString('en-IN', { weekday: 'short' });
+      if (isNaN(d.getTime())) return String(b.d).slice(5);
+      return barsDense ? String(d.getDate()) : d.toLocaleDateString('en-IN', { weekday: 'short' });
     });
     const barsHtml = bars.map((b, i) => {
       const n = b.v.toLocaleString('en-IN');
@@ -8901,7 +8973,26 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
         ' signups" onclick="ndSelectBar(' + i + ')"><i style="height:' + Math.max(4, Math.round(b.v / bMax * 100)) +
         '%"></i></button>';
     }).join('');
-    const xLbl = bLbl.map(l => '<span>' + esc(l) + '</span>').join('');
+    const xLbl = (barsDense && bars.length > 6)
+      ? bars.map((b, i) => {
+          const step = Math.max(1, Math.round((bars.length - 1) / 4));
+          const show = (i === 0) || (i === bars.length - 1) || (i % step === 0);
+          return '<span>' + (show ? esc(bLbl[i]) : '') + '</span>';
+        }).join('')
+      : bLbl.map(l => '<span>' + esc(l) + '</span>').join('');
+    const mCompact = bars.length <= 2;
+    const mCmpCur = rangeSignups || 0;
+    const mCmpPrev = (prevN != null && prevN >= 0) ? prevN : 0;
+    const mCmpMax = Math.max(1, mCmpCur, mCmpPrev);
+    const mCompareHtml =
+      '<div class="nd-compare">' +
+        '<div class="nd-cmp-row"><div class="nd-cmp-lbl">' + esc(rangeLabel) + '</div>' +
+          '<div class="nd-cmp-track"><div class="nd-cmp-fill now" style="width:' + Math.round(mCmpCur / mCmpMax * 100) + '%"></div></div>' +
+          '<div class="nd-cmp-n">' + mCmpCur.toLocaleString('en-IN') + '</div></div>' +
+        '<div class="nd-cmp-row"><div class="nd-cmp-lbl">Prior period</div>' +
+          '<div class="nd-cmp-track"><div class="nd-cmp-fill prev" style="width:' + Math.round(mCmpPrev / mCmpMax * 100) + '%"></div></div>' +
+          '<div class="nd-cmp-n">' + (prevN != null ? mCmpPrev.toLocaleString('en-IN') : '—') + '</div></div>' +
+      '</div>';
 
     const sw = _ovData.sameWin, swCur = sw ? +sw[0] || 0 : null, swPrev = sw ? +sw[1] || 0 : 0;
     const swDelta = (swCur != null && swPrev) ? (swCur - swPrev) / swPrev * 100 : null;
@@ -8962,8 +9053,11 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
         '<div class="nd-hero-row"><div class="nd-big stat-num">' + rangeSignups.toLocaleString('en-IN') + '</div>' +
           '<div class="nd-delta"><span class="nd-badge ' + dCls + '">' + esc(dTxt) + '</span>' +
           (prevN != null ? '<span class="nd-prev">vs ' + prevN.toLocaleString('en-IN') + ' prior</span>' : '') + '</div></div>' +
-        '<div class="nd-chart nd-chartwrap"><span class="nd-tip" hidden></span><div class="nd-bars">' + barsHtml +
-          '</div><div class="nd-xlbl">' + xLbl + '</div></div>' +
+        (mCompact
+          ? mCompareHtml
+          : '<div class="nd-chart nd-chartwrap"><span class="nd-tip" hidden></span><div class="nd-bars' +
+            (barsDense ? ' ndc-bars--dense' : '') + '">' + barsHtml +
+            '</div><div class="nd-xlbl">' + xLbl + '</div></div>') +
       '</div>' +
       '<div class="nd-kpis">' +
         '<button class="nd-card nd-kpi" onclick="ndOpenDrill(\'payments\')"><span class="nd-lbl">Revenue</span>' +
