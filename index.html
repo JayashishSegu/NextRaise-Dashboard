@@ -7259,6 +7259,13 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
   // ── Overview / Analytics (default landing tab) ────────────────────
   let _ovData = null;
   let _ovDataTs = null;   // wall-clock time of the data currently on screen (may be a stale snapshot)
+  // Provenance of the last /api/overview response: 'compute' (freshly recomputed),
+  // 'snapshot-recent' (server throttled because the snapshot is already <60s old,
+  // still counts as fresh), 'snapshot' (normal edge-cached copy), or one of the
+  // failure/fallback flavors (snapshot-capped, snapshot-budget, snapshot-error,
+  // snapshot-stale). The Refresh button uses this instead of just watching for a
+  // ts change so a legitimately-fresh snapshot doesn't read as a refresh failure.
+  let _ovDataSource = null;
   // v3: bumped from v2 to purge any snapshots poisoned by the pre-fix range race.
   const OV_CACHE_BASE = 'nr_ov_cache3', OV_CACHE_TTL = 10 * 60 * 1000; // 10 min
   const OV_FRESH_TTL = 3 * 60 * 1000; // <3 min old → skip the refetch entirely (instant, zero queries)
@@ -7695,7 +7702,12 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
       }
       if (!j || !j.data || !Array.isArray(j.data.counts)) return null;
       // j.ts is the server's computedAt, not the time this response was written.
-      return { data: j.data, ts: j.ts || Date.now() };
+      // j.source is one of: compute, snapshot, snapshot-recent, snapshot-waited,
+      // snapshot-stale, snapshot-capped, snapshot-budget, snapshot-error.
+      // The refresh handler uses `source` to distinguish "actually recomputed"
+      // and "already fresh, throttled" from a genuine failure — otherwise a
+      // <60s snapshot returned with an unchanged ts read as "Could not refresh".
+      return { data: j.data, ts: j.ts || Date.now(), source: j.source || 'snapshot', ageSec: j.ageSec || 0 };
     };
     if (force) {
       // The live recompute is heavy and can occasionally hit ClickHouse's limit;
@@ -7792,6 +7804,7 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
           const wasTs = _ovDataTs;
           _ovData = api.data;
           _ovDataTs = api.ts;
+          _ovDataSource = api.source || 'snapshot';
           saveOvCache(_ovData, reqRange, api.ts);
           (document.getElementById('skTabBadge')||{}).textContent = _ovData.counts[1];
           // Skip the DOM rewrite when the snapshot did not advance. The auto-tick
@@ -8554,48 +8567,61 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
     if (btn) { btn.classList.add('spin'); btn.disabled = true; }
     const t0 = Date.now();
     let settled = false;
-    const finish = (ok, err) => {
+    // Sources that mean "data is actually fresh" — either a real recompute, or
+    // a throttled response where the snapshot is <60s old and refreshing again
+    // would waste PostHog reads. Anything else (snapshot-error, snapshot-budget,
+    // snapshot-capped, snapshot-stale) means the compute failed or was skipped
+    // and the numbers on screen are what the last successful compute produced.
+    const FRESH_SOURCES = { compute: 1, 'snapshot-recent': 1, 'snapshot-waited': 1 };
+    const FAILED_SOURCES = { 'snapshot-error': 1, 'snapshot-budget': 1,
+      'snapshot-capped': 1, 'snapshot-stale': 1 };
+    const finish = (outcome, err) => {
       _ndRefreshBusy = false;
       if (btn) { btn.classList.remove('spin'); btn.disabled = false; }
-      if (!ok && err) console.warn('refresh failed on ' + tab, err);
+      if (outcome === 'fail' && err) console.warn('refresh failed on ' + tab, err);
       try {
         const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        if (ok) { ndToast('Refreshed · ' + now); }
+        if (outcome === 'ok') ndToast('Refreshed · ' + now);
+        else if (outcome === 'throttled') ndToast('Already fresh · snapshot is ' +
+          Math.max(1, Math.round((Date.now() - (_ovDataTs || Date.now())) / 1000)) + 's old');
+        else if (outcome === 'budget') ndToast('PostHog budget paused · showing the last snapshot');
         else if (tab === 'overview' && typeof _ovDataTs === 'number' && _ovDataTs) {
-          // Say which snapshot is on screen, so this agrees with the Live pill
-          // instead of contradicting it.
-          ndToast('Could not refresh · still showing '
+          ndToast('Refresh failed · still showing '
             + new Date(_ovDataTs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-        } else { ndToast('Refresh failed · showing the last snapshot'); }
+        } else ndToast('Refresh failed · showing the last snapshot');
       } catch (_) {}
       try { ndLiveEl(document.getElementById('ndDeskLive')); ndLiveEl(document.getElementById('ndLive')); } catch (_) {}
     };
     // the glyph completes one full 900ms turn before the toast lands
-    const done = (ok, err) => {
+    const done = (outcome, err) => {
       if (settled) return;
       settled = true;
-      setTimeout(() => finish(ok, err), Math.max(0, 900 - (Date.now() - t0)));
+      setTimeout(() => finish(outcome, err), Math.max(0, 900 - (Date.now() - t0)));
     };
-    // Several fetchers catch their own failures and paint an error box rather
-    // than rejecting. Resolving is therefore not proof of a refresh: check the
-    // screen before claiming one.
+    // For non-overview tabs, the only signal we have is whether the page
+    // painted without an error box.
     const painted = () => {
       const pg = document.querySelector('[id^="page-"].active');
       return !(pg && pg.querySelector('.error-box'));
     };
-    // On Overview the only honest test is whether the snapshot actually moved.
-    // A forced recompute can fail server-side (ClickHouse max execution time on
-    // the heavier buckets) and the fetcher then falls back to the edge-cached
-    // copy, which resolves cleanly while the numbers are unchanged. Reporting
-    // "Refreshed" there is a lie, and it is the one the Live pill contradicts.
+    // Overview: read the server's own source label. A refresh that returns
+    // 'snapshot-recent' isn't a failure — the server correctly refused to
+    // re-run a compute against a <60s snapshot. A refresh that returns
+    // 'snapshot-error' or 'snapshot-budget' IS a failure and needs to say so.
+    // ts-advance stays as a backup signal for the pre-source snapshot path.
     const tsBefore = (typeof _ovDataTs === 'number') ? _ovDataTs : 0;
-    const advanced = () => {
-      if (tab !== 'overview') return painted();
+    const classify = () => {
+      if (tab !== 'overview') return painted() ? 'ok' : 'fail';
+      const src = _ovDataSource;
       const tsAfter = (typeof _ovDataTs === 'number') ? _ovDataTs : 0;
-      return tsAfter > tsBefore;
+      if (src === 'snapshot-budget') return 'budget';
+      if (FAILED_SOURCES[src]) return 'fail';
+      if (FRESH_SOURCES[src]) return src === 'compute' ? 'ok' : 'throttled';
+      // Older server response with no `source` field: fall back to ts test.
+      return tsAfter > tsBefore ? 'ok' : 'fail';
     };
-    Promise.resolve(work).then(() => done(advanced()), (e) => done(false, e));
-    setTimeout(() => done(false, 'timeout'), 20000);
+    Promise.resolve(work).then(() => done(classify()), (e) => done('fail', e));
+    setTimeout(() => done('fail', 'timeout'), 20000);
   }
 
 
