@@ -2913,6 +2913,19 @@
 
       html[data-theme="light"] .ndc-hero{ padding:24px; display:flex; flex-direction:column; gap:18px; }
       html[data-theme="light"] .ndc-hero-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+      /* Hero metric-switcher — sits inline with the label */
+      html[data-theme="light"] .nd-metric-seg{ display:inline-flex; padding:2px; gap:2px; background:var(--nd-100); border-radius:999px;
+        border:1px solid var(--nd-100); align-self:flex-start; }
+      html[data-theme="light"] .nd-metric-seg > button{ appearance:none; border:0; background:transparent; padding:5px 12px; font:inherit;
+        font-size:12px; font-weight:600; color:var(--nd-500); border-radius:999px; cursor:pointer; letter-spacing:.01em;
+        transition:background 160ms, color 160ms; }
+      html[data-theme="light"] .nd-metric-seg > button:hover{ color:var(--nd-700); }
+      html[data-theme="light"] .nd-metric-seg > button.on{ background:#fff; color:var(--nd-900);
+        box-shadow:0 1px 2px rgba(15,28,61,.08), 0 0 0 1px var(--nd-100); }
+      html[data-theme="light"][data-appearance="dark"] .nd-metric-seg{ background:#151B2E; border-color:#232C4A; }
+      html[data-theme="light"][data-appearance="dark"] .nd-metric-seg > button{ color:#8E9AB8; }
+      html[data-theme="light"][data-appearance="dark"] .nd-metric-seg > button:hover{ color:#D7DEF0; }
+      html[data-theme="light"][data-appearance="dark"] .nd-metric-seg > button.on{ background:#232C4A; color:#F3F5FB; box-shadow:none; }
       html[data-theme="light"] .ndc-hnum{ display:flex; align-items:baseline; gap:14px; }
       html[data-theme="light"] .ndc-big{ font-size:48px; font-weight:800; letter-spacing:-.03em; line-height:1; color:var(--nd-900); }
       html[data-theme="light"] .nd-badge{ display:inline-flex; align-items:center; height:24px; padding:0 10px; border-radius:999px;
@@ -8591,33 +8604,76 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
     if (!area || !_ovData) return;
     const esc = s => h(s == null ? '' : s);
     const M = ndOverviewModel();
-    // Show every day in the range. Old code sliced the last 14, so a
-    // Last-month view lost half its story. The bar CSS caps individual bar
-    // width (~44px) and the .dense modifier tightens gap+width past 14
-    // bars, so 30 days fit cleanly without the layout stretching. Above
-    // 45 daily bars the strip loses information density, so clip to the
-    // most recent 45 days — the delta pill still reads from the full range.
-    const bars = M.growth.length > 45 ? M.growth.slice(-45) : M.growth;
+    const heroTab = ndHeroTab();
+    // Two hero views. Revenue is primary; Signups is the pre-monetization
+    // metric. They share the chart shape (daily bars) but pull different
+    // series and different totals/deltas.
+    const _fmtN  = n => (+n || 0).toLocaleString('en-IN');
+    const _fmtINR = n => '₹' + Math.round(+n || 0).toLocaleString('en-IN');
+    const _dp   = (_ovData && _ovData.dailyPay) || [];
+    // Zero-fill days for the revenue series so 0-revenue days show a gap in
+    // the strip rather than making adjacent bars misalign.
+    const _daysInRange = (_ovData && _ovData.growth || []).map(r => r[0]);
+    const _payMap = {};
+    for (const r of _dp) _payMap[r[0]] = { inr: +r[2] || 0, usd: +r[3] || 0, cnt: +r[1] || 0 };
+    const _revSeries = _daysInRange.map(d => {
+      const row = _payMap[d] || { inr: 0, usd: 0, cnt: 0 };
+      return { d, v: Math.round(row.inr + row.usd * USD_TO_INR) };
+    });
+    // Revenue prior-period delta, from server-computed pgRevenueTotals.
+    const _prevRevInr = (_ovData && _ovData.prevRevInr) != null ? +_ovData.prevRevInr : null;
+    const _prevRevUsd = (_ovData && _ovData.prevRevUsd) != null ? +_ovData.prevRevUsd : 0;
+    const _prevRevTot = _prevRevInr != null ? Math.round(_prevRevInr + _prevRevUsd * USD_TO_INR) : null;
+    const _revDPct = (_prevRevTot != null && _prevRevTot > 0)
+      ? (M.totalRevInr - _prevRevTot) / _prevRevTot * 100 : null;
+
+    let heroLabelKind, heroBig, heroSub, heroPrevN, heroSeries, heroFmt, heroDPct, heroChip;
+    if (heroTab === 'revenue') {
+      heroLabelKind = 'Revenue';
+      heroBig = _fmtINR(M.totalRevInr);
+      heroSeries = _revSeries;
+      heroFmt = _fmtINR;
+      heroDPct = _revDPct;
+      heroPrevN = _prevRevTot;
+      heroChip = (M.payCount
+        ? '<b>' + M.payCount.toLocaleString('en-IN') + '</b><span>' +
+          (M.payCount === 1 ? 'payment' : 'payments') + '</span>' +
+          (M.revPayers ? '<em>' + M.revPayers.toLocaleString('en-IN') + ' payers</em>' : '')
+        : '');
+    } else {
+      heroLabelKind = 'New signups';
+      heroBig = _fmtN(M.rangeSignups);
+      heroSeries = M.growth;
+      heroFmt = _fmtN;
+      heroDPct = M.dPct;
+      heroPrevN = M.prevN;
+      heroChip = (M.revPayers && M.rangeSignups
+        ? (function () {
+            var rate = M.revPayers / M.rangeSignups * 100;
+            return '<b>' + M.revPayers.toLocaleString('en-IN') + '</b>' +
+              '<span>paid</span><em>' + rate.toFixed(2) + '%</em>';
+          })()
+        : '');
+    }
+    // Clip long ranges to 45 bars for readability; the hero total still
+    // reflects the full range because it comes from the server aggregate.
+    const bars = heroSeries.length > 45 ? heroSeries.slice(-45) : heroSeries;
     const barsDense = bars.length > 14;
     const barsCls = barsDense ? 'ndc-bars ndc-bars--dense' : 'ndc-bars';
     const bMax = Math.max(1, ...bars.map(b => b.v));
-    // For dense views the weekday code repeats too much (5+ Mondays); switch
-    // to the day-of-month so each label stays distinct without crowding.
     const bLbl = bars.map(b => {
       const d = new Date(b.d);
       if (isNaN(d.getTime())) return String(b.d).slice(5);
       return barsDense ? String(d.getDate()) : d.toLocaleDateString('en-IN', { weekday: 'short' });
     });
+    const _unit = heroTab === 'revenue' ? '' : ' signups';
     const barsHtml = bars.map((b, i) => {
-      const n = b.v.toLocaleString('en-IN');
+      const n = heroFmt(b.v);
       return '<button type="button" class="nd-bar" data-i="' + i + '" data-n="' + esc(n) + '" data-label="' + esc(bLbl[i]) +
-        '" aria-pressed="false" aria-label="' + esc(bLbl[i]) + ': ' + n + ' signups" title="' + esc(b.d) + ' · ' + n +
-        ' signups" onclick="ndSelectBar(' + i + ')"><i style="height:' + Math.max(3, Math.round(b.v / bMax * 100)) +
+        '" aria-pressed="false" aria-label="' + esc(bLbl[i]) + ': ' + n + esc(_unit) + '" title="' + esc(b.d) + ' · ' + n +
+        esc(_unit) + '" onclick="ndSelectBar(' + i + ')"><i style="height:' + Math.max(3, Math.round(b.v / bMax * 100)) +
         '%"></i></button>';
     }).join('');
-    // For dense (>14) views, show only 6 evenly-spaced date labels so the
-    // axis doesn't wrap or overlap. Includes first and last so the range
-    // stays legible.
     const xLbl = (barsDense && bars.length > 6)
       ? bars.map((b, i) => {
           const step = Math.max(1, Math.round((bars.length - 1) / 5));
@@ -8625,32 +8681,40 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
           return '<span>' + (show ? esc(bLbl[i]) : '') + '</span>';
         }).join('')
       : bLbl.map(l => '<span>' + esc(l) + '</span>').join('');
-    // 1-2 data points look terrible as bars stranded in whitespace. Swap in
-    // a horizontal comparison against the prior period, using the numbers
-    // the hero already computes. Ranges: today, yesterday, custom-same-day.
+    // 1-2 point ranges: horizontal comparison bar for the selected metric.
     const compactHero = bars.length <= 2;
-    const cmpCur = M.rangeSignups || 0;
-    const cmpPrev = (M.prevN != null && M.prevN >= 0) ? M.prevN : 0;
+    const cmpCur = heroTab === 'revenue' ? M.totalRevInr : (M.rangeSignups || 0);
+    const cmpPrev = heroPrevN != null && heroPrevN >= 0 ? heroPrevN : 0;
     const cmpMax = Math.max(1, cmpCur, cmpPrev);
     const compareHtml =
       '<div class="nd-compare">' +
         '<div class="nd-cmp-row">' +
           '<div class="nd-cmp-lbl">' + esc(M.rangeLabel) + '</div>' +
           '<div class="nd-cmp-track"><div class="nd-cmp-fill now" style="width:' + Math.round(cmpCur / cmpMax * 100) + '%"></div></div>' +
-          '<div class="nd-cmp-n">' + cmpCur.toLocaleString('en-IN') + '</div>' +
+          '<div class="nd-cmp-n">' + heroFmt(cmpCur) + '</div>' +
         '</div>' +
         '<div class="nd-cmp-row">' +
           '<div class="nd-cmp-lbl">Prior period</div>' +
           '<div class="nd-cmp-track"><div class="nd-cmp-fill prev" style="width:' + Math.round(cmpPrev / cmpMax * 100) + '%"></div></div>' +
-          '<div class="nd-cmp-n">' + (M.prevN != null ? cmpPrev.toLocaleString('en-IN') : '—') + '</div>' +
+          '<div class="nd-cmp-n">' + (heroPrevN != null ? heroFmt(cmpPrev) : '—') + '</div>' +
         '</div>' +
-        (M.prevN != null && M.prevN > 0
+        (heroPrevN != null && heroPrevN > 0
           ? '<div class="nd-cmp-foot"><span>' + (cmpCur >= cmpPrev ? '+' : '') +
-              (cmpCur - cmpPrev).toLocaleString('en-IN') + ' vs prior</span>' +
+              heroFmt(cmpCur - cmpPrev) + ' vs prior</span>' +
             '<span>' + Math.abs((cmpCur - cmpPrev) / cmpPrev * 100).toFixed(1) + '% ' +
               (cmpCur >= cmpPrev ? 'higher' : 'lower') + '</span></div>'
           : '') +
       '</div>';
+    const heroDCls = heroDPct == null ? 'flat' : heroDPct >= 0 ? 'up' : 'down';
+    const heroDTxt = heroDPct == null ? M.rangeLabel
+      : (heroDPct >= 0 ? '+' : '') + heroDPct.toFixed(1) + '%';
+    const heroSegHtml =
+      '<span class="nd-metric-seg" role="tablist">' +
+        '<button type="button" role="tab" aria-selected="' + (heroTab === 'revenue') + '"' +
+          ' class="' + (heroTab === 'revenue' ? 'on' : '') + '" onclick="ndSetHeroTab(\'revenue\')">Revenue</button>' +
+        '<button type="button" role="tab" aria-selected="' + (heroTab === 'signups') + '"' +
+          ' class="' + (heroTab === 'signups' ? 'on' : '') + '" onclick="ndSetHeroTab(\'signups\')">Signups</button>' +
+      '</span>';
     const dCls = M.dPct == null ? 'flat' : M.dPct >= 0 ? 'up' : 'down';
     const dTxt = M.dPct == null ? M.rangeLabel : (M.dPct >= 0 ? '+' : '') + M.dPct.toFixed(1) + '%';
     // Bar size against visitors when the snapshot has them (top of funnel),
@@ -8676,27 +8740,15 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
     const _feet = ndKpiFeet(M);
     area.innerHTML =
       '<div class="ndc nd-s8 ndc-hero">' +
-        '<div class="ndc-hero-top"><div style="display:flex;flex-direction:column;gap:6px">' +
-          '<span class="nd-lbl">New signups · ' + esc(M.rangeLabel) + ' · ' + esc(M.viewLabel) + '</span>' +
-          '<div class="ndc-hnum"><span class="ndc-big stat-num">' + M.rangeSignups.toLocaleString('en-IN') + '</span>' +
-          '<span class="nd-badge ' + dCls + '">' + esc(dTxt) + '</span>' +
-          (M.prevN != null ? '<span class="nd-prev">vs ' + M.prevN.toLocaleString('en-IN') + ' prior period</span>' : '') +
-          // Payers in the range as a share of signups in the range. Uses the
-          // same revPayers count the Revenue tile's "6 payments" and the
-          // Payers · ARPU tile show, so all three numbers reconcile. Anyone
-          // who paid, regardless of when they signed up.
-          (M.revPayers && M.rangeSignups
-            ? (function () {
-                var rate = M.revPayers / M.rangeSignups * 100;
-                return '<span class="nd-conv" title="' + M.revPayers +
-                  ' distinct people paid in this range. As a share of the ' +
-                  M.rangeSignups.toLocaleString('en-IN') + ' signups in the same range.">' +
-                  '<b>' + M.revPayers.toLocaleString('en-IN') + '</b>' +
-                  '<span>paid</span>' +
-                  '<em>' + rate.toFixed(2) + '%</em>' +
-                '</span>';
-              })()
-            : '') +
+        '<div class="ndc-hero-top"><div style="display:flex;flex-direction:column;gap:8px">' +
+          '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+            '<span class="nd-lbl">' + esc(heroLabelKind) + ' &middot; ' + esc(M.rangeLabel) + ' &middot; ' + esc(M.viewLabel) + '</span>' +
+            heroSegHtml +
+          '</div>' +
+          '<div class="ndc-hnum"><span class="ndc-big stat-num">' + heroBig + '</span>' +
+          '<span class="nd-badge ' + heroDCls + '">' + esc(heroDTxt) + '</span>' +
+          (heroPrevN != null ? '<span class="nd-prev">vs ' + heroFmt(heroPrevN) + ' prior period</span>' : '') +
+          (heroChip ? '<span class="nd-conv">' + heroChip + '</span>' : '') +
         '</div></div></div>' +
         (compactHero
           ? compareHtml
@@ -8759,6 +8811,20 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
   }
 
   // ══ APPEARANCE (design: Light · Dark · Auto) ════════════════════════
+  // Hero-metric switcher — Revenue is the primary north-star, Signups is
+  // the pre-monetization one. Selection persists across reloads.
+  const ND_HERO_TAB_KEY = 'nr_ov_hero_tab';
+  function ndHeroTab() {
+    try { const v = localStorage.getItem(ND_HERO_TAB_KEY);
+      return (v === 'signups' || v === 'revenue') ? v : 'revenue'; }
+    catch (_) { return 'revenue'; }
+  }
+  function ndSetHeroTab(v) {
+    if (v !== 'revenue' && v !== 'signups') return;
+    try { localStorage.setItem(ND_HERO_TAB_KEY, v); } catch (_) {}
+    try { if (typeof renderOverview === 'function') renderOverview(); } catch (_) {}
+  }
+
   const ND_APPEAR_KEY = 'nr_appearance';
   function ndAppearance() { try { return localStorage.getItem(ND_APPEAR_KEY) || 'light'; } catch(_) { return 'light'; } }
   function ndIsDark() {
@@ -8956,9 +9022,40 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
     const dCls = dPct == null ? 'flat' : dPct >= 0 ? 'up' : 'down';
     const dTxt = dPct == null ? rangeLabel : (dPct >= 0 ? '+' : '') + dPct.toFixed(1) + '%';
 
-    // Mobile: keep the last 30 days at most so the strip fits, but always show
-    // every day in the range up to that cap (no fixed 7).
-    const bars = growth.length > 30 ? growth.slice(-30) : growth;
+    const mHeroTab = ndHeroTab();
+    const mFmtN   = n => (+n || 0).toLocaleString('en-IN');
+    const mFmtINR = n => '₹' + Math.round(+n || 0).toLocaleString('en-IN');
+    // Zero-filled revenue series aligned to the growth days.
+    const _mPayMap = {};
+    for (const r of (_ovData.dailyPay || [])) _mPayMap[r[0]] = { inr: +r[2] || 0, usd: +r[3] || 0 };
+    const mRevSeries = growth.map(g => {
+      const row = _mPayMap[g.d] || { inr: 0, usd: 0 };
+      return { d: g.d, v: Math.round(row.inr + row.usd * USD_TO_INR) };
+    });
+    const _mPrevRevTot = _ovData.prevRevInr != null
+      ? Math.round((+_ovData.prevRevInr || 0) + (+_ovData.prevRevUsd || 0) * USD_TO_INR) : null;
+    const _mRevDPct = (_mPrevRevTot != null && _mPrevRevTot > 0)
+      ? (totalRevInr - _mPrevRevTot) / _mPrevRevTot * 100 : null;
+
+    let mHeroLabel, mHeroBig, mHeroSeries, mHeroFmt, mHeroPrev, mHeroDCls, mHeroDTxt;
+    if (mHeroTab === 'revenue') {
+      mHeroLabel = 'Revenue';
+      mHeroBig = mFmtINR(totalRevInr);
+      mHeroSeries = mRevSeries;
+      mHeroFmt = mFmtINR;
+      mHeroPrev = _mPrevRevTot;
+      mHeroDCls = _mRevDPct == null ? 'flat' : _mRevDPct >= 0 ? 'up' : 'down';
+      mHeroDTxt = _mRevDPct == null ? rangeLabel : (_mRevDPct >= 0 ? '+' : '') + _mRevDPct.toFixed(1) + '%';
+    } else {
+      mHeroLabel = 'New signups';
+      mHeroBig = mFmtN(rangeSignups);
+      mHeroSeries = growth;
+      mHeroFmt = mFmtN;
+      mHeroPrev = prevN;
+      mHeroDCls = dCls;
+      mHeroDTxt = dTxt;
+    }
+    const bars = mHeroSeries.length > 30 ? mHeroSeries.slice(-30) : mHeroSeries;
     const barsDense = bars.length > 10;
     const bMax = Math.max(1, ...bars.map(b => b.v));
     const bLbl = bars.map(b => {
@@ -8966,11 +9063,12 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
       if (isNaN(d.getTime())) return String(b.d).slice(5);
       return barsDense ? String(d.getDate()) : d.toLocaleDateString('en-IN', { weekday: 'short' });
     });
+    const _mUnit = mHeroTab === 'revenue' ? '' : ' signups';
     const barsHtml = bars.map((b, i) => {
-      const n = b.v.toLocaleString('en-IN');
+      const n = mHeroFmt(b.v);
       return '<button type="button" class="nd-bar" data-i="' + i + '" data-n="' + esc(n) + '" data-label="' + esc(bLbl[i]) +
-        '" aria-pressed="false" aria-label="' + esc(bLbl[i]) + ': ' + n + ' signups" title="' + esc(b.d) + ' · ' + n +
-        ' signups" onclick="ndSelectBar(' + i + ')"><i style="height:' + Math.max(4, Math.round(b.v / bMax * 100)) +
+        '" aria-pressed="false" aria-label="' + esc(bLbl[i]) + ': ' + n + esc(_mUnit) + '" title="' + esc(b.d) + ' · ' + n +
+        esc(_mUnit) + '" onclick="ndSelectBar(' + i + ')"><i style="height:' + Math.max(4, Math.round(b.v / bMax * 100)) +
         '%"></i></button>';
     }).join('');
     const xLbl = (barsDense && bars.length > 6)
@@ -8981,17 +9079,24 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
         }).join('')
       : bLbl.map(l => '<span>' + esc(l) + '</span>').join('');
     const mCompact = bars.length <= 2;
-    const mCmpCur = rangeSignups || 0;
-    const mCmpPrev = (prevN != null && prevN >= 0) ? prevN : 0;
+    const mCmpCur = mHeroTab === 'revenue' ? totalRevInr : (rangeSignups || 0);
+    const mCmpPrev = (mHeroPrev != null && mHeroPrev >= 0) ? mHeroPrev : 0;
     const mCmpMax = Math.max(1, mCmpCur, mCmpPrev);
     const mCompareHtml =
       '<div class="nd-compare">' +
         '<div class="nd-cmp-row"><div class="nd-cmp-lbl">' + esc(rangeLabel) + '</div>' +
           '<div class="nd-cmp-track"><div class="nd-cmp-fill now" style="width:' + Math.round(mCmpCur / mCmpMax * 100) + '%"></div></div>' +
-          '<div class="nd-cmp-n">' + mCmpCur.toLocaleString('en-IN') + '</div></div>' +
+          '<div class="nd-cmp-n">' + mHeroFmt(mCmpCur) + '</div></div>' +
         '<div class="nd-cmp-row"><div class="nd-cmp-lbl">Prior period</div>' +
           '<div class="nd-cmp-track"><div class="nd-cmp-fill prev" style="width:' + Math.round(mCmpPrev / mCmpMax * 100) + '%"></div></div>' +
-          '<div class="nd-cmp-n">' + (prevN != null ? mCmpPrev.toLocaleString('en-IN') : '—') + '</div></div>' +
+          '<div class="nd-cmp-n">' + (mHeroPrev != null ? mHeroFmt(mCmpPrev) : '—') + '</div></div>' +
+      '</div>';
+    const mSegHtml =
+      '<div class="nd-metric-seg" role="tablist" style="margin:0 0 6px">' +
+        '<button type="button" role="tab" aria-selected="' + (mHeroTab === 'revenue') + '"' +
+          ' class="' + (mHeroTab === 'revenue' ? 'on' : '') + '" onclick="ndSetHeroTab(\'revenue\')">Revenue</button>' +
+        '<button type="button" role="tab" aria-selected="' + (mHeroTab === 'signups') + '"' +
+          ' class="' + (mHeroTab === 'signups' ? 'on' : '') + '" onclick="ndSetHeroTab(\'signups\')">Signups</button>' +
       '</div>';
 
     const sw = _ovData.sameWin, swCur = sw ? +sw[0] || 0 : null, swPrev = sw ? +sw[1] || 0 : 0;
@@ -9049,10 +9154,11 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
 
     area.innerHTML =
       '<div class="nd-card nd-hero">' +
-        '<div class="nd-lbl">New signups · ' + esc(rangeLabel) + '</div>' +
-        '<div class="nd-hero-row"><div class="nd-big stat-num">' + rangeSignups.toLocaleString('en-IN') + '</div>' +
-          '<div class="nd-delta"><span class="nd-badge ' + dCls + '">' + esc(dTxt) + '</span>' +
-          (prevN != null ? '<span class="nd-prev">vs ' + prevN.toLocaleString('en-IN') + ' prior</span>' : '') + '</div></div>' +
+        mSegHtml +
+        '<div class="nd-lbl">' + esc(mHeroLabel) + ' &middot; ' + esc(rangeLabel) + '</div>' +
+        '<div class="nd-hero-row"><div class="nd-big stat-num">' + mHeroBig + '</div>' +
+          '<div class="nd-delta"><span class="nd-badge ' + mHeroDCls + '">' + esc(mHeroDTxt) + '</span>' +
+          (mHeroPrev != null ? '<span class="nd-prev">vs ' + mHeroFmt(mHeroPrev) + ' prior</span>' : '') + '</div></div>' +
         (mCompact
           ? mCompareHtml
           : '<div class="nd-chart nd-chartwrap"><span class="nd-tip" hidden></span><div class="nd-bars' +
