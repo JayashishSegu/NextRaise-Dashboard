@@ -4521,7 +4521,14 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
         grid-column:span 12 !important;
         grid-template-columns:repeat(4,minmax(0,1fr)) !important;
         grid-auto-rows:auto !important; order:-1; }
+      html[data-theme="light"] .ndc-kpis.ndc-kpis--5{
+        grid-template-columns:repeat(5,minmax(0,1fr)) !important; }
       html[data-theme="light"] .ndc-hero{ grid-column:span 12 !important; }
+    }
+    /* Below 1200px five columns get cramped; drop to 3+2 gracefully. */
+    @media (min-width:901px) and (max-width:1199px){
+      html[data-theme="light"] .ndc-kpis.ndc-kpis--5{
+        grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
     }
     @media (prefers-reduced-motion:reduce){
       html[data-theme="light"] .ndk-bar > i{ transition:none; }
@@ -8345,8 +8352,13 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
     const cbp = ((_ovData && _ovData.convByPeriod) || []).find(r => r && r.key === key);
     const cbpPro    = cbp ? +cbp.pro    || 0 : null;
     const cbpRate   = cbp ? +cbp.rate   || 0 : null;
+    // Total visitors in range = sum of the source/medium breakdown. Same
+    // definition the Acquisition table's top-of-funnel column uses, so the
+    // KPI tile always reconciles with what's listed below it.
+    const rangeVisitors = ((_ovData && _ovData.visitorsBySource) || [])
+      .reduce((a, r) => a + (+r[2] || 0), 0);
     return { newProduct, newToday, newWeek, newYesterday, activePro, revInr, revUsd, totalRevInr,
-      revPayers, arpu, rangeLabel, key, growth, rangeSignups, payCount, dPct, prevN,
+      revPayers, arpu, rangeLabel, key, growth, rangeSignups, rangeVisitors, payCount, dPct, prevN,
       swCur, swDelta, chList, cbpPro, cbpRate,
       viewLabel: (BUCKET_VIEW === 'overall' ? 'Overall' : BUCKET_VIEW === 'perf' ? 'Perf' : 'Influencer') };
   }
@@ -8781,7 +8793,17 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
           : '<div class="nd-chartwrap"><span class="nd-tip" hidden></span><div class="' + barsCls + '">' + barsHtml +
             '</div><div class="ndc-xlbl">' + xLbl + '</div></div>') +
       '</div>' +
-      '<div class="ndc-kpis">' +
+      '<div class="ndc-kpis ndc-kpis--5">' +
+        '<button class="ndc ndc-kpi" onclick="ndOpenDrill(\'sources\')"><span class="nd-lbl">Visitors</span>' +
+          '<b>' + (M.rangeVisitors ? M.rangeVisitors.toLocaleString('en-IN') : '—') + '</b><s>' +
+          (M.rangeVisitors && M.rangeSignups
+            ? '<span title="' + M.rangeSignups.toLocaleString('en-IN') +
+                ' signed up out of ' + M.rangeVisitors.toLocaleString('en-IN') +
+                ' distinct visitors in this range.">' +
+                (M.rangeSignups / M.rangeVisitors * 100).toFixed(1) + '% → signup</span>'
+            : M.rangeVisitors
+              ? 'distinct in range'
+              : 'no pageviews yet') + '</s></button>' +
         '<button class="ndc ndc-kpi" onclick="ndOpenDrill(\'payments\')"><span class="nd-lbl">Revenue</span>' +
           '<b>₹' + M.totalRevInr.toLocaleString('en-IN') + '</b><s>' +
           (M.revUsd > 0 ? 'incl. $' + Math.round(M.revUsd).toLocaleString('en-US') + ' · ' : '') +
@@ -9192,6 +9214,11 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
             '</div><div class="nd-xlbl">' + xLbl + '</div></div>') +
       '</div>' +
       '<div class="nd-kpis">' +
+        '<button class="nd-card nd-kpi" onclick="ndOpenDrill(\'sources\')"><span class="nd-lbl">Visitors</span>' +
+          '<b>' + (function(){ var v = ((_ovData && _ovData.visitorsBySource) || []).reduce((a,r)=>a+(+r[2]||0),0);
+            return v ? v.toLocaleString('en-IN') : '—'; })() + '</b>' +
+          '<s>' + (function(){ var v = ((_ovData && _ovData.visitorsBySource) || []).reduce((a,r)=>a+(+r[2]||0),0);
+            return v && rangeSignups ? (rangeSignups / v * 100).toFixed(1) + '% → signup' : (v ? 'distinct in range' : 'no pageviews'); })() + '</s></button>' +
         '<button class="nd-card nd-kpi" onclick="ndOpenDrill(\'payments\')"><span class="nd-lbl">Revenue</span>' +
           '<b>₹' + totalRevInr.toLocaleString('en-IN') + '</b><s>' +
           (revUsd > 0 ? 'incl. $' + Math.round(revUsd).toLocaleString('en-US') + ' · ' : '') +
