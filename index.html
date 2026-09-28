@@ -3206,6 +3206,10 @@
         color:var(--nd-400); white-space:nowrap; overflow:hidden; }
 
       html[data-theme="light"] .nd-kpis{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+      /* With five KPIs (Visitors added at the front), the 5th tile would
+         otherwise sit alone in a 2-column grid. Span it across both columns
+         so the row reads as intentional. */
+      html[data-theme="light"] .nd-kpis > .nd-kpi:nth-child(5):last-child{ grid-column:1 / -1; }
       html[data-theme="light"] .nd-kpi{ padding:18px 16px; display:flex; flex-direction:column; gap:7px; text-align:left;
         cursor:pointer; transition:transform 140ms; font-family:inherit; }
       html[data-theme="light"] .nd-kpi:active{ transform:scale(.97); }
