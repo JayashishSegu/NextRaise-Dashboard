@@ -3,13 +3,14 @@
 
 export type Channel =
   | "Direct" | "Extension" | "Influencer" | "Google Ads" | "Meta Ads"
-  | "Organic Social" | "Email" | "Referral" | "Other";
+  | "Organic Search" | "Organic Social" | "Email" | "Referral" | "Other";
 
 export function channelOf(source: string | null | undefined, medium: string | null | undefined): Channel {
   const s = (source || "").toLowerCase().trim();
   const m = (medium || "").toLowerCase().trim();
   const blank = (v: string) => !v || ["none", "null", "undefined", "(none)", "(direct)", "false"].includes(v);
   if ((blank(s) && blank(m)) || s === "direct") return "Direct";
+  if (s === "organic_search") return "Organic Search"; // visitors with no UTM who arrived from a search engine
   if (s === "chrome_extension" || m === "extension") return "Extension";
   if (m.includes("influ") || s.includes("influ")) return "Influencer";
   if (s.includes("google")) return "Google Ads";
@@ -29,6 +30,7 @@ export const CHANNEL_COLOR: Record<Channel, string> = {
   "Influencer": "#a78bfa",
   "Google Ads": "#6e8cff",
   "Meta Ads": "#ff8ca6",
+  "Organic Search": "#38bdf8",
   "Organic Social": "#f5c451",
   "Email": "#2fb57a",
   "Referral": "#fb923c",
