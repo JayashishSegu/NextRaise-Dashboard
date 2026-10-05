@@ -4556,6 +4556,83 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
       background:rgba(92,121,255,.18); color:var(--nd-700); }
     html[data-theme="light"][data-appearance="dark"] .ndc-hero .nd-conv em{ color:#9DB2FF; }
 
+    /* ══ DARK MODE PANEL OVERRIDES ══════════════════════════════════════
+       Many legacy rules hard-code background:#ffffff with !important and
+       scope only to html[data-theme="light"] (which is always true), so
+       in dark mode floating panels, inputs, and tooltips still rendered
+       solid white — the date-range dropdown being the loudest offender.
+       This block re-overrides them under the dark-appearance attribute
+       and MUST stay last in the stylesheet so cascade order wins over
+       the forced-white rules above. */
+
+    /* Floating layers: popover, cmdk, modals, suggestions panel */
+    html[data-theme="light"][data-appearance="dark"] :is(
+      .gdr-drop, #gdrSharedDrop, .gdrSharedDrop,
+      .cmdk, .modal, .modal-card,
+      .acq-src-panel, .suggestions, .filter-bar){
+      background:#131A2B !important;
+      border:1px solid rgba(255,255,255,.14) !important;
+      color:var(--text) !important;
+      box-shadow:0 20px 60px -20px rgba(0,0,0,.6) !important;
+      backdrop-filter:none !important;
+    }
+    html[data-theme="light"][data-appearance="dark"] #gdrSharedDrop .gdr-opt{
+      color:#F2F5FB !important;
+    }
+    html[data-theme="light"][data-appearance="dark"] #gdrSharedDrop .gdr-opt:hover{
+      background:rgba(255,255,255,.06) !important;
+    }
+    html[data-theme="light"][data-appearance="dark"] #gdrSharedDrop .gdr-opt.active{
+      color:#8FA3FF !important;
+    }
+    html[data-theme="light"][data-appearance="dark"] #gdrSharedDrop .gdr-sep{
+      background:rgba(255,255,255,.08) !important;
+    }
+
+    /* Toolbar inputs & date pickers (gdr-btn, days-chip, search-shortcut,
+       sort-select, cmdk-trigger, toolbar-input, search-input, field-input,
+       date-input). Translucent white → translucent light-on-dark. */
+    html[data-theme="light"][data-appearance="dark"] :is(
+      .gdr-btn, .days-chip, .search-shortcut, .sort-select, .cmdk-trigger,
+      .toolbar-input, .search-input, .field-input, .date-input,
+      .bucket-seg){
+      background:rgba(255,255,255,.05) !important;
+      border:1px solid rgba(255,255,255,.12) !important;
+      color:#E8ECF5 !important;
+      box-shadow:none !important;
+    }
+    html[data-theme="light"][data-appearance="dark"] :is(
+      .toolbar-input, .search-input, .field-input, .date-input):focus{
+      border-color:#5C79FF !important;
+      box-shadow:0 0 0 3px rgba(92,121,255,.22) !important;
+    }
+
+    /* ApexCharts tooltips (used on a few report screens). */
+    html[data-theme="light"][data-appearance="dark"] :is(
+      .apexcharts-tooltip,
+      .apexcharts-xaxistooltip,
+      .apexcharts-yaxistooltip){
+      background:#131A2B !important;
+      border:1px solid rgba(255,255,255,.14) !important;
+      color:#F2F5FB !important;
+    }
+
+    /* Sidebar + body: the forced-white sidebar rule can win over the
+       token-driven dark background on first paint. Re-pin here. */
+    html[data-theme="light"][data-appearance="dark"] body{
+      background:#090D18 !important;
+      background-image:none !important;
+    }
+    html[data-theme="light"][data-appearance="dark"] .sidebar{
+      background:#0D1324 !important;
+      border-right:1px solid rgba(255,255,255,.08) !important;
+      box-shadow:none !important;
+    }
+    html[data-theme="light"][data-appearance="dark"] .mob-bottom-nav{
+      background:#0D1324 !important;
+      border-top:1px solid rgba(255,255,255,.08) !important;
+    }
+
   </style>
 </head>
 <body>
@@ -8502,10 +8579,12 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
     const hhmm = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const day = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
     const today = new Date().toDateString() === d.toDateString();
+    // Only call it 'Live' when the data is actually fresh; past ~2 minutes
+    // the snapshot is cached and 'Live · 9m' reads as a contradiction.
     if (m < 2) return 'Live · now';
-    if (m < 60) return 'Live · ' + m + 'm';
-    if (today) return 'Updated ' + hhmm;
-    return 'Updated ' + hhmm + ' · ' + day;
+    if (m < 60) return 'Updated · ' + m + 'm ago';
+    if (today) return 'Updated · ' + hhmm;
+    return 'Updated · ' + hhmm + ' · ' + day;
   }
   function ndLiveEl(el) {
     if (!el) return;
