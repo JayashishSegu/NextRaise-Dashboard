@@ -103,6 +103,15 @@ export type SearchAccount = {
 };
 export type SearchData = { q: string; accounts: SearchAccount[] };
 
-export type PaymentEntry = { id: string; creator: string; code: string; date: string; amount: number; note: string };
+export type PaymentEntry = { id: string; creator: string; code: string; date: string; amount: number; note: string; source?: "manual" | "sheet" };
+export type SheetVideo = { creator: string; date: string | null; views: number; link: string };
 /** kv:false means no Redis store is attached yet, so payments cannot be read or saved. */
-export type PaymentsData = { kv: boolean; entries: PaymentEntry[]; total: number; window: { start: string; end: string } };
+export type PaymentsData = {
+  kv: boolean; entries: PaymentEntry[]; total: number; window: { start: string; end: string };
+  /** Amounts the Google Sheets show as earned but not yet paid, for months overlapping the range. */
+  owed?: { total: number; rows: Array<{ month: string; creator: string; amount: number }> };
+  videos?: { count: number; views: number; likes: number; comments: number; top: SheetVideo[] };
+  /** Paid rows in the sheets whose amount could not be read. */
+  unread?: Array<{ month: string; creator: string; reason: string }>;
+  sync?: { months: Array<{ month: string; syncedAt: number | null; payments: number; videos: number; pipelineFound: boolean }>; latest: number | null };
+};

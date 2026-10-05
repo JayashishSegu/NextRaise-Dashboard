@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Lock, Plus, Trash2, WalletCards } from "lucide-react";
+import { AlertTriangle, Eye, Lock, Plus, RefreshCw, Trash2, WalletCards } from "lucide-react";
 import type { ApiError } from "@/lib/use-api";
 import type { PaymentsData } from "@/lib/types";
 import { Panel } from "@/components/dash/panel";
 import { Skeleton } from "@/components/ui/skeleton";
-import { dayLabel, fmtINR, fmtN } from "@/lib/format";
+import { dayLabel, fmtCompact, fmtINR, fmtN } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const todayIst = () => new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0, 10);
@@ -108,6 +108,7 @@ export function PaymentsPanel({
       subtitle={`${rangeLabel} · ${fmtN(data.entries.length)} payment${data.entries.length === 1 ? "" : "s"} · ${fmtINR(data.total)}`}
       padded={false}
     >
+      <SheetStrip data={data} />
       {!connected ? (
         <div className="mx-5 mb-5 flex items-start gap-3 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] px-4 py-3 text-xs text-amber-200">
           <WalletCards className="mt-0.5 h-4 w-4 shrink-0" />
@@ -135,18 +136,23 @@ export function PaymentsPanel({
                 <tr key={p.id} className="border-t border-white/[0.05]">
                   <td className="py-2.5 text-muted-foreground">{dayLabel(p.date)}</td>
                   <td className="py-2.5">
-                    <div className="text-foreground">{p.creator}</div>
+                    <div className="flex items-center gap-1.5 text-foreground">
+                      {p.creator}
+                      {p.source === "sheet" ? <span className="rounded bg-white/[0.06] px-1.5 py-px text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Sheet</span> : null}
+                    </div>
                     {p.code ? <div className="text-[11px] text-muted-foreground">{p.code}</div> : null}
                   </td>
                   <td className="max-w-[16rem] truncate py-2.5 text-muted-foreground">{p.note || ""}</td>
                   <td className="py-2.5 text-right font-medium text-foreground">{fmtINR(p.amount)}</td>
                   <td className="py-2.5 text-right">
-                    <button
-                      type="button" onClick={() => remove(p.id)} aria-label={`Delete payment to ${p.creator}`}
-                      className="rounded-md p-1 text-muted-foreground outline-none hover:bg-white/[0.06] hover:text-rose-300 focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    {p.source === "sheet" ? null : (
+                      <button
+                        type="button" onClick={() => remove(p.id)} aria-label={`Delete payment to ${p.creator}`}
+                        className="rounded-md p-1 text-muted-foreground outline-none hover:bg-white/[0.06] hover:text-rose-300 focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -191,5 +197,49 @@ export function PaymentsPanel({
         ) : null}
       </form>
     </Panel>
+  );
+}
+
+function ago(ms: number) {
+  const m = Math.max(0, Math.round((Date.now() - ms) / 60000));
+  return m < 1 ? "just now" : m < 60 ? `${m}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`;
+}
+
+/** Video totals, owed amounts and sync status read from the Google Sheets. */
+function SheetStrip({ data }: { data: PaymentsData }) {
+  const latest = data.sync?.latest ?? null;
+  const v = data.videos;
+  const owed = data.owed?.total ?? 0;
+  const per1k = v && v.views > 0 && data.total > 0 ? (data.total / v.views) * 1000 : null;
+  if (!data.kv) return null;
+  return (
+    <div className="mx-5 mb-4 space-y-2">
+      {latest == null ? (
+        <div className="flex items-start gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-xs text-muted-foreground">
+          <RefreshCw className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>Google Sheets are not synced yet. Once the sync script is running, payments, owed amounts and video views from your trackers appear here.</span>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5"><RefreshCw className="h-3.5 w-3.5" />Sheets synced {ago(latest)}</span>
+          {v ? (
+            <span className="inline-flex items-center gap-1.5 text-foreground"><Eye className="h-3.5 w-3.5 text-muted-foreground" />
+              {fmtN(v.count)} video{v.count === 1 ? "" : "s"} · {fmtCompact(v.views)} views
+              {per1k != null ? <span className="text-muted-foreground"> · {fmtINR(per1k)} per 1K views</span> : null}
+            </span>
+          ) : null}
+          {owed > 0 ? <span className="text-amber-300">{fmtINR(owed)} owed, not yet paid</span> : null}
+        </div>
+      )}
+      {data.unread && data.unread.length > 0 ? (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] px-3 py-2.5 text-xs text-amber-200">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>
+            {data.unread.length} sheet row{data.unread.length === 1 ? " is" : "s are"} marked paid with no amount, so {data.unread.length === 1 ? "it is" : "they are"} not counted:{" "}
+            {data.unread.slice(0, 4).map((u) => u.creator).join(", ")}{data.unread.length > 4 ? "…" : ""}
+          </span>
+        </div>
+      ) : null}
+    </div>
   );
 }

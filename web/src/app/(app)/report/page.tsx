@@ -89,7 +89,7 @@ export default function ReportPage() {
   const paySubtitle = !showPay
     ? undefined
     : pay.data?.kv
-      ? payCount ? `${fmtN(payCount)} payment${payCount === 1 ? "" : "s"} logged` : "none logged in this range"
+      ? [payCount ? `${fmtN(payCount)} payment${payCount === 1 ? "" : "s"}` : "none logged", pay.data.owed && pay.data.owed.total > 0 ? `${fmtINR(pay.data.owed.total)} owed` : ""].filter(Boolean).join(" · ")
       : pay.data
         ? "storage not connected"
         : pay.error?.code === "locked" ? "unlock to load" : pay.loading ? "loading" : "unavailable";

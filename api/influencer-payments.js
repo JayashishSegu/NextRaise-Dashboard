@@ -13,8 +13,10 @@
 // the Report can say plainly that payments cannot be saved yet.
 const { requireGate } = require('../lib/gate');
 const { gdrBounds } = require('../lib/overview');
+const { summarise } = require('../lib/influencer');
 
 const KEY = 'creator-data:v1';
+const SHEETS_KEY = 'influencer:sheets:v1'; // raw tabs pushed by the Apps Script (api/influencer-sync.js)
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 function store() {
@@ -41,15 +43,30 @@ module.exports = async function handler(req, res) {
     const window = { start: b.startDate, end: b.endDate };
     try {
       const all = (kv && (await kv.hgetall(KEY))) || {};
-      const entries = Object.values(all)
+      const manual = Object.values(all)
         .filter((e) => e && Number(e.budget) > 0 && e.date >= window.start && e.date < window.end)
         .map((e) => ({
           id: String(e.id), creator: String(e.creator || ''), code: String(e.code || ''),
-          date: String(e.date), amount: Number(e.budget) || 0, note: String(e.note || ''),
-        }))
-        .sort((a, z) => (a.date < z.date ? 1 : a.date > z.date ? -1 : 0));
+          date: String(e.date), amount: Number(e.budget) || 0, note: String(e.note || ''), source: 'manual',
+        }));
+      // Payments, owed amounts and videos read from the synced Google Sheets.
+      const sheetRaw = (kv && (await kv.hgetall(SHEETS_KEY))) || {};
+      const sheet = summarise(Object.values(sheetRaw), window);
+      const entries = [...manual, ...sheet.payments.map((p) => ({
+        id: p.id, creator: p.creator, code: p.code, date: p.date, amount: p.amount, note: p.note, source: 'sheet',
+      }))].sort((a, z) => (a.date < z.date ? 1 : a.date > z.date ? -1 : 0));
       const total = entries.reduce((n, e) => n + e.amount, 0);
-      return res.status(200).json({ ts: Date.now(), data: { kv: true, window, entries, total } });
+      const owedTotal = sheet.owed.reduce((n, o) => n + o.amount, 0);
+      return res.status(200).json({
+        ts: Date.now(),
+        data: {
+          kv: true, window, entries, total,
+          owed: { total: owedTotal, rows: sheet.owed },
+          videos: sheet.videos,
+          unread: sheet.unread,
+          sync: { months: sheet.status, latest: sheet.status.reduce((n, m) => Math.max(n, m.syncedAt || 0), 0) || null },
+        },
+      });
     } catch (_) {
       // No store attached yet: report that instead of failing the page.
       return res.status(200).json({ ts: Date.now(), data: { kv: false, window, entries: [], total: 0 } });
