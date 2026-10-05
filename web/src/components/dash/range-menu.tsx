@@ -51,7 +51,7 @@ export function RangeMenu({ className }: { className?: string }) {
         <div
           role="listbox"
           aria-label="Date range"
-          className="absolute right-0 z-50 mt-2 w-60 rounded-xl border border-white/10 bg-popover p-1.5 shadow-2xl shadow-black/60"
+          className="absolute left-0 z-50 mt-2 w-60 max-w-[calc(100vw-2rem)] rounded-xl sm:left-auto sm:right-0 border border-white/10 bg-popover p-1.5 shadow-2xl shadow-black/60"
         >
           {RANGES.map((r) => (
             <button
