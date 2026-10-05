@@ -1,12 +1,31 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "api/overview.js": { "maxDuration": 60 },
-    "api/screen.js": { "maxDuration": 60 },
-    "api/cron.js": { "maxDuration": 60 },
-    "api/influencer-names.js": { "maxDuration": 30 }
+    "api/overview.js": {
+      "maxDuration": 60
+    },
+    "api/screen.js": {
+      "maxDuration": 60
+    },
+    "api/cron.js": {
+      "maxDuration": 60
+    },
+    "api/influencer-names.js": {
+      "maxDuration": 30
+    },
+    "api/unlock.js": {
+      "maxDuration": 10
+    },
+    "api/ops.js": {
+      "maxDuration": 30
+    }
   },
   "crons": [
-    { "path": "/api/cron", "schedule": "35 18 * * *" }
-  ]
+    {
+      "path": "/api/cron",
+      "schedule": "35 18 * * *"
+    }
+  ],
+  "buildCommand": "cd web && npm ci && NR_EXPORT=1 npm run build",
+  "outputDirectory": "web/out"
 }

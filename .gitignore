@@ -13,3 +13,9 @@ __fixture_ov.json
 .swarm/
 ruvector.db
 *.db
+
+# v2 front end build output
+web/.next/
+web/out/
+web/node_modules/
+web/tsconfig.tsbuildinfo
