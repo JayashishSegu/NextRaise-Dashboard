@@ -62,8 +62,8 @@ export function TrendArea({
             </linearGradient>
           </defs>
           <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-          <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={10} interval={step} tick={{ fill: "#7d869b", fontSize: 11 }} />
-          <YAxis tickLine={false} axisLine={false} width={46} tick={{ fill: "#6a7388", fontSize: 11 }} tickFormatter={(v) => (yFmt ?? fmt)(Number(v))} />
+          <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={10} interval={step} tick={{ fill: "#8e8e93", fontSize: 11 }} />
+          <YAxis tickLine={false} axisLine={false} width={46} tick={{ fill: "#76767b", fontSize: 11 }} tickFormatter={(v) => (yFmt ?? fmt)(Number(v))} />
           <Tooltip cursor={{ stroke: "rgba(255,255,255,.1)" }} content={<Tip fmt={fmt} names={names} colors={[color, color2]} />} />
           <Area isAnimationActive={false} type="monotone" dataKey="value" stroke={color} strokeWidth={2} fill={`url(#${gid})`} dot={false} activeDot={{ r: 4 }} />
           {two ? <Area isAnimationActive={false} type="monotone" dataKey="value2" stroke={color2} strokeWidth={2} fill={`url(#${gid2})`} dot={false} activeDot={{ r: 4 }} /> : null}
@@ -91,8 +91,8 @@ export function TrendBars({
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barCategoryGap={data.length > 20 ? 2 : "22%"}>
           <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-          <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={10} interval={step} tick={{ fill: "#7d869b", fontSize: 11 }} />
-          <YAxis tickLine={false} axisLine={false} width={46} tick={{ fill: "#6a7388", fontSize: 11 }} tickFormatter={(v) => (yFmt ?? fmt)(Number(v))} />
+          <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={10} interval={step} tick={{ fill: "#8e8e93", fontSize: 11 }} />
+          <YAxis tickLine={false} axisLine={false} width={46} tick={{ fill: "#76767b", fontSize: 11 }} tickFormatter={(v) => (yFmt ?? fmt)(Number(v))} />
           <Tooltip cursor={{ fill: "rgba(255,255,255,.04)" }} content={<Tip fmt={fmt} names={[name]} colors={[color]} />} />
           <Bar dataKey="value" radius={[5, 5, 1, 1]} isAnimationActive={false}>
             {data.map((_, i) => (

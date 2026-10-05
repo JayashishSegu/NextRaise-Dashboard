@@ -14,7 +14,7 @@ export const ACCENT = {
   amber: "#f5c451",
   violet: "#a78bfa",
   rose: "#ff8ca6",
-  slate: "#8b93a7",
+  slate: "#9a9aa0",
 } as const;
 export type Accent = keyof typeof ACCENT;
 

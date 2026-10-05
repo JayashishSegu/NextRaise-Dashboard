@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   icons: { icon: "/icon.svg" },
 };
 
-export const viewport: Viewport = { themeColor: "#0a0b10", colorScheme: "dark" };
+export const viewport: Viewport = { themeColor: "#000000", colorScheme: "dark" };
 
 export default function RootLayout({
   children,

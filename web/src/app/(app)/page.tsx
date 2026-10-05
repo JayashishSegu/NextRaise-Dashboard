@@ -226,7 +226,7 @@ export default function OverviewPage() {
 
 function SingleDay({ current, prior, format, label }: { current: number; prior: number | null; format: (n: number) => string; label: string }) {
   const max = Math.max(1, current, prior ?? 0);
-  const rows: Array<[string, number | null, string]> = [[label, current, "#6e8cff"], ["Prior period", prior, "#475069"]];
+  const rows: Array<[string, number | null, string]> = [[label, current, "#6e8cff"], ["Prior period", prior, "#4a4a50"]];
   return (
     <div className="space-y-5 px-2 py-4">
       {rows.map(([name, v, c]) => (

@@ -84,23 +84,23 @@
 }
 
 .dark {
-  /* NextRaise charcoal: neutral near-black, hairline borders, one blue accent. */
-  --background: #0a0b10;
+  /* NextRaise true black: OLED #000 canvas, neutral gray elevation, hairline borders, one blue accent. */
+  --background: #000000;
   --foreground: #f8fafc;
-  --card: #12131a;
+  --card: #0a0a0a;
   --card-foreground: #f8fafc;
-  --popover: #14151d;
+  --popover: #0f0f0f;
   --popover-foreground: #f8fafc;
   --primary: #6e8cff;
-  --primary-foreground: #0a0b10;
-  --secondary: #1a1b25;
+  --primary-foreground: #000000;
+  --secondary: #121212;
   --secondary-foreground: #f8fafc;
-  --muted: #1a1b25;
-  --muted-foreground: #98a2b8;
-  --accent: #1c1d29;
+  --muted: #121212;
+  --muted-foreground: #a1a1a6;
+  --accent: #171717;
   --accent-foreground: #f8fafc;
   --destructive: #ff6b6b;
-  --border: rgb(255 255 255 / 8%);
+  --border: rgb(255 255 255 / 10%);
   --input: rgb(255 255 255 / 12%);
   --ring: #6e8cff;
   --chart-1: #6e8cff;
@@ -108,13 +108,13 @@
   --chart-3: #f5c451;
   --chart-4: #a78bfa;
   --chart-5: #ff8ca6;
-  --sidebar: #0d0e14;
+  --sidebar: #000000;
   --sidebar-foreground: #f8fafc;
   --sidebar-primary: #6e8cff;
-  --sidebar-primary-foreground: #0a0b10;
-  --sidebar-accent: #1a1b25;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #121212;
   --sidebar-accent-foreground: #f8fafc;
-  --sidebar-border: rgb(255 255 255 / 6%);
+  --sidebar-border: rgb(255 255 255 / 8%);
   --sidebar-ring: #6e8cff;
   --nr-blue: #6e8cff;
   --nr-green: #2fb57a;
@@ -143,11 +143,8 @@
 .tabular { font-variant-numeric: tabular-nums; }
 
 /* Page-level ambient glow: a single soft blue wash at the top, nothing else. */
-.nr-ambient {
-  background:
-    radial-gradient(900px 380px at 80% -80px, rgb(110 140 255 / 0.10), transparent 70%),
-    radial-gradient(700px 300px at 0% 0%, rgb(47 181 122 / 0.05), transparent 70%);
-}
+/* True black has no ambient wash; the class stays so layouts that reference it keep working. */
+.nr-ambient { background: none; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }

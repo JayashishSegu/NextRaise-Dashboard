@@ -24,7 +24,7 @@ export function channelOf(source: string | null | undefined, medium: string | nu
 }
 
 export const CHANNEL_COLOR: Record<Channel, string> = {
-  "Direct": "#8b93a7",
+  "Direct": "#9a9aa0",
   "Extension": "#2dd4bf",
   "Influencer": "#a78bfa",
   "Google Ads": "#6e8cff",
@@ -32,7 +32,7 @@ export const CHANNEL_COLOR: Record<Channel, string> = {
   "Organic Social": "#f5c451",
   "Email": "#2fb57a",
   "Referral": "#fb923c",
-  "Other": "#64748b",
+  "Other": "#6b6b72",
 };
 
 /** Plan keys come from postgres.payments.plan_key (e.g. resume-builder-pro-1w) or users.plan_cache. */
