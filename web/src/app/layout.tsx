@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { NativeBridge } from "@/components/dash/native-bridge";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +32,7 @@ export default function RootLayout({
       <body
         className="antialiased min-h-screen bg-background font-sans text-foreground"
       >
+        <NativeBridge />
         {children}
       </body>
     </html>
