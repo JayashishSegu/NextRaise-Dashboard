@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
-  ApiEnvelope, CreatorsData, DailyData, InsightsData, MonetizationData, OverviewData, ReportData, RetentionData,
+  ApiEnvelope, CreatorsData, DailyData, InsightsData, MonetizationData, OverviewData, PaymentsData, ReportData, RetentionData,
 } from "@/lib/types";
 import { useDashboard } from "@/lib/dashboard-state";
 
@@ -160,4 +160,10 @@ export function useCreatorNames() {
     autoRefresh: false,
     unwrap: (j) => (j && typeof j === "object" && "map" in (j as object) ? (j as { map: Record<string, string> }).map : {}),
   });
+}
+
+/** Creator payments in the selected range. Gated server-side, so it needs the unlock cookie. */
+export function usePayments(enabled = true) {
+  const { range, from, to } = useDashboard();
+  return useApi<PaymentsData>("influencer-payments", { range, from, to }, { enabled, autoRefresh: false });
 }

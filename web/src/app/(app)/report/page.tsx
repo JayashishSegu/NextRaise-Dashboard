@@ -1,15 +1,16 @@
 "use client";
 
 import { useMemo } from "react";
-import { CircleDollarSign, Percent, Receipt, Target, UserPlus, Wallet } from "lucide-react";
+import { CircleDollarSign, HandCoins, Layers, Percent, Receipt, Target, UserPlus, Wallet } from "lucide-react";
 import { useDashboard } from "@/lib/dashboard-state";
-import { useScreen } from "@/lib/use-api";
+import { useCreatorNames, usePayments, useScreen } from "@/lib/use-api";
 import { useReportFreshness } from "@/components/dash/freshness";
 import { ScreenGate } from "@/components/dash/screen-gate";
 import { PageHeader } from "@/components/dash/page-header";
 import { Panel } from "@/components/dash/panel";
 import { StatRow, StatTile } from "@/components/dash/stat-tile";
 import { TrendArea, TrendBars } from "@/components/dash/charts";
+import { PaymentsPanel } from "@/components/dash/payments-panel";
 import { dayLabel, fmtCompact, fmtINR, fmtINRCompact, fmtN, fmtPct, safeDiv } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,16 @@ export default function ReportPage() {
   const api = useScreen("report");
   useReportFreshness(api);
   const d = api.data;
+
+  // Ad spend belongs to the perf side and creator payments to the influencer side,
+  // so each view shows only its own: Perf hides payments, Influencer hides ad spend.
+  const showAds = view !== "influencer";
+  const showPay = view !== "perf";
+  const pay = usePayments(showPay);
+  const names = useCreatorNames();
+  const creatorNames = useMemo(() => [...new Set(Object.values(names.data ?? {}))].sort(), [names.data]);
+  const payTotal = showPay && pay.data?.kv ? pay.data.total : null;
+  const payCount = pay.data?.kv ? pay.data.entries.length : 0;
 
   const m = useMemo(() => {
     if (!d) return null;
@@ -49,19 +60,39 @@ export default function ReportPage() {
     const revByDay = new Map(d.trend.revenueParts.map(([day, inr, usd]) => [day, inr + usdToInr(usd)] as const));
     const su = new Map(d.trend.signups);
     const days = [...new Set([...su.keys(), ...revByDay.keys()])].sort();
+    // Spend that ROAS and CAC divide by. Overall is blended (ads + creators) once payments
+    // are readable; until then it keeps the old paid-ads-only definition.
+    const legacyOverall = view === "overall" && payTotal == null;
+    const spend = legacyOverall ? adSpend : view === "perf" ? adSpend : view === "influencer" ? payTotal : adSpend + (payTotal ?? 0);
+    const base = legacyOverall ? perf : { sales: d.sales, revenue };
     return {
-      revenue, adSpend, perf, infl, perfB,
-      roas: perf && adSpend > 0 ? perf.revenue / adSpend : null,
-      cac: perf && adSpend > 0 && perf.sales > 0 ? adSpend / perf.sales : null,
+      revenue, adSpend, perf, infl, perfB, spend,
+      totalSpend: adSpend + (payTotal ?? 0),
+      roas: base && spend != null && spend > 0 ? base.revenue / spend : null,
+      cac: base && spend != null && spend > 0 && base.sales > 0 ? spend / base.sales : null,
       signupSeries: days.map((day) => ({ label: dayLabel(day), value: su.get(day) ?? 0 })),
       revSeries: days.map((day) => ({ label: dayLabel(day), value: Math.round(revByDay.get(day) ?? 0) })),
     };
-  }, [d, usdToInr, view]);
+  }, [d, usdToInr, view, payTotal]);
 
   const basis =
-    view === "influencer"
-      ? "Creator spend is not recorded yet, so ROAS and CAC cover paid ads only and show n/a in this view."
-      : "ROAS and CAC use paid-ad spend (Google without the keyword campaign, plus Meta) against perf-attributed revenue.";
+    view === "perf"
+      ? "ROAS and CAC use paid-ad spend (Google without the keyword campaign, plus Meta) against this view's revenue."
+      : view === "influencer"
+        ? payTotal == null
+          ? "Creator payments are not available yet, so ROAS and CAC show n/a in this view."
+          : "ROAS and CAC use the creator payments logged for this range against influencer revenue. The keyword search campaign is not counted."
+        : payTotal == null
+          ? "ROAS and CAC use paid-ad spend against perf-attributed revenue. Creator payments are not available yet, so they are left out."
+          : "ROAS and CAC are blended: all revenue against ad spend plus creator payments.";
+
+  const paySubtitle = !showPay
+    ? undefined
+    : pay.data?.kv
+      ? payCount ? `${fmtN(payCount)} payment${payCount === 1 ? "" : "s"} logged` : "none logged in this range"
+      : pay.data
+        ? "storage not connected"
+        : pay.error?.code === "locked" ? "unlock to load" : pay.loading ? "loading" : "unavailable";
 
   return (
     <>
@@ -69,16 +100,30 @@ export default function ReportPage() {
       <ScreenGate loading={api.loading} error={api.error} hasData={!!d} onRetry={() => api.refetch(false)}>
         {d && m ? (
           <div className="space-y-4">
-            <StatRow cols={6}>
+            <StatRow cols={view === "overall" ? 4 : 6}>
               <StatTile label="Signups" icon={<UserPlus className="h-3.5 w-3.5" />} value={d.signups} accent="blue" subtitle="tracked signup events" />
               <StatTile label="Sales" icon={<Receipt className="h-3.5 w-3.5" />} value={d.sales} accent="green" subtitle={`${fmtN(d.payers)} payers`} />
               <StatTile label="Conversion" icon={<Percent className="h-3.5 w-3.5" />} value={safeDiv(d.sales, d.signups) * 100} format={(n) => fmtPct(n, 2)} accent="violet" />
               <StatTile label="Revenue" icon={<CircleDollarSign className="h-3.5 w-3.5" />} value={m.revenue} format={fmtINR} accent="green" subtitle={`${fmtINR(d.inr)} + $${Math.round(d.usd)}`} />
-              <StatTile label="Ad spend" icon={<Wallet className="h-3.5 w-3.5" />} value={m.adSpend} format={fmtINR} accent="amber" subtitle="Google + Meta, paid only" />
+              {showAds ? (
+                <StatTile label="Ad spend" icon={<Wallet className="h-3.5 w-3.5" />} value={m.adSpend} format={fmtINR} accent="amber" subtitle="Google + Meta, paid only" />
+              ) : null}
+              {showPay ? (
+                <StatTile
+                  label="Influencer payments" icon={<HandCoins className="h-3.5 w-3.5" />} accent="violet"
+                  value={payTotal ?? 0} format={(n) => (payTotal == null ? "n/a" : fmtINR(n))} subtitle={paySubtitle}
+                />
+              ) : null}
+              {view === "overall" ? (
+                <StatTile
+                  label="Total spend" icon={<Layers className="h-3.5 w-3.5" />} value={m.totalSpend} format={fmtINR} accent="amber"
+                  subtitle={payTotal == null ? "ads only, payments unavailable" : "ads + creator payments"}
+                />
+              ) : null}
               <StatTile
                 label="ROAS" icon={<Target className="h-3.5 w-3.5" />} accent="rose"
                 value={m.roas ?? 0} format={(n) => (m.roas == null ? "n/a" : `${n.toFixed(2)}x`)}
-                subtitle={m.cac != null ? `CAC ${fmtINR(m.cac)} per sale` : "needs ad spend and perf sales"}
+                subtitle={m.cac != null ? `CAC ${fmtINR(m.cac)} per sale` : "needs spend and sales"}
               />
             </StatRow>
 
@@ -86,6 +131,13 @@ export default function ReportPage() {
               <Panel title="Signups per day"><TrendBars data={m.signupSeries} fmt={fmtN} name="signups" height={230} /></Panel>
               <Panel title="Revenue per day"><TrendArea data={m.revSeries} fmt={fmtINR} yFmt={fmtINRCompact} color="#2fb57a" names={["revenue"]} height={230} /></Panel>
             </div>
+
+            {showPay ? (
+              <PaymentsPanel
+                data={pay.data} error={pay.error} loading={pay.loading} rangeLabel={rangeLabel} creatorNames={creatorNames}
+                onChanged={() => pay.refetch(false)}
+              />
+            ) : null}
 
             {m.infl && m.perfB ? (
               <Panel title="Influencer vs performance" subtitle="How each attribution bucket contributes">
@@ -109,7 +161,8 @@ export default function ReportPage() {
               </Panel>
             ) : null}
 
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className={cn("grid gap-4", showAds && "lg:grid-cols-2")}>
+              {showAds ? (
               <Panel title="Ad campaigns" subtitle="Google campaigns and Meta in this range" padded={false}>
                 <div className="overflow-x-auto px-5 pb-5">
                   <table className="w-full min-w-[420px] text-[13px] tabular">
@@ -133,6 +186,7 @@ export default function ReportPage() {
                   </table>
                 </div>
               </Panel>
+              ) : null}
               <Panel title="Campaign codes" subtitle="Codes in the influencer bucket" padded={false}>
                 <div className="overflow-x-auto px-5 pb-5">
                   <table className="w-full min-w-[360px] text-[13px] tabular">

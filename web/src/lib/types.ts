@@ -102,3 +102,7 @@ export type SearchAccount = {
   resumes: Array<{ name: string | null; phone: string | null; email: string | null }>;
 };
 export type SearchData = { q: string; accounts: SearchAccount[] };
+
+export type PaymentEntry = { id: string; creator: string; code: string; date: string; amount: number; note: string };
+/** kv:false means no Redis store is attached yet, so payments cannot be read or saved. */
+export type PaymentsData = { kv: boolean; entries: PaymentEntry[]; total: number; window: { start: string; end: string } };
