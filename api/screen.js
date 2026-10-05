@@ -21,7 +21,7 @@ module.exports = async function handler(req, res) {
   }
   // Daily ignores the range selector entirely — canonicalise so the echoed range
   // never suggests the window followed it.
-  const range = name === 'daily' ? 'fixed30' : (req.query.range || '7d').toString();
+  const range = name === 'daily' ? 'fixed30' : name === 'retention' ? 'fixed8w' : (req.query.range || '7d').toString();
   // Attribution view — cached separately per bucket (the edge key is the full URL).
   const view = ['overall', 'influencer', 'perf'].includes((req.query.view || '').toString())
     ? req.query.view.toString() : 'overall';
