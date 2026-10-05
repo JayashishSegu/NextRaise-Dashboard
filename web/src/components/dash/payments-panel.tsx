@@ -161,6 +161,29 @@ export function PaymentsPanel({
         </div>
       )}
 
+      {data.owed && data.owed.rows.length > 0 ? (
+        <div className="border-t border-white/[0.06] px-5 pb-5 pt-4">
+          <div className="mb-1 flex items-baseline justify-between">
+            <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Pending payments</div>
+            <div className="text-sm font-semibold text-amber-300">{fmtINR(data.owed.total)} owed</div>
+          </div>
+          <table className="w-full text-[13px] tabular">
+            <tbody>
+              {data.owed.rows.map((o, i) => (
+                <tr key={`${o.creator}|${o.month}|${i}`} className="border-t border-white/[0.05] first:border-t-0">
+                  <td className="py-2 pr-2 text-foreground">{o.creator}</td>
+                  <td className="py-2 pr-2 text-muted-foreground">{monthLabel(o.month)}</td>
+                  <td className="py-2 text-right font-medium text-amber-200">{fmtINR(o.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            From your Google Sheets: earned but not yet marked paid. Mark them paid in the sheet, or log the payment above once sent.
+          </p>
+        </div>
+      ) : null}
+
       <form onSubmit={add} className="border-t border-white/[0.06] px-5 pb-5 pt-4">
         <div className="mb-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Log a payment</div>
         <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
@@ -200,6 +223,11 @@ export function PaymentsPanel({
   );
 }
 
+function monthLabel(ym: string) {
+  const d = new Date(`${ym}-02T00:00:00Z`);
+  return isNaN(d.getTime()) ? ym : d.toLocaleString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
+}
+
 function ago(ms: number) {
   const m = Math.max(0, Math.round((Date.now() - ms) / 60000));
   return m < 1 ? "just now" : m < 60 ? `${m}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`;
@@ -209,7 +237,6 @@ function ago(ms: number) {
 function SheetStrip({ data }: { data: PaymentsData }) {
   const latest = data.sync?.latest ?? null;
   const v = data.videos;
-  const owed = data.owed?.total ?? 0;
   const per1k = v && v.views > 0 && data.total > 0 ? (data.total / v.views) * 1000 : null;
   if (!data.kv) return null;
   return (
@@ -228,7 +255,6 @@ function SheetStrip({ data }: { data: PaymentsData }) {
               {per1k != null ? <span className="text-muted-foreground"> · {fmtINR(per1k)} per 1K views</span> : null}
             </span>
           ) : null}
-          {owed > 0 ? <span className="text-amber-300">{fmtINR(owed)} owed, not yet paid</span> : null}
         </div>
       )}
       {data.unread && data.unread.length > 0 ? (
