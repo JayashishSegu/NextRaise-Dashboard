@@ -3023,25 +3023,31 @@
     /* ══ DARK APPEARANCE — the handoff's dark token remap. Applied to the
        shared token layer so every screen follows, not just the shell. ══ */
     html[data-theme="light"][data-appearance="dark"]{
-      --nd-0:#131A2B; --nd-50:#090D18; --nd-100:#1A2236; --nd-200:#242E46;
-      --nd-400:#6C7796; --nd-500:#9AA5C0; --nd-700:#C9D1E4; --nd-900:#F2F5FB;
-      --nd-edge:rgba(255,255,255,.10); --nd-card:rgba(255,255,255,.055);
-      --nd-hair:rgba(255,255,255,.08);
-      --nd-act-50:rgba(92,121,255,.16); --nd-act-500:#5C79FF; --nd-act-600:#8FA3FF;
-      --nd-ok-50:rgba(25,182,114,.14); --nd-ok-700:#4BD69B;
-      --nd-red-100:rgba(229,72,77,.16); --nd-red-700:#FF9B9B;
-      --nd-amber-100:rgba(245,158,12,.16); --nd-amber-700:#F6C270;
-      --nd-sh:0 16px 40px -20px rgba(0,0,0,.6);
+      /* Rebalanced 2026-10-05: the previous palette (#131A2B panels on
+         #090D18 bg) read as navy-overcast rather than true dark — low
+         contrast between page and surface + a strong blue tint made the
+         whole app feel grey. New palette: neutral charcoal, bigger lift
+         between page and panel, pure-white text, hairline borders.
+         Matches the "feels actually dark" look from reference designs. */
+      --nd-0:#15161F; --nd-50:#0A0B10; --nd-100:#1C1D28; --nd-200:#272835;
+      --nd-400:#6E7891; --nd-500:#A4AEC4; --nd-700:#D6DBE8; --nd-900:#F8FAFC;
+      --nd-edge:rgba(255,255,255,.08); --nd-card:rgba(255,255,255,.04);
+      --nd-hair:rgba(255,255,255,.06);
+      --nd-act-50:rgba(92,121,255,.18); --nd-act-500:#6E8CFF; --nd-act-600:#9AB1FF;
+      --nd-ok-50:rgba(47,181,122,.18); --nd-ok-700:#5EDB9A;
+      --nd-red-100:rgba(255,107,107,.18); --nd-red-700:#FFA8A8;
+      --nd-amber-100:rgba(245,158,12,.18); --nd-amber-700:#FFCB7A;
+      --nd-sh:0 20px 50px -24px rgba(0,0,0,.75);
       /* base app tokens so the other screens follow */
-      --canvas:#090D18; --bg:#090D18; --surface:#131A2B; --surface-2:#1A2236; --pop:#131A2B;
-      --border:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.18);
-      --hover:rgba(255,255,255,.05); --sep:rgba(255,255,255,.08); --row-border:rgba(255,255,255,.08);
-      --text:#F2F5FB; --ink:#F2F5FB; --text-2:#C9D1E4; --text-3:#9AA5C0;
-      --blue:#5C79FF; --blue-soft:rgba(92,121,255,.16); --blue-text:#8FA3FF;
-      --green:#19B672; --green-soft:rgba(25,182,114,.14); --green-text:#4BD69B;
-      --red:#E5484D; --red-soft:rgba(229,72,77,.16); --red-text:#FF9B9B;
-      --amber:#F59E0C; --amber-soft:rgba(245,158,12,.16); --amber-text:#F6C270;
-      --violet:#8B9BFF; --violet-soft:rgba(139,155,255,.16); --violet-text:#A9B6FF;
+      --canvas:#0A0B10; --bg:#0A0B10; --surface:#15161F; --surface-2:#1C1D28; --pop:#15161F;
+      --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.14);
+      --hover:rgba(255,255,255,.04); --sep:rgba(255,255,255,.06); --row-border:rgba(255,255,255,.06);
+      --text:#F8FAFC; --ink:#F8FAFC; --text-2:#D6DBE8; --text-3:#A4AEC4;
+      --blue:#6E8CFF; --blue-soft:rgba(92,121,255,.18); --blue-text:#9AB1FF;
+      --green:#2FB57A; --green-soft:rgba(47,181,122,.18); --green-text:#5EDB9A;
+      --red:#FF6B6B; --red-soft:rgba(255,107,107,.18); --red-text:#FFA8A8;
+      --amber:#F59E0C; --amber-soft:rgba(245,158,12,.18); --amber-text:#FFCB7A;
+      --violet:#8B9BFF; --violet-soft:rgba(139,155,255,.18); --violet-text:#B5C0FF;
       color-scheme:dark;
     }
     html[data-theme="light"][data-appearance="dark"] body{ background:var(--nd-50) !important; color:var(--nd-900); }
@@ -4570,67 +4576,82 @@ html[data-theme="light"] :is(#ndDeskLive,#ndLive){ user-select:none; }
       .gdr-drop, #gdrSharedDrop, .gdrSharedDrop,
       .cmdk, .modal, .modal-card,
       .acq-src-panel, .suggestions, .filter-bar){
-      background:#131A2B !important;
-      border:1px solid rgba(255,255,255,.14) !important;
-      color:var(--text) !important;
-      box-shadow:0 20px 60px -20px rgba(0,0,0,.6) !important;
+      background:#15161F !important;
+      border:1px solid rgba(255,255,255,.10) !important;
+      color:#F8FAFC !important;
+      box-shadow:0 24px 60px -24px rgba(0,0,0,.8) !important;
       backdrop-filter:none !important;
     }
     html[data-theme="light"][data-appearance="dark"] #gdrSharedDrop .gdr-opt{
-      color:#F2F5FB !important;
+      color:#F8FAFC !important;
     }
     html[data-theme="light"][data-appearance="dark"] #gdrSharedDrop .gdr-opt:hover{
       background:rgba(255,255,255,.06) !important;
     }
     html[data-theme="light"][data-appearance="dark"] #gdrSharedDrop .gdr-opt.active{
-      color:#8FA3FF !important;
+      color:#9AB1FF !important;
     }
     html[data-theme="light"][data-appearance="dark"] #gdrSharedDrop .gdr-sep{
-      background:rgba(255,255,255,.08) !important;
+      background:rgba(255,255,255,.06) !important;
     }
 
-    /* Toolbar inputs & date pickers (gdr-btn, days-chip, search-shortcut,
-       sort-select, cmdk-trigger, toolbar-input, search-input, field-input,
-       date-input). Translucent white → translucent light-on-dark. */
+    /* Toolbar inputs & date pickers. Translucent white → light-on-dark. */
     html[data-theme="light"][data-appearance="dark"] :is(
       .gdr-btn, .days-chip, .search-shortcut, .sort-select, .cmdk-trigger,
       .toolbar-input, .search-input, .field-input, .date-input,
       .bucket-seg){
-      background:rgba(255,255,255,.05) !important;
-      border:1px solid rgba(255,255,255,.12) !important;
-      color:#E8ECF5 !important;
+      background:rgba(255,255,255,.04) !important;
+      border:1px solid rgba(255,255,255,.10) !important;
+      color:#F2F5FB !important;
       box-shadow:none !important;
     }
     html[data-theme="light"][data-appearance="dark"] :is(
       .toolbar-input, .search-input, .field-input, .date-input):focus{
-      border-color:#5C79FF !important;
-      box-shadow:0 0 0 3px rgba(92,121,255,.22) !important;
+      border-color:#6E8CFF !important;
+      box-shadow:0 0 0 3px rgba(110,140,255,.24) !important;
     }
 
-    /* ApexCharts tooltips (used on a few report screens). */
+    /* ApexCharts tooltips. */
     html[data-theme="light"][data-appearance="dark"] :is(
       .apexcharts-tooltip,
       .apexcharts-xaxistooltip,
       .apexcharts-yaxistooltip){
-      background:#131A2B !important;
-      border:1px solid rgba(255,255,255,.14) !important;
-      color:#F2F5FB !important;
+      background:#15161F !important;
+      border:1px solid rgba(255,255,255,.10) !important;
+      color:#F8FAFC !important;
     }
 
-    /* Sidebar + body: the forced-white sidebar rule can win over the
-       token-driven dark background on first paint. Re-pin here. */
+    /* Sidebar + body: force neutral charcoal, not navy. */
     html[data-theme="light"][data-appearance="dark"] body{
-      background:#090D18 !important;
+      background:#0A0B10 !important;
       background-image:none !important;
+      color:#F8FAFC !important;
     }
     html[data-theme="light"][data-appearance="dark"] .sidebar{
-      background:#0D1324 !important;
-      border-right:1px solid rgba(255,255,255,.08) !important;
+      background:#0E0F17 !important;
+      border-right:1px solid rgba(255,255,255,.06) !important;
       box-shadow:none !important;
     }
     html[data-theme="light"][data-appearance="dark"] .mob-bottom-nav{
-      background:#0D1324 !important;
-      border-top:1px solid rgba(255,255,255,.08) !important;
+      background:#0E0F17 !important;
+      border-top:1px solid rgba(255,255,255,.06) !important;
+    }
+
+    /* Cards/panels — force the neutral charcoal across every surface that
+       could still read as navy from an earlier rule, including the
+       hero/tile backgrounds painted via inline gradients on fallback paths. */
+    html[data-theme="light"][data-appearance="dark"] :is(
+      .ndc, .nd-card, .ov-card, .ocard, .nb-card,
+      .okpi, .rev-kpi, .infl-card, .panel, .result-card,
+      .table-wrap){
+      background:#15161F !important;
+      border-color:rgba(255,255,255,.08) !important;
+    }
+    html[data-theme="light"][data-appearance="dark"] :is(.ndc-hero, .nd-hero){
+      background:
+        radial-gradient(140% 100% at 100% 0%, rgba(110,140,255,.08), transparent 55%),
+        #15161F !important;
+      border-color:rgba(255,255,255,.08) !important;
     }
 
   </style>
