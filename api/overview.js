@@ -138,8 +138,10 @@ module.exports = async function handler(req, res) {
   // turned into repeated multi-second computes. Nothing below this point runs
   // until a Redis store is actually provisioned.
   if (!snapstore.enabled(env)) {
+    const dbg = {};
     try {
-      const data = await computeOverview(range, env, cust, view);
+      const data = await computeOverview(range, env, cust, view, dbg);
+      res.setHeader('x-nr-timings', (dbg.timings || []).join(','));
       const sMax = data.stale ? 300 : 1800;
       res.setHeader('Cache-Control', `public, max-age=0, s-maxage=${sMax}, stale-while-revalidate=86400`);
       res.setHeader('Content-Type', 'application/json');
@@ -147,6 +149,7 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ range, view, ts: Date.now(), stale: !!data.stale, data });
     } catch (e) {
       res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('x-nr-timings', (dbg.timings || []).join(','));
       if (e instanceof PostHogBudgetError || e.code === 'budget') {
         res.setHeader('Retry-After', String(e.retryAfter || 900));
         return res.status(429).json({
