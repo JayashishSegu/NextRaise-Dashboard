@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Sidebar, SidebarFooter, SidebarHeader, SidebarItem, SidebarNav, SidebarSection, SidebarToggle } from "@/components/ui/sidebar";
+import { Sidebar, SidebarFooter, SidebarHeader, SidebarItem, SidebarNav, SidebarSection, SidebarToggle, useSidebar } from "@/components/ui/sidebar";
 import { ExternalLink } from "lucide-react";
 import { NAV, NAV_GROUPS, CLASSIC_URL, navForPath } from "@/lib/nav";
 import { DashboardProvider, useDashboard } from "@/lib/dashboard-state";
@@ -24,47 +24,79 @@ function Logo() {
   );
 }
 
+/** Name block next to the logo. It has no room on the 60px rail, so it steps aside there. */
+function BrandText() {
+  const { collapsed } = useSidebar();
+  if (collapsed) return null;
+  return (
+    <div className="min-w-0 flex-1">
+      <div className="truncate text-sm font-semibold tracking-tight">NextRaise</div>
+      <div className="truncate text-[11px] text-muted-foreground">Analytics</div>
+    </div>
+  );
+}
+
+/** Group heading; on the rail there is no room for it, so it is dropped entirely. */
+function NavGroup({ title, children }: { title: string; children: ReactNode }) {
+  const { collapsed } = useSidebar();
+  return <SidebarSection label={collapsed ? undefined : title}>{children}</SidebarSection>;
+}
+
+const SIDEBAR_KEY = "nr_sidebar_collapsed";
+
 function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { hrefFor } = useDashboard();
   const [palette, setPalette] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem(SIDEBAR_KEY);
+    } catch {
+      /* storage unavailable */
+    }
+    setCollapsed(saved != null ? saved === "1" : window.innerWidth < 1100);
+  }, []);
+  const onCollapsedChange = (c: boolean) => {
+    setCollapsed(c);
+    try {
+      localStorage.setItem(SIDEBAR_KEY, c ? "1" : "0");
+    } catch {
+      /* storage unavailable */
+    }
+  };
   const current = navForPath(pathname);
 
   return (
     <div className="flex h-dvh overflow-hidden bg-background text-foreground">
       <div className="hidden md:flex">
-        <Sidebar variant="collapsible" width={236} aria-label="Primary" className="border-r border-white/[0.06] bg-[var(--sidebar)]">
+        <Sidebar variant="collapsible" width={236} collapsed={collapsed} onCollapsedChange={onCollapsedChange} aria-label="Primary" className="border-r border-white/[0.06] bg-[var(--sidebar)]">
           <SidebarHeader>
-            <div className="flex items-center gap-2.5 px-1 py-1">
-              <Logo />
-              <div className="min-w-0">
-                <div className="text-sm font-semibold tracking-tight">NextRaise</div>
-                <div className="truncate text-[11px] text-muted-foreground">Analytics</div>
-              </div>
-              <div className="ml-auto">
-                <SidebarToggle className="text-muted-foreground hover:text-foreground" />
-              </div>
-            </div>
+            <Logo />
+            <BrandText />
+            <SidebarToggle className="text-muted-foreground hover:text-foreground" />
           </SidebarHeader>
           <SidebarNav>
             {NAV_GROUPS.map((g) => (
-              <SidebarSection key={g} label={g}>
+              <NavGroup key={g} title={g}>
                 {NAV.filter((n) => n.group === g).map((n) => (
                   <SidebarItem
                     key={n.id}
                     icon={<n.icon className="h-4 w-4" />}
+                    title={n.label}
                     active={current.id === n.id}
                     onClick={() => router.push(hrefFor(n))}
                   >
                     {n.label}
                   </SidebarItem>
                 ))}
-              </SidebarSection>
+              </NavGroup>
             ))}
           </SidebarNav>
           <SidebarFooter>
-            <SidebarItem icon={<ExternalLink className="h-4 w-4" />} onClick={() => window.open(CLASSIC_URL, "_blank", "noopener")}>
+            <SidebarItem icon={<ExternalLink className="h-4 w-4" />} title="Classic dashboard" onClick={() => window.open(CLASSIC_URL, "_blank", "noopener")}>
               Classic dashboard
             </SidebarItem>
           </SidebarFooter>
