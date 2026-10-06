@@ -7,6 +7,7 @@ import { timeAgo } from "@/lib/format";
 import { useFreshness, useNow } from "@/components/dash/freshness";
 import { RangeMenu } from "@/components/dash/range-menu";
 import { ViewToggle } from "@/components/dash/view-toggle";
+import { ThinkingOrb } from "@/components/ui/thinking-orbs";
 import { cn } from "@/lib/utils";
 
 export function Topbar({ onOpenPalette }: { onOpenPalette: () => void }) {
@@ -37,9 +38,13 @@ export function Topbar({ onOpenPalette }: { onOpenPalette: () => void }) {
           title={error ? error.message : "Refresh now"}
           className="flex h-8 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 text-xs font-medium text-foreground outline-none transition-colors hover:bg-white/[0.06] focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
         >
-          <span className={cn("h-1.5 w-1.5 rounded-full", tone)} aria-hidden />
+          {refreshing ? (
+            <ThinkingOrb state="working" size={20} theme="dark" color="#a9bcff" aria-label="Loading" />
+          ) : (
+            <span className={cn("h-1.5 w-1.5 rounded-full", tone)} aria-hidden />
+          )}
           <span className="tabular">{label}</span>
-          <RefreshCw className={cn("h-3.5 w-3.5 text-muted-foreground", refreshing && "animate-spin")} aria-hidden />
+          {refreshing ? null : <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />}
         </button>
 
         <button
