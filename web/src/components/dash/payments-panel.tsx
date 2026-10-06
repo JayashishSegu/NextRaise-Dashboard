@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { MetalBadge } from "metal-fx";
 import { AlertTriangle, Eye, Lock, Plus, RefreshCw, Trash2, WalletCards } from "lucide-react";
 import type { ApiError } from "@/lib/use-api";
 import type { PaymentsData } from "@/lib/types";
@@ -49,7 +50,7 @@ export function PaymentsPanel({
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
 
-  const title = "Influencer payments";
+  const title = <span className="inline-flex items-center gap-2">Influencer payments <MetalBadge>New</MetalBadge></span>;
 
   if (!data && loading) {
     return (

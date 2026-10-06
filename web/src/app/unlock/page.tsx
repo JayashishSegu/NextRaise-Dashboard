@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Lock } from "lucide-react";
+import { MetalFx } from "metal-fx";
 
 function UnlockForm() {
   const router = useRouter();
@@ -44,9 +45,11 @@ function UnlockForm() {
         className="mt-1.5 h-10 w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm text-foreground outline-none focus:border-primary"
       />
       {error ? <p role="alert" className="mt-2 text-xs text-rose-300">{error}</p> : null}
-      <button type="submit" disabled={busy || !code} className="mt-4 h-10 w-full rounded-lg bg-primary text-sm font-semibold text-primary-foreground transition-opacity disabled:opacity-50">
+      <MetalFx preset="chromatic" strength={1} className="mt-4 block w-full">
+        <button type="submit" disabled={busy || !code} className="h-10 w-full rounded-lg text-sm font-semibold text-foreground transition-opacity disabled:opacity-50">
         {busy ? "Checking" : "Unlock"}
       </button>
+      </MetalFx>
     </form>
   );
 }

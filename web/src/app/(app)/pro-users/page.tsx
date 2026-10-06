@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { MetalText } from "metal-fx";
 import { CircleDollarSign, Clock, Download, Flame, PhoneCall, UserX } from "lucide-react";
 import { useDashboard } from "@/lib/dashboard-state";
 import { useOps } from "@/lib/use-api";
@@ -102,7 +103,7 @@ export default function ProUsersPage() {
     <>
       <PageHeader
         eyebrow="People"
-        title="Pro users"
+        title={<span className="inline-flex items-center gap-2.5"><MetalText font="600 28px/1.1 sans-serif" color="#E2E2E2">Pro</MetalText>users</span>}
         description="Everyone with a live Pro subscription. Same definition as Active Pro on the Overview."
         actions={
           <button type="button" onClick={exportCsv} disabled={!shown.length} className="inline-flex h-8 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 text-xs font-medium text-foreground outline-none hover:bg-white/[0.06] focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50">
