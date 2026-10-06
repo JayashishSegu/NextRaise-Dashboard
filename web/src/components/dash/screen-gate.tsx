@@ -6,6 +6,7 @@ import { AlertTriangle, Lock, RefreshCw, TimerReset } from "lucide-react";
 import type { ApiError } from "@/lib/use-api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ThinkingOrb } from "thinking-orbs";
+import { BorderBeam } from "border-beam";
 
 export function PanelSkeleton({ height = 260 }: { height?: number }) {
   return (
@@ -24,15 +25,17 @@ function LoadingBanner() {
     return () => clearTimeout(id);
   }, []);
   return (
-    <div role="status" className="mb-4 flex items-center gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] px-5 py-4">
-      <ThinkingOrb state="searching" size={64} theme="dark" color="#a9bcff" aria-hidden />
-      <div className="min-w-0">
-        <div className="text-sm font-medium text-foreground">{slow ? "Still crunching the numbers" : "Loading the numbers"}</div>
-        <div className="mt-0.5 text-xs text-muted-foreground">
-          {slow ? "The first load of a range can take around 10 seconds. After that it is saved and opens instantly." : "Pulling the latest from the database."}
+    <BorderBeam size="pulse-inner" colorVariant="mono" theme="dark" className="mb-4 rounded-2xl">
+      <div role="status" className="flex items-center gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] px-5 py-4">
+        <ThinkingOrb state="searching" size={64} theme="dark" color="#a9bcff" aria-hidden />
+        <div className="min-w-0">
+          <div className="text-sm font-medium text-foreground">{slow ? "Still crunching the numbers" : "Loading the numbers"}</div>
+          <div className="mt-0.5 text-xs text-muted-foreground">
+            {slow ? "The first load of a range can take around 10 seconds. After that it is saved and opens instantly." : "Pulling the latest from the database."}
+          </div>
         </div>
       </div>
-    </div>
+    </BorderBeam>
   );
 }
 
