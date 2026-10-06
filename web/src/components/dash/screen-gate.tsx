@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { AlertTriangle, Lock, RefreshCw, TimerReset } from "lucide-react";
 import type { ApiError } from "@/lib/use-api";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ThinkingOrb } from "@/components/ui/thinking-orbs";
+import { ThinkingOrb } from "thinking-orbs";
 
 export function PanelSkeleton({ height = 260 }: { height?: number }) {
   return (
@@ -16,7 +16,7 @@ export function PanelSkeleton({ height = 260 }: { height?: number }) {
   );
 }
 
-/** First load of a screen: an orb and a plain-words note, which gets more candid if it takes a while. */
+/** First load of a screen: a searching orb and a plain-words note, which gets more candid if it takes a while. */
 function LoadingBanner() {
   const [slow, setSlow] = useState(false);
   useEffect(() => {
@@ -24,11 +24,13 @@ function LoadingBanner() {
     return () => clearTimeout(id);
   }, []);
   return (
-    <div role="status" className="mb-4 flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
-      <ThinkingOrb state={slow ? "solving" : "working"} size={20} theme="dark" color="#a9bcff" aria-hidden />
-      <div className="min-w-0 text-sm">
-        <span className="text-foreground">{slow ? "Still crunching the numbers" : "Loading the numbers"}</span>
-        {slow ? <span className="text-muted-foreground"> · the first load of a range can take around 10 seconds, then it is saved and opens instantly.</span> : null}
+    <div role="status" className="mb-4 flex items-center gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] px-5 py-4">
+      <ThinkingOrb state="searching" size={64} theme="dark" color="#a9bcff" aria-hidden />
+      <div className="min-w-0">
+        <div className="text-sm font-medium text-foreground">{slow ? "Still crunching the numbers" : "Loading the numbers"}</div>
+        <div className="mt-0.5 text-xs text-muted-foreground">
+          {slow ? "The first load of a range can take around 10 seconds. After that it is saved and opens instantly." : "Pulling the latest from the database."}
+        </div>
       </div>
     </div>
   );
