@@ -1,10 +1,11 @@
 // POST /api/unlock { code }  -> sets the unlock cookie when the code is right
 // GET  /api/unlock           -> { unlocked: boolean }
 // The cookie is what api/ops.js checks (lib/gate.js). Never cached.
-const { COOKIE, isUnlocked, unlockToken, same } = require('../lib/gate');
+const { COOKIE, isUnlocked, isOpen, unlockToken, same } = require('../lib/gate');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'private, no-store');
+  if (req.method === 'GET' && isOpen()) return res.status(200).json({ unlocked: true, open: true });
   const token = unlockToken();
   if (!token) {
     return res.status(503).json({ error: 'Access is not configured on this deployment', code: 'gate-unset' });

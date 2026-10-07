@@ -3,13 +3,13 @@
 // Personal-data lookups for the v2 app (account search, Pro Users with phone
 // numbers). Gated by lib/gate.js and never cached: the response carries
 // emails, phone numbers and payment history.
-const { requireGate } = require('../lib/gate');
+const { requireRead } = require('../lib/gate');
 const { computeSearch, computeProUsers } = require('../lib/ops');
 const { PostHogBudgetError } = require('../lib/overview');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'private, no-store');
-  if (!requireGate(req, res)) return;
+  if (!requireRead(req, res)) return;
   if (!process.env.PH_API_KEY) return res.status(503).json({ error: 'PH_API_KEY not configured on the server yet' });
 
   const name = (req.query.name || '').toString();

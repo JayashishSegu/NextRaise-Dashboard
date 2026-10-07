@@ -8,7 +8,7 @@
 // The raw tabs are stored as-is in Redis and parsed on read (lib/influencer.js), so
 // a parsing fix never needs the script to be re-pasted. The key only authorises
 // writing sheet snapshots; nothing is readable with it.
-const { requireGate, same } = require('../lib/gate');
+const { requireRead, same } = require('../lib/gate');
 const { summarise } = require('../lib/influencer');
 
 const KEY = 'influencer:sheets:v1';
@@ -31,7 +31,7 @@ module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'private, no-store');
 
   if (req.method === 'GET') {
-    if (!requireGate(req, res)) return;
+    if (!requireRead(req, res)) return;
     const kv = store();
     try {
       const all = (kv && (await kv.hgetall(KEY))) || {};

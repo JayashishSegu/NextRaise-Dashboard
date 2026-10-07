@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Lock } from "lucide-react";
 import { MetalFx } from "metal-fx";
@@ -13,6 +13,18 @@ function UnlockForm() {
   const [busy, setBusy] = useState(false);
   const next = sp.get("next");
   const dest = next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+
+  // When the dashboard is open (no access code required) there is nothing to unlock: go straight through.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/unlock", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { unlocked?: boolean; open?: boolean } | null) => {
+        if (!cancelled && j?.open) router.replace(dest);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [router, dest]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

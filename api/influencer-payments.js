@@ -11,7 +11,7 @@
 //
 // Until a Redis store is attached GET answers kv:false and writes answer 503, so
 // the Report can say plainly that payments cannot be saved yet.
-const { requireGate } = require('../lib/gate');
+const { requireGate, requireRead } = require('../lib/gate');
 const { gdrBounds } = require('../lib/overview');
 const { summarise } = require('../lib/influencer');
 
@@ -35,7 +35,8 @@ function clean(s, max) {
 
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'private, no-store');
-  if (!requireGate(req, res)) return;
+  // Reads follow the open/locked switch; adding or deleting a payment always needs the unlock code.
+  if (!(req.method === 'GET' ? requireRead(req, res) : requireGate(req, res))) return;
   const kv = store();
 
   if (req.method === 'GET') {

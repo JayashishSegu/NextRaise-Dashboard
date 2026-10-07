@@ -21,6 +21,7 @@ async function call(method: "POST" | "DELETE", url: string, body?: unknown): Pro
     });
     if (res.ok) return { ok: true };
     const j = (await res.json().catch(() => ({}))) as { error?: string };
+    if (res.status === 401) return { ok: false, error: "Adding or deleting a payment still needs the access code. Open /unlock, enter it once, then try again." };
     return { ok: false, error: j.error || `Request failed (${res.status})` };
   } catch {
     return { ok: false, error: "Network error. Try again." };
