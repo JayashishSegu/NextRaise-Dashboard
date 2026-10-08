@@ -153,8 +153,8 @@ module.exports = async function handler(req, res) {
   // Single-flight first, budget second. ok:false means the store did not answer
   // at all - then there is no winner to wait for and we just compute, exactly as
   // this endpoint did before the store existed.
-  const lock = await snapstore.acquireLock(env, key, LOCK_TTL_SEC);
-  const lockToken = lock.token;
+  let lock = await snapstore.acquireLock(env, key, LOCK_TTL_SEC);
+  let lockToken = lock.token;
   const dbgRef = { v: null };   // so a failed compute can still report which queries ran and how long they took
   // Release BEFORE replying. Vercel can freeze the process the moment the response is sent, which
   // used to leave the lock held for its full 90s and make every press in that window wait for nothing.
@@ -174,11 +174,18 @@ module.exports = async function handler(req, res) {
     }
     const since = snap ? snap.computedAt : 0;
     const waitMs = (req.query.fresh && !isBg && !isCron) ? MANUAL_DEADLINE_MS : WAIT_FOR_WINNER_MS;
-    const winner = await snapstore.waitForNewer(env, key, since, waitMs, 700);
+    const winner = await snapstore.waitForNewer(env, key, since, waitMs, 700, true);
     if (winner) return send(winner, { source: 'snapshot-waited', noStore: force });
-    // Someone else's refresh of this exact view is still running. Say so rather than serve old data quietly.
-    if (snap) return send(snap, { source: 'snapshot-stale', noStore: force, flags: { busy: true } });
-    return sendComputing(8, 'locked');
+    // The compute we waited on ended without saving anything (it failed), or ran out our patience.
+    // If the lock is free now, take over once so this press still gets fresh numbers.
+    lock = await snapstore.acquireLock(env, key, LOCK_TTL_SEC);
+    lockToken = lock.token;
+    heldToken = lockToken;
+    if (lock.ok && !lockToken) {
+      // A newer compute has started and is still running. Say so rather than serve old data quietly.
+      if (snap) return send(snap, { source: 'snapshot-stale', noStore: force, flags: { busy: true } });
+      return sendComputing(8, 'locked');
+    }
   }
 
   try {
