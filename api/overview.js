@@ -36,8 +36,7 @@ const LOCK_TTL_SEC = 90;
 // ~9.1s, so 20s covers the normal case twice over, and if the lock holder dies
 // the reader is not made to wait longer than the compute it replaced.
 const WAIT_FOR_WINNER_MS = 20 * 1000;
-// A person pressing Refresh gets an answer within this many ms, whatever PostHog is doing.
-// The page promises under 34s, so we stop waiting at 30s and say so instead of hanging.
+// How long a press waits for someone else's compute of the same view to finish.
 const MANUAL_DEADLINE_MS = +(process.env.OV_MANUAL_DEADLINE_MS || 30 * 1000);
 
 // Hard ceiling on computes (= PostHog reads) per clock hour, across every combo
@@ -192,24 +191,11 @@ module.exports = async function handler(req, res) {
       }
     }
 
+    // Never abandon a compute: it runs to the end, saves the snapshot and releases the lock, even if
+    // the page gave up waiting. (Cutting it off used to leave an orphan holding the lock and block
+    // the next presses.) If it is slow, the page tells the person and the next press picks it up.
     const dbg = { force: kind === 'manual' };
-    const work = computeOverview(range, env, cust, view, dbg);
-    let data;
-    if (kind === 'manual') {
-      let timer;
-      const late = new Promise((r) => { timer = setTimeout(() => r('late'), MANUAL_DEADLINE_MS); });
-      const got = await Promise.race([work.then((d) => ({ d })), late]);
-      clearTimeout(timer);
-      if (got === 'late') {
-        work.catch(() => {});   // stop an unhandled rejection from the abandoned compute
-        const old = snap || await snapstore.getSnapshot(env, key);
-        if (old) return send(old, { source: 'snapshot-timeout', noStore: true, flags: { timedOut: true, waitedMs: MANUAL_DEADLINE_MS } });
-        return sendComputing(10, 'compute-slow');
-      }
-      data = got.d;
-    } else {
-      data = await work;
-    }
+    const data = await computeOverview(range, env, cust, view, dbg);
     res.setHeader('x-nr-timings', (dbg.timings || []).join(','));
     const payload = {
       v: 1, computedAt: Date.now(), range, view,

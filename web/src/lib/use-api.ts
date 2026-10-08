@@ -11,6 +11,9 @@ type Entry<T> = { env: ApiEnvelope<T>; fetchedAt: number };
 // last response while a fresh one loads behind it (stale-while-revalidate).
 const cache = new Map<string, Entry<unknown>>();
 
+/** How long a manual refresh waits before telling the person it is slow. */
+const REFRESH_WAIT_MS = 33_000;
+
 export type ApiError = { message: string; code?: string; retryAfter?: number };
 
 /** What a manual Refresh actually did, in words. Never leave the person guessing why the numbers did not move. */
@@ -86,8 +89,15 @@ export function useApi<T>(
     async (force: boolean, signal?: AbortSignal) => {
       const target = force ? `${url}${url.includes("?") ? "&" : "?"}fresh=${Date.now()}` : url;
       setState((s) => ({ ...s, refreshing: true, loading: s.env === null }));
+      // A manual refresh promises an answer inside 34 seconds. Past 33 we stop waiting and say so;
+      // the server keeps going and saves the result, so the next press picks it up.
+      const inner = new AbortController();
+      const relay = () => inner.abort();
+      signal?.addEventListener("abort", relay);
+      let timedOut = false;
+      const timer = force ? setTimeout(() => { timedOut = true; inner.abort(); }, REFRESH_WAIT_MS) : null;
       try {
-        const res = await fetch(target, { signal, cache: "no-store" });
+        const res = await fetch(target, { signal: inner.signal, cache: "no-store" });
         let json: unknown = null;
         try {
           json = await res.json();
@@ -111,7 +121,15 @@ export function useApi<T>(
           }));
         }
       } catch (e) {
-        if ((e as { name?: string })?.name === "AbortError") return;
+        if ((e as { name?: string })?.name === "AbortError") {
+          if (timedOut && urlRef.current === url) {
+            setState((s) => ({
+              ...s, refreshing: false, loading: s.env === null,
+              notice: { id: Date.now(), tone: "warn", text: `Refresh is taking longer than usual, so these numbers are still from ${s.env ? agoText(Math.round((Date.now() - s.env.ts) / 1000)) : "earlier"}. It keeps running on the server: press Refresh again in a few seconds to pick up the result.` },
+            }));
+          }
+          return;
+        }
         const err = (e && typeof e === "object" && "message" in e ? e : { message: "Network error" }) as ApiError;
         if (urlRef.current === url) {
           // Keep the last good data on screen; surface the error alongside it.
@@ -120,6 +138,10 @@ export function useApi<T>(
             notice: force ? { id: Date.now(), tone: "warn", text: `Refresh failed: ${err.message}. Showing the last numbers${s.env ? ` from ${agoText(Math.round((Date.now() - s.env.ts) / 1000))}` : ""}.` } : s.notice,
           }));
         }
+      }
+      finally {
+        if (timer) clearTimeout(timer);
+        signal?.removeEventListener("abort", relay);
       }
     },
     [url],
