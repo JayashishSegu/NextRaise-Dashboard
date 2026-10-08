@@ -13,6 +13,33 @@ const cache = new Map<string, Entry<unknown>>();
 
 export type ApiError = { message: string; code?: string; retryAfter?: number };
 
+/** What a manual Refresh actually did, in words. Never leave the person guessing why the numbers did not move. */
+export type RefreshNotice = { id: number; tone: "ok" | "info" | "warn"; text: string };
+
+function agoText(sec: number) {
+  if (sec < 90) return "a moment ago";
+  const m = Math.round(sec / 60);
+  return m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`;
+}
+
+export function describeRefresh(env: ApiEnvelope<unknown>, prevTs: number | null): Omit<RefreshNotice, "id"> {
+  const age = typeof env.ageSec === "number" ? env.ageSec : Math.max(0, Math.round((Date.now() - env.ts) / 1000));
+  if (env.capped) {
+    const mins = Math.max(1, Math.ceil((env.retryAfterSec ?? 600) / 60));
+    return { tone: "warn", text: `Refresh limit for this hour reached, so these numbers are from ${agoText(age)}. It resets in about ${mins} min.` };
+  }
+  if (env.refreshFailed || env.source === "snapshot-error" || env.source === "snapshot-budget" || env.source === "snapshot-stale") {
+    return { tone: "warn", text: `Could not refresh right now, so these numbers are from ${agoText(age)}.${env.budget ? " The PostHog read budget is used up and refills through the hour." : ""}` };
+  }
+  if (env.source === "snapshot-recent") {
+    return { tone: "info", text: `Already up to date. These numbers were computed ${agoText(age)}.` };
+  }
+  if (prevTs != null && env.ts <= prevTs && age > 120) {
+    return { tone: "warn", text: `No newer data came back. These numbers are still from ${agoText(age)}.` };
+  }
+  return { tone: "ok", text: "Refreshed with the latest numbers." };
+}
+
 const AUTO_REFRESH_MS = 120_000;
 
 function buildUrl(name: string, params: Record<string, string | null | undefined>) {
@@ -36,6 +63,7 @@ export function useApi<T>(
     error: ApiError | null;
     loading: boolean;
     refreshing: boolean;
+    notice: RefreshNotice | null;
   }>(() => {
     const hit = cache.get(url) as Entry<T> | undefined;
     return {
@@ -44,6 +72,7 @@ export function useApi<T>(
       error: null,
       loading: !hit,
       refreshing: false,
+      notice: null,
     };
   });
   const urlRef = useRef(url);
@@ -72,14 +101,20 @@ export function useApi<T>(
         const fetchedAt = Date.now();
         cache.set(url, { env, fetchedAt });
         if (urlRef.current === url) {
-          setState({ env, fetchedAt, error: null, loading: false, refreshing: false });
+          setState((s) => ({
+            env, fetchedAt, error: null, loading: false, refreshing: false,
+            notice: force ? { id: Date.now(), ...describeRefresh(env as ApiEnvelope<unknown>, s.env?.ts ?? null) } : null,
+          }));
         }
       } catch (e) {
         if ((e as { name?: string })?.name === "AbortError") return;
         const err = (e && typeof e === "object" && "message" in e ? e : { message: "Network error" }) as ApiError;
         if (urlRef.current === url) {
           // Keep the last good data on screen; surface the error alongside it.
-          setState((s) => ({ ...s, error: err, loading: false, refreshing: false }));
+          setState((s) => ({
+            ...s, error: err, loading: false, refreshing: false,
+            notice: force ? { id: Date.now(), tone: "warn", text: `Refresh failed: ${err.message}. Showing the last numbers${s.env ? ` from ${agoText(Math.round((Date.now() - s.env.ts) / 1000))}` : ""}.` } : s.notice,
+          }));
         }
       }
     },
@@ -95,6 +130,7 @@ export function useApi<T>(
       error: null,
       loading: !hit,
       refreshing: false,
+      notice: null,
     });
     const ctl = new AbortController();
     load(false, ctl.signal);
@@ -117,6 +153,7 @@ export function useApi<T>(
     error: state.error,
     loading: state.loading,
     refreshing: state.refreshing,
+    notice: state.notice,
     refetch: (force = true) => load(force),
   };
 }

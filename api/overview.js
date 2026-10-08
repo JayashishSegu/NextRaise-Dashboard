@@ -42,7 +42,10 @@ const FORCE_MIN_AGE_MS = 60 * 1000;
 
 // Hard ceiling on computes (= PostHog reads) per clock hour, across every combo
 // and every caller. See the arithmetic in api/cron.js.
-const MAX_COMPUTES_PER_HOUR = Math.max(1, +(process.env.OV_MAX_COMPUTES_PER_HOUR || 8));
+const MAX_COMPUTES_PER_HOUR = Math.max(1, +(process.env.OV_MAX_COMPUTES_PER_HOUR || 12));
+// Pressing Refresh draws on its own allowance, never on the one background refreshes
+// and the cron share. A per-combo 60s minimum (FORCE_MIN_AGE_MS) already stops mashing.
+const MAX_MANUAL_PER_HOUR = Math.max(1, +(process.env.OV_MAX_MANUAL_PER_HOUR || 20));
 // The cron stops this far below the ceiling so a human pressing Refresh always
 // has room left.
 const CRON_RESERVE = Math.max(1, +(process.env.OV_CRON_RESERVE || 2));
@@ -173,7 +176,7 @@ module.exports = async function handler(req, res) {
     return send(snap, { source: 'snapshot' });
   }
   if (snap && force && snapAge <= FORCE_MIN_AGE_MS) {
-    return send(snap, { source: 'snapshot-recent', noStore: true });
+    return send(snap, { source: 'snapshot-recent', noStore: true, flags: { recent: true } });
   }
 
   // Single-flight first, budget second. ok:false means the store did not answer
@@ -197,15 +200,20 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const used = await snapstore.reserveCompute(env);   // null = no store, uncapped
-    const cap = isCron ? (MAX_COMPUTES_PER_HOUR - CRON_RESERVE) : MAX_COMPUTES_PER_HOUR;
+    // A person pressing Refresh uses the manual allowance; background kicks and the cron
+    // share the auto one. A denied attempt hands its reservation back.
+    const kind = (req.query.fresh && !isBg && !isCron) ? 'manual' : 'auto';
+    const used = await snapstore.reserveCompute(env, kind);   // null = no store, uncapped
+    const cap = kind === 'manual' ? MAX_MANUAL_PER_HOUR : (isCron ? MAX_COMPUTES_PER_HOUR - CRON_RESERVE : MAX_COMPUTES_PER_HOUR);
     if (used !== null && used > cap) {
-      // The hourly PostHog read allowance for this dashboard is spent. Serving a
-      // slightly older snapshot is always better than risking a 429 that takes
-      // every screen down.
-      if (snap) return send(snap, { source: 'snapshot-capped', noStore: force, flags: { capped: true } });
+      await snapstore.releaseCompute(env, kind);
+      // Serving a slightly older snapshot beats risking a 429 that takes every screen down,
+      // but the response says so (capped + when it resets) and the page shows that to the user.
+      const retryAfterSec = 3600 - Math.floor((Date.now() % 3600000) / 1000);
+      const capFlags = { capped: true, capKind: kind, retryAfterSec };
+      if (snap) return send(snap, { source: 'snapshot-capped', noStore: force, flags: capFlags });
       const older = await snapstore.getSnapshot(env, key);
-      if (older) return send(older, { source: 'snapshot-capped', noStore: force, flags: { capped: true } });
+      if (older) return send(older, { source: 'snapshot-capped', noStore: force, flags: capFlags });
       return sendComputing(600, 'compute-capped');
     }
 

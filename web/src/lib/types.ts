@@ -66,6 +66,16 @@ export type ApiEnvelope<T> = {
   range?: string;
   view?: string;
   data: T;
+  /** Where the server got these numbers: compute, snapshot, snapshot-recent, snapshot-capped, ... */
+  source?: string;
+  /** Seconds since the server computed them. */
+  ageSec?: number;
+  /** Refresh was refused because the hourly allowance is spent; retryAfterSec says when it resets. */
+  capped?: boolean;
+  retryAfterSec?: number;
+  /** A recompute was attempted and failed; this is why. */
+  refreshFailed?: string;
+  budget?: boolean;
 };
 
 export type MonetizationData = {

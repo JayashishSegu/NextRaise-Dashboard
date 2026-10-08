@@ -1,10 +1,10 @@
 "use client";
 
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import type { ApiError } from "@/lib/use-api";
+import type { ApiError, RefreshNotice } from "@/lib/use-api";
 
-type State = { ts: number | null; refreshing: boolean; error: ApiError | null; refetch: ((force?: boolean) => void) | null };
-const IDLE: State = { ts: null, refreshing: false, error: null, refetch: null };
+type State = { ts: number | null; refreshing: boolean; error: ApiError | null; notice: RefreshNotice | null; refetch: ((force?: boolean) => void) | null };
+const IDLE: State = { ts: null, refreshing: false, error: null, notice: null, refetch: null };
 
 const Ctx = createContext<{ state: State; set: (s: State) => void } | null>(null);
 
@@ -22,6 +22,7 @@ export function useReportFreshness(api: {
   ts: number | null;
   refreshing: boolean;
   error: ApiError | null;
+  notice?: RefreshNotice | null;
   refetch: (force?: boolean) => Promise<void>;
 }) {
   const ctx = useContext(Ctx);
@@ -29,8 +30,8 @@ export function useReportFreshness(api: {
   refetchRef.current = api.refetch;
   const set = ctx?.set;
   useEffect(() => {
-    set?.({ ts: api.ts, refreshing: api.refreshing, error: api.error, refetch: (f = true) => void refetchRef.current(f) });
-  }, [set, api.ts, api.refreshing, api.error]);
+    set?.({ ts: api.ts, refreshing: api.refreshing, error: api.error, notice: api.notice ?? null, refetch: (f = true) => void refetchRef.current(f) });
+  }, [set, api.ts, api.refreshing, api.error, api.notice]);
   useEffect(() => () => set?.(IDLE), [set]);
 }
 
