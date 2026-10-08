@@ -76,6 +76,8 @@ export type ApiEnvelope<T> = {
   timedOut?: boolean;
   /** Someone else's refresh of the same view was still running when the wait ran out. */
   busy?: boolean;
+  /** Names of queries that fell back to PostHog's saved copy because the live run timed out. */
+  partlyCached?: string[];
   retryAfterSec?: number;
   /** A recompute was attempted and failed; this is why. */
   refreshFailed?: string;

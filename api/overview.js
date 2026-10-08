@@ -208,6 +208,7 @@ module.exports = async function handler(req, res) {
     const dbg = dbgRef.v;
     const data = await computeOverview(range, env, cust, view, dbg);
     res.setHeader('x-nr-timings', (dbg.timings || []).join(','));
+    const staleQueries = (dbg.state && dbg.state.staleQueries) || [];
     const payload = {
       v: 1, computedAt: Date.now(), range, view,
       window: { start: bounds.startDate, end: bounds.endDate },
@@ -219,7 +220,7 @@ module.exports = async function handler(req, res) {
       res.setHeader('Cache-Control', 'no-store');
       return res.status(200).json({ refreshed: true, range, view, computedAt: payload.computedAt });
     }
-    return send(payload, { source: 'compute', noStore: force });
+    return send(payload, { source: 'compute', noStore: force, flags: staleQueries.length ? { partlyCached: staleQueries } : undefined });
   } catch (e) {
     await releaseNow();
     console.error('overview recompute failed', range, view, String((e && e.message) || e).slice(0, 200), '| timings:', (dbgRef.v && dbgRef.v.timings ? dbgRef.v.timings.join(',') : 'n/a'));

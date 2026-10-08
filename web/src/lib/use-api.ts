@@ -27,6 +27,9 @@ function agoText(sec: number) {
 
 export function describeRefresh(env: ApiEnvelope<unknown>, prevTs: number | null): Omit<RefreshNotice, "id"> {
   const age = typeof env.ageSec === "number" ? env.ageSec : Math.max(0, Math.round((Date.now() - env.ts) / 1000));
+  if (env.partlyCached && env.partlyCached.length) {
+    return { tone: "info", text: `Refreshed. ${env.partlyCached.length === 1 ? "One figure" : `${env.partlyCached.length} figures`} (${env.partlyCached.join(", ")}) came from PostHog's saved copy because the live query timed out, so they may lag a few minutes.` };
+  }
   if (env.busy) {
     return { tone: "info", text: `Another refresh of this view is still running, so these numbers are from ${agoText(age)}. Press Refresh again in a few seconds.` };
   }
