@@ -155,6 +155,14 @@ module.exports = async function handler(req, res) {
   // this endpoint did before the store existed.
   const lock = await snapstore.acquireLock(env, key, LOCK_TTL_SEC);
   const lockToken = lock.token;
+  // Release BEFORE replying. Vercel can freeze the process the moment the response is sent, which
+  // used to leave the lock held for its full 90s and make every press in that window wait for nothing.
+  let heldToken = lockToken;
+  const releaseNow = async () => {
+    if (!heldToken) return;
+    const t = heldToken; heldToken = null;
+    await snapstore.releaseLock(env, key, t);
+  };
   if (lock.ok && !lockToken) {
     // Somebody else is already computing this exact combo. Background and cron
     // callers return immediately - a cron tick must never spend its 60s budget
@@ -182,6 +190,7 @@ module.exports = async function handler(req, res) {
       const cap = isCron ? MAX_COMPUTES_PER_HOUR - CRON_RESERVE : MAX_COMPUTES_PER_HOUR;
       if (used !== null && used > cap) {
         await snapstore.releaseCompute(env, kind);
+        await releaseNow();
         const retryAfterSec = 3600 - Math.floor((Date.now() % 3600000) / 1000);
         const capFlags = { capped: true, capKind: kind, retryAfterSec };
         if (snap) return send(snap, { source: 'snapshot-capped', noStore: force, flags: capFlags });
@@ -203,12 +212,14 @@ module.exports = async function handler(req, res) {
       stale: !!data.stale, data,
     };
     await snapstore.putSnapshot(env, key, payload, SNAP_TTL_SEC);
+    await releaseNow();
     if (isBg || isCron) {
       res.setHeader('Cache-Control', 'no-store');
       return res.status(200).json({ refreshed: true, range, view, computedAt: payload.computedAt });
     }
     return send(payload, { source: 'compute', noStore: force });
   } catch (e) {
+    await releaseNow();
     console.error('overview recompute failed', range, view, String((e && e.message) || e).slice(0, 300));
     const budget = (e instanceof PostHogBudgetError) || e.code === 'budget';
     // A failed recompute must never blank a screen that has good numbers.
@@ -230,6 +241,6 @@ module.exports = async function handler(req, res) {
     }
     return res.status(500).json({ error: String((e && e.message) || e) });
   } finally {
-    if (lockToken) await snapstore.releaseLock(env, key, lockToken);
+    await releaseNow();
   }
 };
