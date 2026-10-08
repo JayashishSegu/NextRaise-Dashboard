@@ -24,6 +24,9 @@ function agoText(sec: number) {
 
 export function describeRefresh(env: ApiEnvelope<unknown>, prevTs: number | null): Omit<RefreshNotice, "id"> {
   const age = typeof env.ageSec === "number" ? env.ageSec : Math.max(0, Math.round((Date.now() - env.ts) / 1000));
+  if (env.busy) {
+    return { tone: "info", text: `Another refresh of this view is still running, so these numbers are from ${agoText(age)}. Press Refresh again in a few seconds.` };
+  }
   if (env.timedOut) {
     return { tone: "warn", text: `Refresh took longer than 30 seconds, so these numbers are still from ${agoText(age)}. Press Refresh again in a minute.` };
   }

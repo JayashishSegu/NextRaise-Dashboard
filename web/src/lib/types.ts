@@ -74,6 +74,8 @@ export type ApiEnvelope<T> = {
   capped?: boolean;
   /** A manual refresh hit the 30s deadline and returned the previous numbers. */
   timedOut?: boolean;
+  /** Someone else's refresh of the same view was still running when the wait ran out. */
+  busy?: boolean;
   retryAfterSec?: number;
   /** A recompute was attempted and failed; this is why. */
   refreshFailed?: string;

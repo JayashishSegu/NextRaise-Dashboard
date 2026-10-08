@@ -173,9 +173,11 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ skipped: 'locked', range, view });
     }
     const since = snap ? snap.computedAt : 0;
-    const winner = await snapstore.waitForNewer(env, key, since, WAIT_FOR_WINNER_MS, 700);
+    const waitMs = (req.query.fresh && !isBg && !isCron) ? MANUAL_DEADLINE_MS : WAIT_FOR_WINNER_MS;
+    const winner = await snapstore.waitForNewer(env, key, since, waitMs, 700);
     if (winner) return send(winner, { source: 'snapshot-waited', noStore: force });
-    if (snap) return send(snap, { source: 'snapshot-stale', noStore: force });
+    // Someone else's refresh of this exact view is still running. Say so rather than serve old data quietly.
+    if (snap) return send(snap, { source: 'snapshot-stale', noStore: force, flags: { busy: true } });
     return sendComputing(8, 'locked');
   }
 
@@ -197,7 +199,7 @@ module.exports = async function handler(req, res) {
       return sendComputing(600, 'compute-capped');
     }
 
-    const dbg = {};
+    const dbg = { force: kind === 'manual' };
     const work = computeOverview(range, env, cust, view, dbg);
     let data;
     if (kind === 'manual') {

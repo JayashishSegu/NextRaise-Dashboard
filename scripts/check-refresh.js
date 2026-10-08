@@ -5,7 +5,7 @@
 // requires ONE of these outcomes, otherwise it exits 1:
 //   - the numbers are new (source "compute", age under 2 minutes), or
 //   - the server says they are already recent (source "snapshot-recent"), or
-//   - the response says why nothing was recomputed (capped / timedOut / refreshFailed / budget)
+//   - the response says why nothing was recomputed (capped / timedOut / busy / refreshFailed / budget)
 // AND the press must come back within 34 seconds (the promise made to the person pressing it).
 // An old snapshot returned with no explanation is the bug this exists to catch.
 //
@@ -21,7 +21,7 @@ async function press(range, view) {
   const ms = Date.now() - t0;
   const j = await res.json().catch(() => ({}));
   const age = typeof j.ageSec === 'number' ? j.ageSec : null;
-  const explained = j.capped || j.timedOut || j.refreshFailed || j.budget || j.source === 'snapshot-recent';
+  const explained = j.capped || j.timedOut || j.busy || j.refreshFailed || j.budget || j.source === 'snapshot-recent';
   const isNew = j.source === 'compute' && age !== null && age < 120;
   let verdict = 'FAIL';
   let why = `source=${j.source} age=${age}s with no explanation`;
