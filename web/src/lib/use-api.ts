@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
-  ApiEnvelope, CreatorsData, DailyData, InsightsData, MonetizationData, OverviewData, PaymentsData, ReportData, RetentionData,
+  ApiEnvelope, CreatorsData, DailyData, InsightsData, OverviewData, PaymentsData, ReportData, RetentionData,
 } from "@/lib/types";
 import { useDashboard } from "@/lib/dashboard-state";
 
@@ -24,6 +24,9 @@ function agoText(sec: number) {
 
 export function describeRefresh(env: ApiEnvelope<unknown>, prevTs: number | null): Omit<RefreshNotice, "id"> {
   const age = typeof env.ageSec === "number" ? env.ageSec : Math.max(0, Math.round((Date.now() - env.ts) / 1000));
+  if (env.timedOut) {
+    return { tone: "warn", text: `Refresh took longer than 30 seconds, so these numbers are still from ${agoText(age)}. Press Refresh again in a minute.` };
+  }
   if (env.capped) {
     const mins = Math.max(1, Math.ceil((env.retryAfterSec ?? 600) / 60));
     return { tone: "warn", text: `Refresh limit for this hour reached, so these numbers are from ${agoText(age)}. It resets in about ${mins} min.` };
@@ -40,8 +43,6 @@ export function describeRefresh(env: ApiEnvelope<unknown>, prevTs: number | null
   return { tone: "ok", text: "Refreshed with the latest numbers." };
 }
 
-const AUTO_REFRESH_MS = 120_000;
-
 function buildUrl(name: string, params: Record<string, string | null | undefined>) {
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) if (v) q.set(k, v);
@@ -52,9 +53,9 @@ function buildUrl(name: string, params: Record<string, string | null | undefined
 export function useApi<T>(
   name: string,
   params: Record<string, string | null | undefined>,
-  opts: { enabled?: boolean; autoRefresh?: boolean; unwrap?: (json: unknown) => unknown } = {},
+  opts: { enabled?: boolean; unwrap?: (json: unknown) => unknown } = {},
 ) {
-  const { enabled = true, autoRefresh = true, unwrap } = opts;
+  const { enabled = true, unwrap } = opts;
   const url = buildUrl(name, params);
 
   const [state, setState] = useState<{
@@ -137,14 +138,6 @@ export function useApi<T>(
     return () => ctl.abort();
   }, [url, enabled, load]);
 
-  useEffect(() => {
-    if (!enabled || !autoRefresh) return;
-    const id = setInterval(() => {
-      if (document.visibilityState === "visible") load(false);
-    }, AUTO_REFRESH_MS);
-    return () => clearInterval(id);
-  }, [enabled, autoRefresh, load]);
-
   return {
     data: state.env?.data ?? null,
     /** When the server computed this snapshot (falls back to when we fetched it). */
@@ -167,7 +160,6 @@ type ScreenMap = {
   report: ReportData;
   daily: DailyData;
   insights: InsightsData;
-  monetization: MonetizationData;
   creators: CreatorsData;
   retention: RetentionData;
 };
@@ -187,14 +179,13 @@ export function useScreen<N extends keyof ScreenMap>(name: N, opts: { usesView?:
 }
 
 /** Personal-data endpoints: attached to the gate key server-side, only after unlock. */
-export function useOps<T>(name: "search" | "pro", extra: Record<string, string | null | undefined> = {}, enabled = true) {
-  return useApi<T>("ops", { name, ...extra }, { enabled, autoRefresh: false });
+export function useOps<T>(name: "search", extra: Record<string, string | null | undefined> = {}, enabled = true) {
+  return useApi<T>("ops", { name, ...extra }, { enabled });
 }
 
 /** Referral code -> creator handle, from the production cohort map. */
 export function useCreatorNames() {
   return useApi<Record<string, string>>("influencer-names", {}, {
-    autoRefresh: false,
     unwrap: (j) => (j && typeof j === "object" && "map" in (j as object) ? (j as { map: Record<string, string> }).map : {}),
   });
 }
@@ -202,5 +193,5 @@ export function useCreatorNames() {
 /** Creator payments in the selected range. Gated server-side, so it needs the unlock cookie. */
 export function usePayments(enabled = true) {
   const { range, from, to } = useDashboard();
-  return useApi<PaymentsData>("influencer-payments", { range, from, to }, { enabled, autoRefresh: false });
+  return useApi<PaymentsData>("influencer-payments", { range, from, to }, { enabled });
 }

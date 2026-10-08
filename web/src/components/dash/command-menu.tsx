@@ -4,7 +4,7 @@ import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarDays, ExternalLink, Eye, RefreshCw } from "lucide-react";
 import { CommandDialog, type CommandGroup } from "@/components/ui/command";
-import { NAV, NAV_GROUPS, CLASSIC_URL } from "@/lib/nav";
+import { NAV, NAV_GROUPS } from "@/lib/nav";
 import { RANGES, VIEWS, useDashboard } from "@/lib/dashboard-state";
 import { useFreshness } from "@/components/dash/freshness";
 
@@ -66,13 +66,6 @@ export function CommandMenu({ open, onOpenChange }: { open: boolean; onOpenChang
             icon: <RefreshCw className="h-4 w-4" />,
             keywords: ["reload", "update"],
             onSelect: () => refetch?.(true),
-          },
-          {
-            id: "prod",
-            label: "Open classic dashboard",
-            icon: <ExternalLink className="h-4 w-4" />,
-            keywords: ["old", "blue"],
-            onSelect: () => window.open(CLASSIC_URL, "_blank", "noopener"),
           },
         ],
       },

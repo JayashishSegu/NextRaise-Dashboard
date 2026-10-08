@@ -23,12 +23,9 @@ export const NAV: NavItem[] = [
   { id: "daily", label: "Daily", href: "/daily", icon: BarChart3, group: "Overview", description: "Last 30 days, day by day", range: false, view: true },
   { id: "insights", label: "Insights", href: "/insights", icon: LineChart, group: "Overview", description: "Signup funnel and where people drop off", range: true, view: true },
   { id: "acquire", label: "Acquire", href: "/acquire", icon: Compass, group: "Growth", description: "Channels: visitors, signups and paid", range: true, view: true },
-  { id: "activate", label: "Activate", href: "/activate", icon: Sparkles, group: "Growth", description: "Activation rate over time", range: true, view: true },
-  { id: "monetization", label: "Monetization", href: "/monetization", icon: TrendingUp, group: "Growth", description: "Revenue, plans, run-rate and churn", range: true, view: true },
   { id: "retention", label: "Retention", href: "/retention", icon: Repeat2, group: "Growth", description: "Weekly signup cohorts that come back", range: false, view: false },
   { id: "referrals", label: "Referrals", href: "/referrals", icon: Megaphone, group: "Growth", description: "Referral codes and the referral funnel", range: true, view: false },
   { id: "creators", label: "Creators", href: "/creators", icon: Crown, group: "People", description: "Creator codes: signups, paid and revenue", range: true, view: false },
-  { id: "pro-users", label: "Pro users", href: "/pro-users", icon: Flame, group: "People", description: "Active subscribers with plan and expiry", range: false, view: false, locked: true },
   { id: "search", label: "Search", href: "/search", icon: Search, group: "People", description: "Look up an account by email or name", range: false, view: false, locked: true },
 ];
 
@@ -38,8 +35,5 @@ export function navForPath(pathname: string): NavItem {
   const hit = NAV.find((n) => (n.href === "/" ? pathname === "/" : pathname === n.href || pathname.startsWith(n.href + "/")));
   return hit ?? NAV[0];
 }
-
-/** The previous single-file dashboard, kept at this path as a fallback. */
-export const CLASSIC_URL = "/classic/";
 
 export { Users, Funnel };

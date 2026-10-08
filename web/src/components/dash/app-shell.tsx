@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar, SidebarFooter, SidebarHeader, SidebarItem, SidebarNav, SidebarSection, SidebarToggle, useSidebar } from "@/components/ui/sidebar";
 import { ExternalLink } from "lucide-react";
-import { NAV, NAV_GROUPS, CLASSIC_URL, navForPath } from "@/lib/nav";
+import { NAV, NAV_GROUPS, navForPath } from "@/lib/nav";
 import { DashboardProvider, useDashboard } from "@/lib/dashboard-state";
 import { FreshnessProvider } from "@/components/dash/freshness";
 import { Topbar } from "@/components/dash/topbar";
@@ -95,11 +95,6 @@ function Shell({ children }: { children: ReactNode }) {
               </NavGroup>
             ))}
           </SidebarNav>
-          <SidebarFooter>
-            <SidebarItem icon={<ExternalLink className="h-4 w-4" />} title="Classic dashboard" onClick={() => window.open(CLASSIC_URL, "_blank", "noopener")}>
-              Classic dashboard
-            </SidebarItem>
-          </SidebarFooter>
         </Sidebar>
       </div>
 

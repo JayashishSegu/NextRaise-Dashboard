@@ -39,6 +39,9 @@ const WAIT_FOR_WINNER_MS = 20 * 1000;
 // Even an explicit Refresh will not recompute something this young, so mashing
 // the button cannot turn into repeat ClickHouse work.
 const FORCE_MIN_AGE_MS = 60 * 1000;
+// A person pressing Refresh gets an answer within this many ms, whatever PostHog is doing.
+// The page promises under 34s, so we stop waiting at 30s and say so instead of hanging.
+const MANUAL_DEADLINE_MS = +(process.env.OV_MANUAL_DEADLINE_MS || 30 * 1000);
 
 // Hard ceiling on computes (= PostHog reads) per clock hour, across every combo
 // and every caller. See the arithmetic in api/cron.js.
@@ -49,30 +52,6 @@ const MAX_MANUAL_PER_HOUR = Math.max(1, +(process.env.OV_MAX_MANUAL_PER_HOUR || 
 // The cron stops this far below the ceiling so a human pressing Refresh always
 // has room left.
 const CRON_RESERVE = Math.max(1, +(process.env.OV_CRON_RESERVE || 2));
-
-// Must be the PUBLIC alias - the per-deploy *.vercel.app host has Deployment
-// Protection (302), so a background fetch to VERCEL_URL would never arrive.
-const DEFAULT_BASE = 'https://nextraise-dashboard-blue.vercel.app';
-
-function selfBase(req) {
-  if (process.env.PUBLIC_BASE) return process.env.PUBLIC_BASE.replace(/\/+$/, '');
-  const h = req.headers['x-forwarded-host'] || req.headers.host;
-  return h ? 'https://' + h : DEFAULT_BASE;
-}
-
-// Fire the recompute in its own invocation and do NOT wait for it. We give the
-// request ~150ms to leave the box, which is plenty for it to be sent; if it is
-// ever lost, the cron picks the same combo up on its next tick, so the worst case
-// is a slightly older snapshot, never a slow page.
-function kickRefresh(req, qs) {
-  try {
-    const url = selfBase(req) + '/api/overview?' + qs + '&refresh=1';
-    const p = fetch(url, { headers: { 'x-nr-bg': '1' }, cache: 'no-store' }).then(() => {}, () => {});
-    return Promise.race([p, new Promise(r => setTimeout(r, 150))]);
-  } catch (_) {
-    return Promise.resolve();
-  }
-}
 
 module.exports = async function handler(req, res) {
   const range = (req.query.range || '7d').toString();
@@ -172,7 +151,8 @@ module.exports = async function handler(req, res) {
     // Answer first, refresh behind it. A background invocation does the work,
     // guarded by the same single-flight lock, so concurrent readers do not stack
     // up computes.
-    if (snapAge > FRESH_MS && !isBg) await kickRefresh(req, qs);
+    // No automatic refresh on read: numbers change when someone presses Refresh (or on the
+    // scheduled cron warm-up), and the page shows how old they are.
     return send(snap, { source: 'snapshot' });
   }
   if (snap && force && snapAge <= FORCE_MIN_AGE_MS) {
@@ -217,7 +197,26 @@ module.exports = async function handler(req, res) {
       return sendComputing(600, 'compute-capped');
     }
 
-    const data = await computeOverview(range, env, cust, view);
+    const dbg = {};
+    const work = computeOverview(range, env, cust, view, dbg);
+    let data;
+    if (kind === 'manual') {
+      let timer;
+      const late = new Promise((r) => { timer = setTimeout(() => r('late'), MANUAL_DEADLINE_MS); });
+      const got = await Promise.race([work.then((d) => ({ d })), late]);
+      clearTimeout(timer);
+      if (got === 'late') {
+        work.catch(() => {});   // stop an unhandled rejection from the abandoned compute
+        await snapstore.releaseCompute(env, kind);
+        const old = snap || await snapstore.getSnapshot(env, key);
+        if (old) return send(old, { source: 'snapshot-timeout', noStore: true, flags: { timedOut: true, waitedMs: MANUAL_DEADLINE_MS } });
+        return sendComputing(10, 'compute-slow');
+      }
+      data = got.d;
+    } else {
+      data = await work;
+    }
+    res.setHeader('x-nr-timings', (dbg.timings || []).join(','));
     const payload = {
       v: 1, computedAt: Date.now(), range, view,
       window: { start: bounds.startDate, end: bounds.endDate },

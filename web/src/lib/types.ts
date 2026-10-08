@@ -72,16 +72,12 @@ export type ApiEnvelope<T> = {
   ageSec?: number;
   /** Refresh was refused because the hourly allowance is spent; retryAfterSec says when it resets. */
   capped?: boolean;
+  /** A manual refresh hit the 30s deadline and returned the previous numbers. */
+  timedOut?: boolean;
   retryAfterSec?: number;
   /** A recompute was attempted and failed; this is why. */
   refreshFailed?: string;
   budget?: boolean;
-};
-
-export type MonetizationData = {
-  plans: Array<[string | null, number, number, number, number]>; // [plan_key, payments, payers, inr, usd]
-  monthly: Array<[string, number, number, number, number]>; // [month, payments, payers, inr, usd]
-  channels: Array<[string | null, string | null, number, number, number, number]>; // [source, medium, payments, payers, inr, usd]
 };
 
 export type CreatorsData = {
@@ -95,13 +91,6 @@ export type RetentionData = {
   events: string[];
   asOf: string;
 };
-
-export type ProUser = {
-  id: string; email: string; name: string | null; plan: string | null; status: string | null;
-  ends: string | null; created: string | null; code: string | null; phone: string | null;
-  firstPay: string | null; lastPay: string | null; inr: number; usd: number; payCount: number; planKey: string | null;
-};
-export type ProUsersData = { users: ProUser[] };
 
 export type SearchAccount = {
   id: string; email: string; name: string | null; plan: string | null; status: string | null;

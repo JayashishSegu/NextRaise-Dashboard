@@ -1,10 +1,10 @@
-// GET /api/ops?name=search&q=<text> | name=pro
+// GET /api/ops?name=search&q=<text>
 //
 // Personal-data lookups for the v2 app (account search, Pro Users with phone
 // numbers). Gated by lib/gate.js and never cached: the response carries
 // emails, phone numbers and payment history.
 const { requireRead } = require('../lib/gate');
-const { computeSearch, computeProUsers } = require('../lib/ops');
+const { computeSearch } = require('../lib/ops');
 const { PostHogBudgetError } = require('../lib/overview');
 
 module.exports = async function handler(req, res) {
@@ -16,8 +16,7 @@ module.exports = async function handler(req, res) {
   try {
     let data;
     if (name === 'search') data = await computeSearch(process.env, (req.query.q || '').toString());
-    else if (name === 'pro') data = await computeProUsers(process.env);
-    else return res.status(400).json({ error: 'name must be one of: search, pro' });
+    else return res.status(400).json({ error: 'name must be: search' });
     return res.status(200).json({ name, ts: Date.now(), data });
   } catch (e) {
     if (e instanceof PostHogBudgetError || (e && e.code === 'budget')) {

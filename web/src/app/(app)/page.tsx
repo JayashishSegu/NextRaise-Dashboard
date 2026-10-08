@@ -84,7 +84,7 @@ export default function OverviewPage() {
                 label="Revenue" icon={<CircleDollarSign className="h-3.5 w-3.5" />} accent="green"
                 value={m.rev} format={fmtINR} deltaPct={m.revDelta}
                 subtitle={`${fmtN(m.payments)} payments${d.revUsd > 0 ? ` · incl. $${Math.round(d.revUsd)}` : ""}`}
-                series={spark(m.revSeries)} onClick={() => router.push("/monetization")}
+                series={spark(m.revSeries)} onClick={() => router.push("/report")}
               />
               <StatTile
                 label="Signups" icon={<UserPlus className="h-3.5 w-3.5" />} accent="blue"
@@ -96,13 +96,12 @@ export default function OverviewPage() {
                 label="Active Pro" icon={<Flame className="h-3.5 w-3.5" />} accent="violet"
                 value={m.activePro}
                 subtitle={d.subsOk ? `${fmtPct(safeDiv(m.activePro, m.allUsers) * 100, 2)} of ${fmtN(m.allUsers)} users` : "subscription data unavailable"}
-                onClick={() => router.push("/pro-users")}
               />
               <StatTile
                 label="Payers" icon={<TrendingUp className="h-3.5 w-3.5" />} accent="amber"
                 value={d.revPayers}
                 subtitle={d.revPayers ? `${fmtINR(m.rev / d.revPayers)} per payer` : "no payers yet"}
-                onClick={() => router.push("/monetization")}
+                onClick={() => router.push("/report")}
               />
             </StatRow>
 
