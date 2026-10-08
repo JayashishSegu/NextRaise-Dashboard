@@ -155,6 +155,7 @@ module.exports = async function handler(req, res) {
   // this endpoint did before the store existed.
   const lock = await snapstore.acquireLock(env, key, LOCK_TTL_SEC);
   const lockToken = lock.token;
+  const dbgRef = { v: null };   // so a failed compute can still report which queries ran and how long they took
   // Release BEFORE replying. Vercel can freeze the process the moment the response is sent, which
   // used to leave the lock held for its full 90s and make every press in that window wait for nothing.
   let heldToken = lockToken;
@@ -203,7 +204,8 @@ module.exports = async function handler(req, res) {
     // Never abandon a compute: it runs to the end, saves the snapshot and releases the lock, even if
     // the page gave up waiting. (Cutting it off used to leave an orphan holding the lock and block
     // the next presses.) If it is slow, the page tells the person and the next press picks it up.
-    const dbg = { force: kind === 'manual' };
+    dbgRef.v = { force: kind === 'manual' };
+    const dbg = dbgRef.v;
     const data = await computeOverview(range, env, cust, view, dbg);
     res.setHeader('x-nr-timings', (dbg.timings || []).join(','));
     const payload = {
@@ -220,7 +222,7 @@ module.exports = async function handler(req, res) {
     return send(payload, { source: 'compute', noStore: force });
   } catch (e) {
     await releaseNow();
-    console.error('overview recompute failed', range, view, String((e && e.message) || e).slice(0, 300));
+    console.error('overview recompute failed', range, view, String((e && e.message) || e).slice(0, 200), '| timings:', (dbgRef.v && dbgRef.v.timings ? dbgRef.v.timings.join(',') : 'n/a'));
     const budget = (e instanceof PostHogBudgetError) || e.code === 'budget';
     // A failed recompute must never blank a screen that has good numbers.
     const fallback = snap || await snapstore.getSnapshot(env, key);
