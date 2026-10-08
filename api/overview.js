@@ -36,9 +36,6 @@ const LOCK_TTL_SEC = 90;
 // ~9.1s, so 20s covers the normal case twice over, and if the lock holder dies
 // the reader is not made to wait longer than the compute it replaced.
 const WAIT_FOR_WINNER_MS = 20 * 1000;
-// Even an explicit Refresh will not recompute something this young, so mashing
-// the button cannot turn into repeat ClickHouse work.
-const FORCE_MIN_AGE_MS = 60 * 1000;
 // A person pressing Refresh gets an answer within this many ms, whatever PostHog is doing.
 // The page promises under 34s, so we stop waiting at 30s and say so instead of hanging.
 const MANUAL_DEADLINE_MS = +(process.env.OV_MANUAL_DEADLINE_MS || 30 * 1000);
@@ -46,9 +43,6 @@ const MANUAL_DEADLINE_MS = +(process.env.OV_MANUAL_DEADLINE_MS || 30 * 1000);
 // Hard ceiling on computes (= PostHog reads) per clock hour, across every combo
 // and every caller. See the arithmetic in api/cron.js.
 const MAX_COMPUTES_PER_HOUR = Math.max(1, +(process.env.OV_MAX_COMPUTES_PER_HOUR || 12));
-// Pressing Refresh draws on its own allowance, never on the one background refreshes
-// and the cron share. A per-combo 60s minimum (FORCE_MIN_AGE_MS) already stops mashing.
-const MAX_MANUAL_PER_HOUR = Math.max(1, +(process.env.OV_MAX_MANUAL_PER_HOUR || 20));
 // The cron stops this far below the ceiling so a human pressing Refresh always
 // has room left.
 const CRON_RESERVE = Math.max(1, +(process.env.OV_CRON_RESERVE || 2));
@@ -155,9 +149,7 @@ module.exports = async function handler(req, res) {
     // scheduled cron warm-up), and the page shows how old they are.
     return send(snap, { source: 'snapshot' });
   }
-  if (snap && force && snapAge <= FORCE_MIN_AGE_MS) {
-    return send(snap, { source: 'snapshot-recent', noStore: true, flags: { recent: true } });
-  }
+  // No minimum age: every manual Refresh recomputes. Presses that overlap share one compute (the lock below).
 
   // Single-flight first, budget second. ok:false means the store did not answer
   // at all - then there is no winner to wait for and we just compute, exactly as
@@ -182,21 +174,22 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // A person pressing Refresh uses the manual allowance; background kicks and the cron
-    // share the auto one. A denied attempt hands its reservation back.
+    // A person pressing Refresh is never limited by us. Only background refreshes and the cron
+    // are capped per hour (to protect PostHog's read budget); PostHog's own budget error is still
+    // handled below, and the page says so if that is ever the reason.
     const kind = (req.query.fresh && !isBg && !isCron) ? 'manual' : 'auto';
-    const used = await snapstore.reserveCompute(env, kind);   // null = no store, uncapped
-    const cap = kind === 'manual' ? MAX_MANUAL_PER_HOUR : (isCron ? MAX_COMPUTES_PER_HOUR - CRON_RESERVE : MAX_COMPUTES_PER_HOUR);
-    if (used !== null && used > cap) {
-      await snapstore.releaseCompute(env, kind);
-      // Serving a slightly older snapshot beats risking a 429 that takes every screen down,
-      // but the response says so (capped + when it resets) and the page shows that to the user.
-      const retryAfterSec = 3600 - Math.floor((Date.now() % 3600000) / 1000);
-      const capFlags = { capped: true, capKind: kind, retryAfterSec };
-      if (snap) return send(snap, { source: 'snapshot-capped', noStore: force, flags: capFlags });
-      const older = await snapstore.getSnapshot(env, key);
-      if (older) return send(older, { source: 'snapshot-capped', noStore: force, flags: capFlags });
-      return sendComputing(600, 'compute-capped');
+    if (kind === 'auto') {
+      const used = await snapstore.reserveCompute(env, kind);   // null = no store, uncapped
+      const cap = isCron ? MAX_COMPUTES_PER_HOUR - CRON_RESERVE : MAX_COMPUTES_PER_HOUR;
+      if (used !== null && used > cap) {
+        await snapstore.releaseCompute(env, kind);
+        const retryAfterSec = 3600 - Math.floor((Date.now() % 3600000) / 1000);
+        const capFlags = { capped: true, capKind: kind, retryAfterSec };
+        if (snap) return send(snap, { source: 'snapshot-capped', noStore: force, flags: capFlags });
+        const older = await snapstore.getSnapshot(env, key);
+        if (older) return send(older, { source: 'snapshot-capped', noStore: force, flags: capFlags });
+        return sendComputing(600, 'compute-capped');
+      }
     }
 
     const dbg = { force: kind === 'manual' };
@@ -209,7 +202,6 @@ module.exports = async function handler(req, res) {
       clearTimeout(timer);
       if (got === 'late') {
         work.catch(() => {});   // stop an unhandled rejection from the abandoned compute
-        await snapstore.releaseCompute(env, kind);
         const old = snap || await snapstore.getSnapshot(env, key);
         if (old) return send(old, { source: 'snapshot-timeout', noStore: true, flags: { timedOut: true, waitedMs: MANUAL_DEADLINE_MS } });
         return sendComputing(10, 'compute-slow');
@@ -231,6 +223,7 @@ module.exports = async function handler(req, res) {
     }
     return send(payload, { source: 'compute', noStore: force });
   } catch (e) {
+    console.error('overview recompute failed', range, view, String((e && e.message) || e).slice(0, 300));
     const budget = (e instanceof PostHogBudgetError) || e.code === 'budget';
     // A failed recompute must never blank a screen that has good numbers.
     const fallback = snap || await snapstore.getSnapshot(env, key);

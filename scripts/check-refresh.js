@@ -4,7 +4,6 @@
 // For each combo it presses Refresh the way the dashboard does (fresh=<timestamp>) and
 // requires ONE of these outcomes, otherwise it exits 1:
 //   - the numbers are new (source "compute", age under 2 minutes), or
-//   - the server says they are already recent (source "snapshot-recent"), or
 //   - the response says why nothing was recomputed (capped / timedOut / busy / refreshFailed / budget)
 // AND the press must come back within 34 seconds (the promise made to the person pressing it).
 // An old snapshot returned with no explanation is the bug this exists to catch.

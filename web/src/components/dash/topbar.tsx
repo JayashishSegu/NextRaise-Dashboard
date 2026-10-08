@@ -22,9 +22,10 @@ export function Topbar({ onOpenPalette }: { onOpenPalette: () => void }) {
     return () => clearTimeout(id);
   }, [notice]);
   const showNotice = notice && dismissed !== notice.id ? notice : null;
-  const now = useNow();
+  const now = useNow(5_000);   // fine enough that the dot turns yellow right at one minute
   const ageMin = ts ? (now - ts) / 60000 : null;
-  const tone = error ? "bg-amber-400" : refreshing ? "bg-primary animate-pulse" : ageMin != null && ageMin < 10 ? "bg-emerald-400" : "bg-amber-400";
+  // Green only while the numbers are under a minute old. After that it is yellow: press Refresh.
+  const tone = error ? "bg-amber-400" : refreshing ? "bg-primary animate-pulse" : ageMin != null && ageMin < 1 ? "bg-emerald-400" : "bg-amber-400";
   const label = error && !ts ? "Could not load" : refreshing && !ts ? "Loading" : `Updated ${timeAgo(ts, now)}`;
 
   return (
