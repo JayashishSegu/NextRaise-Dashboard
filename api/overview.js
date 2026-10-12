@@ -146,7 +146,8 @@ module.exports = async function handler(req, res) {
     // up computes.
     // No automatic refresh on read: numbers change when someone presses Refresh (or on the
     // scheduled cron warm-up), and the page shows how old they are.
-    return send(snap, { source: 'snapshot' });
+    // live=1 (the phone widget) must see the store's current snapshot, not an edge copy up to 2 minutes old.
+    return send(snap, { source: 'snapshot', noStore: !!req.query.live });
   }
   // No minimum age: every manual Refresh recomputes. Presses that overlap share one compute (the lock below).
 
