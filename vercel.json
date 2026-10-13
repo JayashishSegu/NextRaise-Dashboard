@@ -18,6 +18,9 @@
     },
     "api/ops.js": {
       "maxDuration": 30
+    },
+    "api/creator-earnings.js": {
+      "maxDuration": 30
     }
   },
   "crons": [
