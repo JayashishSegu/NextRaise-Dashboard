@@ -5,8 +5,8 @@
 //
 // This is how the NextRaise team gives influencers access to their earnings page. A link only works while the registry
 // (lib/creatorAccess.js) says the creator is active at the link's version, so revoke and rotate take effect at once.
-// Links and access codes (NR-XXXX-XXXX, shown once, only their hash is kept) are returned only here, to a person who has
-// unlocked the dashboard, and never listed anywhere else.
+// A creator signs in with their referral code (public), so switching a creator on here is what lets them in. Personal links
+// still work and are returned only here, to a person who has unlocked the dashboard, never listed anywhere else.
 // Only referral codes that exist in the users table can be given access, and names and emails come from there, not from
 // the request.
 //
@@ -61,25 +61,14 @@ module.exports = async function handler(req, res) {
     for (const code of codes) {
       const person = people.get(code);
       if (!person) { results.push({ code, error: 'No creator has this referral code' }); continue; }
-      const before = await A.load(kv, code);
-      let entry = before;
+      let entry = await A.load(kv, code);
       if (action === 'grant' || action === 'grant-all') entry = A.grant(entry, person, now);
       else if (action === 'revoke') entry = A.revoke(entry, now);
       else if (action === 'rotate') entry = A.rotate(entry, now);
       else if (action === 'link' && !(entry && entry.enabled)) entry = null;
       if (!entry) { results.push({ code, name: person.name, status: A.status(await A.load(kv, code)), error: action === 'revoke' ? 'Had no access' : 'Give access first' }); continue; }
-      // A creator gets a new access code when they are given access (or given it again, or sent a new link).
-      let pin = null;
-      const fresh = action === 'rotate' || ((action === 'grant' || action === 'grant-all') && entry.enabled && (!before || !before.enabled || !entry.pinHash));
-      if (fresh) {
-        pin = A.newPin();
-        const h = A.pinHash(secret, A.normalizePin(pin));
-        if (entry.pinHash && entry.pinHash !== h) await kv.hdel(A.PINS_KEY, entry.pinHash);
-        await kv.hset(A.PINS_KEY, { [h]: entry.code });
-        entry = { ...entry, pinHash: h };
-      }
       if (action !== 'link') await A.save(kv, entry);
-      results.push({ code, name: person.name, status: A.status(entry), ...(entry.enabled ? { link: linkFor(entry) } : {}), ...(pin ? { pin } : {}) });
+      results.push({ code, name: person.name, status: A.status(entry), ...(entry.enabled ? { link: linkFor(entry) } : {}) });
     }
     return res.status(200).json({ results });
   } catch (e) {

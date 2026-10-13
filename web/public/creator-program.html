@@ -147,26 +147,26 @@ async function act(action, row, extra = {}) {
 }
 
 const first = (n) => (String(n).split(/\s+/)[0] || 'there');
-const messageFor = (row, link, pin) => `Hi ${first(row.name)}, here is your personal NextRaise earnings page: ${link}\nIt shows your sign-ups, Pro users, revenue and commission day by day.${pin ? `\nIf you ever get signed out, open ${new URL(link).origin} and type your access code: ${pin}` : ''}\nPlease keep the link and the code private.`;
+const APP_URL = 'https://nextraise-creator-earnings.vercel.app';
+const messageFor = (row) => `Hi ${first(row.name)}, your personal NextRaise earnings page is ready: ${APP_URL}\nType your referral code ${row.code} to sign in. It shows your sign-ups, Pro users, revenue and commission, day by day. You can come back any time.`;
 
 function controls(r) {
   const s = r.access.status;
   const reload = async () => { state.data = await api('/api/creator-program?range=' + state.range); render(); };
   if (s === 'nocode') return el('span', { class: 'seen' }, 'No referral code yet');
   if (s === 'none' || s === 'revoked') {
-    return el('button', { class: 'btn sm primary', onclick: async () => { const x = await act('grant', r); if (x) { await copy(messageFor(r, x.link, x.pin)); toast(`Access given to ${r.name}. Message copied with their link${x.pin ? ' and access code ' + x.pin : ''}. Paste it in WhatsApp or Instagram.`, 12000); await reload(); } } }, s === 'revoked' ? 'Restore access' : 'Give access');
+    return el('button', { class: 'btn sm primary', onclick: async () => { const x = await act('grant', r); if (x) { await copy(messageFor(r)); toast(`${r.name} can now sign in with their referral code ${r.code}. Message copied. Paste it in WhatsApp or Instagram.`, 9000); await reload(); } } }, s === 'revoked' ? 'Restore access' : 'Give access');
   }
   return el('span', {},
-    el('button', { class: 'btn sm', onclick: async () => { const x = await act('link', r); if (x) toast((await copy(x.link)) ? 'Link copied.' : 'Copy the link from the box.'); } }, 'Copy link'),
-    el('button', { class: 'btn sm', onclick: async () => { const x = await act('link', r); if (x) toast((await copy(messageFor(r, x.link))) ? 'Message copied. Paste it in WhatsApp or Instagram.' : 'Copy the message from the box.'); } }, 'Copy message'),
-    el('button', { class: 'btn sm', title: 'Makes a new link and stops the old one working', onclick: async () => { if (!confirm(`Make a new link for ${r.name}? Their old link stops working.`)) return; const x = await act('rotate', r); if (x) { await copy(messageFor(r, x.link, x.pin)); toast(`New message copied${x.pin ? ' with the new access code ' + x.pin : ''}. The old link and code no longer work.`, 12000); await reload(); } } }, 'New link'),
-    el('button', { class: 'btn sm danger', onclick: async () => { if (!confirm(`Remove ${r.name}'s access? Their link stops working right away.`)) return; const x = await act('revoke', r); if (x) { toast(`${r.name} no longer has access.`); await reload(); } } }, 'Revoke'));
+    el('button', { class: 'btn sm', onclick: async () => toast((await copy(messageFor(r))) ? 'Message copied. Paste it in WhatsApp or Instagram.' : 'Copy the message from the box.') }, 'Copy message'),
+    el('button', { class: 'btn sm', title: 'Signs them out on every device. Their code still works to sign in again', onclick: async () => { if (!confirm(`Sign ${r.name} out on every device? They can sign in again with their referral code.`)) return; const x = await act('rotate', r); if (x) { toast(`${r.name} was signed out everywhere.`); await reload(); } } }, 'Sign out everywhere'),
+    el('button', { class: 'btn sm danger', onclick: async () => { if (!confirm(`Remove ${r.name}'s access? They are signed out and their referral code stops working here.`)) return; const x = await act('revoke', r); if (x) { toast(`${r.name} no longer has access.`); await reload(); } } }, 'Revoke'));
 }
 
 async function giveAll() {
   const todo = state.data.rows.filter((r) => r.code && r.access.status === 'none');
   if (!todo.length) return toast('Everyone with a referral code already has access.');
-  if (!confirm(`Give ${todo.length} creator${todo.length === 1 ? '' : 's'} access to their earnings page?\n\nThis only creates their links. Nothing is sent to anyone. You will get a file with every link and access code to share yourself.`)) return;
+  if (!confirm(`Switch on ${todo.length} creator${todo.length === 1 ? '' : 's'}?\n\nEach can then sign in at ${APP_URL} by typing their referral code. Nothing is sent to anyone. You will get a file with each creator and their code to share.`)) return;
   const out = [];
   try {
     for (let i = 0; i < todo.length; i += 100) {
@@ -175,8 +175,8 @@ async function giveAll() {
     }
   } catch (e) { return e.status === 401 ? lockScreen('Your session ended. Enter the code again.') : toast(e.message); }
   const ok = out.filter((x) => x.link);
-  csv(ok.map((x) => ({ name: x.name, code: x.code, access_code: x.pin || '', link: x.link })), 'nextraise-creator-links.csv');
-  toast(`${ok.length} creator${ok.length === 1 ? '' : 's'} now have access. Links downloaded.`);
+  csv(ok.map((x) => ({ name: x.name, referral_code_to_sign_in: x.code, page: APP_URL })), 'nextraise-creator-access.csv');
+  toast(`${ok.length} creator${ok.length === 1 ? '' : 's'} switched on. File downloaded.`);
   load();
 }
 
@@ -213,8 +213,8 @@ function render() {
   const search = el('input', { type: 'search', placeholder: 'Search name or code', 'aria-label': 'Search creators', value: state.q, oninput: (e) => { state.q = e.target.value; const pos = e.target.selectionStart; render(); const n = $('input[type=search]'); n.focus(); n.setSelectionRange(pos, pos); } });
   $('#app').replaceChildren(
     el('div', { class: 'top' },
-      el('div', {}, el('h1', {}, 'Creator program'), el('div', { class: 'sub' }, `${range} · ${t.creators} creators · give each one access to their own earnings page`)),
-      el('div', { class: 'bar' }, pills, el('button', { class: 'btn primary', onclick: giveAll }, 'Give access to everyone'), el('button', { class: 'btn', onclick: () => csv(sorted().map((r) => ({ name: r.name, code: r.code, access: r.access.status, signups: r.signups, paying_users: r.payers, revenue_inr: r.revenue, reel_fees_inr: r.fees, commission_inr: r.commission, cost_inr: r.cost, return_x: r.roi.toFixed(2), owed_inr: r.owed })), 'nextraise-creator-program.csv') }, 'Download table'))),
+      el('div', {}, el('h1', {}, 'Creator program'), el('div', { class: 'sub' }, `${range} · ${t.creators} creators · switch each one on to let them see their own earnings`)),
+      el('div', { class: 'bar' }, pills, el('button', { class: 'btn primary', onclick: giveAll }, 'Switch on everyone'), el('button', { class: 'btn', onclick: () => csv(sorted().map((r) => ({ name: r.name, code: r.code, access: r.access.status, signups: r.signups, paying_users: r.payers, revenue_inr: r.revenue, reel_fees_inr: r.fees, commission_inr: r.commission, cost_inr: r.cost, return_x: r.roi.toFixed(2), owed_inr: r.owed })), 'nextraise-creator-program.csv') }, 'Download table'))),
     el('div', { class: 'kpis' },
       kpi('Pro revenue', inr(t.revenue), `${t.payers} paying users from ${t.signups} sign-ups`),
       kpi('Creator cost', inr(t.cost), `${inr(t.fees)} fees · ${inr(t.commission)} commission`),

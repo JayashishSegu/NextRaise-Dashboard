@@ -223,64 +223,46 @@ test('handlers: grant-all gives every listed creator access and reports the ones
   assert.equal((await call(accessApi, { method: 'POST', gate: true, body: { action: 'grant-all', codes: Array.from({ length: 101 }, (_, i) => 'C' + String(i).padStart(4, '0')) } })).status, 400);
 });
 
-test('access codes: format, forgiving input, hashes differ per code and per secret', () => {
-  const p = A.newPin();
-  assert.match(p, /^NR-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/);
-  assert.notEqual(A.newPin(), A.newPin());
-  const n = A.normalizePin(p.toLowerCase().replace(/-/g, ' '));
-  assert.equal(n, p.replace(/-/g, ''));
-  for (const bad of ['', 'TAEKK5', 'NR-0000-0000', 'NR-ABC', 'XX-ABCD-EFGH', "NR-ABCD-EFG'; DROP", null, undefined]) assert.equal(A.normalizePin(bad), null, String(bad));
-  assert.notEqual(A.pinHash('s1', n), A.pinHash('s2', n));
-  assert.notEqual(A.pinHash('s1', n), A.pinHash('s1', A.normalizePin(A.newPin())));
-  assert.ok(!JSON.stringify(A.publicView({ code: 'X', enabled: true, ver: 1, pinHash: 'abc' })).includes('abc'), 'the registry view never carries the hash');
-});
-
-test('sign-in by access code: given with access, works once typed, dies on revoke, replaced on new link', async () => {
+test('sign-in by referral code: only creators who are switched on, and it ends when they are switched off', async () => {
   await call(accessApi, { method: 'POST', gate: true, body: { action: 'revoke', code: 'ABC123' } }); // start clean
-  const g = await call(accessApi, { method: 'POST', gate: true, body: { action: 'grant', code: 'ABC123' } });
-  const pin1 = g.json.results[0].pin;
-  assert.match(pin1 || '', /^NR-/, 'the admin gets the code when access is given');
-  // The stored value is a hash, not the code.
-  assert.ok(!JSON.stringify(await kv.hgetall('creator:access:v1')).includes(pin1.replace(/-/g, '')));
 
-  // A referral code is public and must not sign anyone in.
-  assert.equal((await call(signinApi, { method: 'POST', body: { pin: 'ABC123' }, ip: '1.1.1.1' })).status, 400);
-  assert.equal((await call(signinApi, { method: 'POST', body: { pin: 'NR-ZZZZ-ZZZZ' }, ip: '1.1.1.1' })).status, 401);
+  // A referral code is public, so a creator who has not been switched on cannot get in with it.
+  const no = await call(signinApi, { method: 'POST', body: { code: 'ABC123' }, ip: '1.1.1.1' });
+  assert.equal(no.status, 401);
+  assert.equal((await call(signinApi, { method: 'POST', body: { code: 'NOBODY1' }, ip: '1.1.1.1' })).status, 401, 'unknown codes get the same answer');
+  assert.equal(no.json.error, (await call(signinApi, { method: 'POST', body: { code: 'NOBODY1' }, ip: '1.1.1.1' })).json.error, 'and the same message, so nothing reveals who is a creator');
+  assert.equal((await call(signinApi, { method: 'POST', body: { code: "x'; DROP" }, ip: '1.1.1.1' })).status, 400);
+  assert.equal((await call(signinApi, { method: 'POST', body: {}, ip: '1.1.1.1' })).status, 400);
 
-  const ok = await call(signinApi, { method: 'POST', body: { pin: pin1.toLowerCase() }, ip: '2.2.2.2', origin: 'https://app.example' });
-  assert.equal(ok.status, 200);
-  assert.equal((await call(earningsApi, { query: { t: ok.json.token } })).status, 200, 'the token from sign-in opens the earnings page');
-  assert.ok(E.verifyToken('link-secret', ok.json.token).code === 'ABC123');
+  await call(accessApi, { method: 'POST', gate: true, body: { action: 'grant', code: 'ABC123' } });
+  const ok = await call(signinApi, { method: 'POST', body: { code: ' abc123 ' }, ip: '2.2.2.2', origin: 'https://app.example' });
+  assert.equal(ok.status, 200, 'forgiving about case and spaces');
+  assert.equal(E.verifyToken('link-secret', ok.json.token).code, 'ABC123');
+  assert.equal((await call(earningsApi, { query: { t: ok.json.token } })).status, 200, 'the session opens the earnings page');
+  assert.equal(JSON.stringify(ok.json).includes('pin'), false);
 
-  // Giving access again does not change a working code.
-  const again = await call(accessApi, { method: 'POST', gate: true, body: { action: 'grant', code: 'ABC123' } });
-  assert.equal(again.json.results[0].pin, undefined);
-
-  // A new link also replaces the access code.
-  const rot = await call(accessApi, { method: 'POST', gate: true, body: { action: 'rotate', code: 'ABC123' } });
-  const pin2 = rot.json.results[0].pin;
-  assert.notEqual(pin2, pin1);
-  assert.equal((await call(signinApi, { method: 'POST', body: { pin: pin1 }, ip: '3.3.3.3' })).status, 401, 'the old code is dead');
-  assert.equal((await call(signinApi, { method: 'POST', body: { pin: pin2 }, ip: '3.3.3.3' })).status, 200);
-
-  // Revoke ends the code too.
+  // Revoke ends sign-in AND every session already open.
   await call(accessApi, { method: 'POST', gate: true, body: { action: 'revoke', code: 'ABC123' } });
-  assert.equal((await call(signinApi, { method: 'POST', body: { pin: pin2 }, ip: '4.4.4.4' })).status, 401);
-  // Restoring access gives a brand new code and the old one stays dead.
-  const back = await call(accessApi, { method: 'POST', gate: true, body: { action: 'grant', code: 'ABC123' } });
-  const pin3 = back.json.results[0].pin;
-  assert.ok(pin3 && pin3 !== pin2);
-  assert.equal((await call(signinApi, { method: 'POST', body: { pin: pin2 }, ip: '5.5.5.5' })).status, 401);
-  assert.equal((await call(signinApi, { method: 'POST', body: { pin: pin3 }, ip: '5.5.5.5' })).status, 200);
+  assert.equal((await call(signinApi, { method: 'POST', body: { code: 'ABC123' }, ip: '3.3.3.3' })).status, 401);
+  assert.equal((await call(earningsApi, { query: { t: ok.json.token } })).status, 401);
+
+  // Switched back on: signs in again; the old session stays dead (new version), the new one works.
+  await call(accessApi, { method: 'POST', gate: true, body: { action: 'grant', code: 'ABC123' } });
+  assert.equal((await call(earningsApi, { query: { t: ok.json.token } })).status, 401);
+  const again = await call(signinApi, { method: 'POST', body: { code: 'ABC123' }, ip: '4.4.4.4' });
+  assert.equal(again.status, 200);
+  assert.equal((await call(earningsApi, { query: { t: again.json.token } })).status, 200);
+
+  // "Sign out everywhere": sessions die, the code still signs in.
+  await call(accessApi, { method: 'POST', gate: true, body: { action: 'rotate', code: 'ABC123' } });
+  assert.equal((await call(earningsApi, { query: { t: again.json.token } })).status, 401);
+  assert.equal((await call(signinApi, { method: 'POST', body: { code: 'ABC123' }, ip: '5.5.5.5' })).status, 200);
 });
 
-test('sign-in by access code: guessing is limited, and only the app origin gets CORS', async () => {
-  for (let i = 0; i < 10; i++) assert.equal((await call(signinApi, { method: 'POST', body: { pin: 'NR-ABCD-EFGH' }, ip: '9.9.9.9' })).status, 401);
-  assert.equal((await call(signinApi, { method: 'POST', body: { pin: 'NR-ABCD-EFGH' }, ip: '9.9.9.9' })).status, 429);
-  const g = await call(accessApi, { method: 'POST', gate: true, body: { action: 'grant', code: 'ABC123' } });
-  const pin = (await call(accessApi, { method: 'POST', gate: true, body: { action: 'rotate', code: 'ABC123' } })).json.results[0].pin;
-  assert.equal((await call(signinApi, { method: 'POST', body: { pin }, ip: '9.9.9.9' })).status, 429, 'even the right code is refused while limited');
+test('sign-in by referral code: guessing is limited, and only the app origin gets CORS', async () => {
+  for (let i = 0; i < 10; i++) assert.equal((await call(signinApi, { method: 'POST', body: { code: 'NOBODY' + i }, ip: '9.9.9.9' })).status, 401);
+  assert.equal((await call(signinApi, { method: 'POST', body: { code: 'NOBODY9' }, ip: '9.9.9.9' })).status, 429);
+  assert.equal((await call(signinApi, { method: 'POST', body: { code: 'ABC123' }, ip: '9.9.9.9' })).status, 429, 'even a real code is refused while limited');
   assert.equal((await call(signinApi, { method: 'DELETE', ip: '8.8.8.8' })).status, 405);
-  assert.equal((await call(signinApi, { method: 'GET', ip: '8.8.8.8' })).status, 401, 'a plain GET is the earnings page and needs a link');
-  assert.ok(g.json.results[0].status);
+  assert.equal((await call(signinApi, { method: 'GET', ip: '8.8.8.8' })).status, 401, 'a plain GET is the earnings page and needs a session');
 });
