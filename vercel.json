@@ -27,9 +27,6 @@
     },
     "api/creator-access.js": {
       "maxDuration": 30
-    },
-    "api/creator-signin.js": {
-      "maxDuration": 10
     }
   },
   "crons": [

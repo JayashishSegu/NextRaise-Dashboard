@@ -139,8 +139,8 @@ Module._load = function (request, ...rest) {
 };
 Object.assign(process.env, { CREATOR_APP_ORIGINS: 'https://app.example', NR_GATE_KEY: 'gate-key', NR_ACCESS_CODE: 'open-sesame', CREATOR_LINK_SECRET: 'link-secret', PH_API_KEY: 'x', CREATOR_APP_URL: 'https://app.example/' });
 const accessApi = require('../api/creator-access');
-const signinApi = require('../api/creator-signin');
 const earningsApi = require('../api/creator-earnings');
+const signinApi = earningsApi; // sign-in is a POST on the creator-earnings function (Hobby plan: 12 functions)
 const programApi = require('../api/creator-program');
 // The fake stays in place: the handlers load Redis lazily, per request. (This file runs in its own process.)
 
@@ -280,6 +280,7 @@ test('sign-in by access code: guessing is limited, and only the app origin gets 
   const g = await call(accessApi, { method: 'POST', gate: true, body: { action: 'grant', code: 'ABC123' } });
   const pin = (await call(accessApi, { method: 'POST', gate: true, body: { action: 'rotate', code: 'ABC123' } })).json.results[0].pin;
   assert.equal((await call(signinApi, { method: 'POST', body: { pin }, ip: '9.9.9.9' })).status, 429, 'even the right code is refused while limited');
-  assert.equal((await call(signinApi, { method: 'GET', ip: '8.8.8.8' })).status, 405);
+  assert.equal((await call(signinApi, { method: 'DELETE', ip: '8.8.8.8' })).status, 405);
+  assert.equal((await call(signinApi, { method: 'GET', ip: '8.8.8.8' })).status, 401, 'a plain GET is the earnings page and needs a link');
   assert.ok(g.json.results[0].status);
 });

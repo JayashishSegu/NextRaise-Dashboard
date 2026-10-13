@@ -1,5 +1,6 @@
 // GET /api/creator-earnings?t=<signed link token>      the creator's own earnings (what the Earnings tab reads)
 // GET /api/creator-earnings?code=<REFERRAL CODE>       staff look-up of any creator, behind the unlock code
+// POST /api/creator-earnings { pin }                   sign in with the short access code (lib/creatorSignin.js)
 //
 // Builds one EarningsPayload (lib/creatorEarnings.js) from PostHog (sign-ups, payments, which reel they came from) and
 // the synced Google Sheets (deal, reels with their Instagram views, what was already paid out).
@@ -16,6 +17,7 @@ const { makeRunner, PostHogBudgetError } = require('../lib/overview');
 const { resolveFx, FX_FALLBACK } = require('../lib/fx');
 const { CODE_RE, verifyToken, sheetDeal, loadFromPostHog, buildPayload } = require('../lib/creatorEarnings');
 const A = require('../lib/creatorAccess');
+const { signin } = require('../lib/creatorSignin');
 
 const SHEETS_KEY = 'influencer:sheets:v1';
 const TTL_MS = 3 * 60 * 1000;
@@ -31,7 +33,7 @@ function cors(req, res) {
   if (origin && allowed.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-nr-gate');
   }
 }
@@ -42,6 +44,7 @@ module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'private, no-store');
   cors(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
+  if (req.method === 'POST') return signin(req, res, store()); // sign in with an access code
   if (req.method !== 'GET') return res.status(405).json({ error: 'method not allowed' });
 
   // Who is asking, and for which code.
