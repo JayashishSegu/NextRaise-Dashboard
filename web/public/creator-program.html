@@ -78,7 +78,7 @@ const el = (tag, props = {}, ...kids) => {
   return e;
 };
 let toastT;
-const toast = (m) => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 3200); };
+const toast = (m, ms = 3200) => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms); };
 async function copy(text) {
   try { await navigator.clipboard.writeText(text); return true; } catch (_) { window.prompt('Copy this:', text); return false; }
 }
@@ -147,26 +147,26 @@ async function act(action, row, extra = {}) {
 }
 
 const first = (n) => (String(n).split(/\s+/)[0] || 'there');
-const messageFor = (row, link) => `Hi ${first(row.name)}, here is your personal NextRaise earnings page: ${link}\nIt shows your sign-ups, Pro users, revenue and commission day by day. Please keep the link private.`;
+const messageFor = (row, link, pin) => `Hi ${first(row.name)}, here is your personal NextRaise earnings page: ${link}\nIt shows your sign-ups, Pro users, revenue and commission day by day.${pin ? `\nIf you ever get signed out, open ${new URL(link).origin} and type your access code: ${pin}` : ''}\nPlease keep the link and the code private.`;
 
 function controls(r) {
   const s = r.access.status;
   const reload = async () => { state.data = await api('/api/creator-program?range=' + state.range); render(); };
   if (s === 'nocode') return el('span', { class: 'seen' }, 'No referral code yet');
   if (s === 'none' || s === 'revoked') {
-    return el('button', { class: 'btn sm primary', onclick: async () => { const x = await act('grant', r); if (x) { await copy(x.link); toast(`Access given to ${r.name}. Link copied.`); await reload(); } } }, s === 'revoked' ? 'Restore access' : 'Give access');
+    return el('button', { class: 'btn sm primary', onclick: async () => { const x = await act('grant', r); if (x) { await copy(messageFor(r, x.link, x.pin)); toast(`Access given to ${r.name}. Message copied with their link${x.pin ? ' and access code ' + x.pin : ''}. Paste it in WhatsApp or Instagram.`, 12000); await reload(); } } }, s === 'revoked' ? 'Restore access' : 'Give access');
   }
   return el('span', {},
     el('button', { class: 'btn sm', onclick: async () => { const x = await act('link', r); if (x) toast((await copy(x.link)) ? 'Link copied.' : 'Copy the link from the box.'); } }, 'Copy link'),
     el('button', { class: 'btn sm', onclick: async () => { const x = await act('link', r); if (x) toast((await copy(messageFor(r, x.link))) ? 'Message copied. Paste it in WhatsApp or Instagram.' : 'Copy the message from the box.'); } }, 'Copy message'),
-    el('button', { class: 'btn sm', title: 'Makes a new link and stops the old one working', onclick: async () => { if (!confirm(`Make a new link for ${r.name}? Their old link stops working.`)) return; const x = await act('rotate', r); if (x) { await copy(x.link); toast('New link copied. The old one no longer works.'); await reload(); } } }, 'New link'),
+    el('button', { class: 'btn sm', title: 'Makes a new link and stops the old one working', onclick: async () => { if (!confirm(`Make a new link for ${r.name}? Their old link stops working.`)) return; const x = await act('rotate', r); if (x) { await copy(messageFor(r, x.link, x.pin)); toast(`New message copied${x.pin ? ' with the new access code ' + x.pin : ''}. The old link and code no longer work.`, 12000); await reload(); } } }, 'New link'),
     el('button', { class: 'btn sm danger', onclick: async () => { if (!confirm(`Remove ${r.name}'s access? Their link stops working right away.`)) return; const x = await act('revoke', r); if (x) { toast(`${r.name} no longer has access.`); await reload(); } } }, 'Revoke'));
 }
 
 async function giveAll() {
   const todo = state.data.rows.filter((r) => r.code && r.access.status === 'none');
   if (!todo.length) return toast('Everyone with a referral code already has access.');
-  if (!confirm(`Give ${todo.length} creator${todo.length === 1 ? '' : 's'} access to their earnings page?\n\nThis only creates their links. Nothing is sent to anyone. You will get a file with every link to share yourself.`)) return;
+  if (!confirm(`Give ${todo.length} creator${todo.length === 1 ? '' : 's'} access to their earnings page?\n\nThis only creates their links. Nothing is sent to anyone. You will get a file with every link and access code to share yourself.`)) return;
   const out = [];
   try {
     for (let i = 0; i < todo.length; i += 100) {
@@ -175,7 +175,7 @@ async function giveAll() {
     }
   } catch (e) { return e.status === 401 ? lockScreen('Your session ended. Enter the code again.') : toast(e.message); }
   const ok = out.filter((x) => x.link);
-  csv(ok.map((x) => ({ name: x.name, code: x.code, link: x.link })), 'nextraise-creator-links.csv');
+  csv(ok.map((x) => ({ name: x.name, code: x.code, access_code: x.pin || '', link: x.link })), 'nextraise-creator-links.csv');
   toast(`${ok.length} creator${ok.length === 1 ? '' : 's'} now have access. Links downloaded.`);
   load();
 }

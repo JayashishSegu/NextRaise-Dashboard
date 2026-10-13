@@ -102,6 +102,7 @@ test('program: PostHog loader refuses a bad range, fx or share', async () => {
 
 // ---------- the real handlers, with Redis and PostHog faked ----------
 
+const counters = new Map();
 function fakeKv(seed) {
   const h = new Map(Object.entries(seed || {}).map(([k, v]) => [k, new Map(Object.entries(v))]));
   const hash = (k) => h.get(k) || h.set(k, new Map()).get(k);
@@ -109,6 +110,9 @@ function fakeKv(seed) {
     hget: async (k, f) => hash(k).get(f) ?? null,
     hset: async (k, obj) => { for (const [f, v] of Object.entries(obj)) hash(k).set(f, JSON.parse(JSON.stringify(v))); },
     hgetall: async (k) => (hash(k).size ? Object.fromEntries(hash(k)) : null),
+    hdel: async (k, f) => hash(k).delete(f),
+    incr: async (k) => { counters.set(k, (counters.get(k) || 0) + 1); return counters.get(k); },
+    expire: async () => 1,
   };
 }
 
@@ -133,14 +137,16 @@ Module._load = function (request, ...rest) {
   if (request === '../lib/fx') return { resolveFx: async () => ({ rate: 95 }), FX_FALLBACK: 84 };
   return orig.call(this, request, ...rest);
 };
-Object.assign(process.env, { NR_GATE_KEY: 'gate-key', NR_ACCESS_CODE: 'open-sesame', CREATOR_LINK_SECRET: 'link-secret', PH_API_KEY: 'x', CREATOR_APP_URL: 'https://app.example/' });
+Object.assign(process.env, { CREATOR_APP_ORIGINS: 'https://app.example', NR_GATE_KEY: 'gate-key', NR_ACCESS_CODE: 'open-sesame', CREATOR_LINK_SECRET: 'link-secret', PH_API_KEY: 'x', CREATOR_APP_URL: 'https://app.example/' });
 const accessApi = require('../api/creator-access');
+const signinApi = require('../api/creator-signin');
 const earningsApi = require('../api/creator-earnings');
 const programApi = require('../api/creator-program');
 // The fake stays in place: the handlers load Redis lazily, per request. (This file runs in its own process.)
 
-const call = async (handler, { method = 'GET', query = {}, body, gate = false, origin } = {}) => {
+const call = async (handler, { method = 'GET', query = {}, body, gate = false, origin, ip } = {}) => {
   const headers = {};
+  if (ip) headers['x-forwarded-for'] = ip;
   if (gate) headers['x-nr-gate'] = 'gate-key';
   if (origin) headers.origin = origin;
   let status = 200; let json;
@@ -215,4 +221,65 @@ test('handlers: grant-all gives every listed creator access and reports the ones
   assert.ok(r.json.results.find((x) => x.code === 'NOBODY1').error);
   assert.equal((await call(accessApi, { method: 'POST', gate: true, body: { action: 'grant-all', codes: [] } })).status, 400);
   assert.equal((await call(accessApi, { method: 'POST', gate: true, body: { action: 'grant-all', codes: Array.from({ length: 101 }, (_, i) => 'C' + String(i).padStart(4, '0')) } })).status, 400);
+});
+
+test('access codes: format, forgiving input, hashes differ per code and per secret', () => {
+  const p = A.newPin();
+  assert.match(p, /^NR-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/);
+  assert.notEqual(A.newPin(), A.newPin());
+  const n = A.normalizePin(p.toLowerCase().replace(/-/g, ' '));
+  assert.equal(n, p.replace(/-/g, ''));
+  for (const bad of ['', 'TAEKK5', 'NR-0000-0000', 'NR-ABC', 'XX-ABCD-EFGH', "NR-ABCD-EFG'; DROP", null, undefined]) assert.equal(A.normalizePin(bad), null, String(bad));
+  assert.notEqual(A.pinHash('s1', n), A.pinHash('s2', n));
+  assert.notEqual(A.pinHash('s1', n), A.pinHash('s1', A.normalizePin(A.newPin())));
+  assert.ok(!JSON.stringify(A.publicView({ code: 'X', enabled: true, ver: 1, pinHash: 'abc' })).includes('abc'), 'the registry view never carries the hash');
+});
+
+test('sign-in by access code: given with access, works once typed, dies on revoke, replaced on new link', async () => {
+  await call(accessApi, { method: 'POST', gate: true, body: { action: 'revoke', code: 'ABC123' } }); // start clean
+  const g = await call(accessApi, { method: 'POST', gate: true, body: { action: 'grant', code: 'ABC123' } });
+  const pin1 = g.json.results[0].pin;
+  assert.match(pin1 || '', /^NR-/, 'the admin gets the code when access is given');
+  // The stored value is a hash, not the code.
+  assert.ok(!JSON.stringify(await kv.hgetall('creator:access:v1')).includes(pin1.replace(/-/g, '')));
+
+  // A referral code is public and must not sign anyone in.
+  assert.equal((await call(signinApi, { method: 'POST', body: { pin: 'ABC123' }, ip: '1.1.1.1' })).status, 400);
+  assert.equal((await call(signinApi, { method: 'POST', body: { pin: 'NR-ZZZZ-ZZZZ' }, ip: '1.1.1.1' })).status, 401);
+
+  const ok = await call(signinApi, { method: 'POST', body: { pin: pin1.toLowerCase() }, ip: '2.2.2.2', origin: 'https://app.example' });
+  assert.equal(ok.status, 200);
+  assert.equal((await call(earningsApi, { query: { t: ok.json.token } })).status, 200, 'the token from sign-in opens the earnings page');
+  assert.ok(E.verifyToken('link-secret', ok.json.token).code === 'ABC123');
+
+  // Giving access again does not change a working code.
+  const again = await call(accessApi, { method: 'POST', gate: true, body: { action: 'grant', code: 'ABC123' } });
+  assert.equal(again.json.results[0].pin, undefined);
+
+  // A new link also replaces the access code.
+  const rot = await call(accessApi, { method: 'POST', gate: true, body: { action: 'rotate', code: 'ABC123' } });
+  const pin2 = rot.json.results[0].pin;
+  assert.notEqual(pin2, pin1);
+  assert.equal((await call(signinApi, { method: 'POST', body: { pin: pin1 }, ip: '3.3.3.3' })).status, 401, 'the old code is dead');
+  assert.equal((await call(signinApi, { method: 'POST', body: { pin: pin2 }, ip: '3.3.3.3' })).status, 200);
+
+  // Revoke ends the code too.
+  await call(accessApi, { method: 'POST', gate: true, body: { action: 'revoke', code: 'ABC123' } });
+  assert.equal((await call(signinApi, { method: 'POST', body: { pin: pin2 }, ip: '4.4.4.4' })).status, 401);
+  // Restoring access gives a brand new code and the old one stays dead.
+  const back = await call(accessApi, { method: 'POST', gate: true, body: { action: 'grant', code: 'ABC123' } });
+  const pin3 = back.json.results[0].pin;
+  assert.ok(pin3 && pin3 !== pin2);
+  assert.equal((await call(signinApi, { method: 'POST', body: { pin: pin2 }, ip: '5.5.5.5' })).status, 401);
+  assert.equal((await call(signinApi, { method: 'POST', body: { pin: pin3 }, ip: '5.5.5.5' })).status, 200);
+});
+
+test('sign-in by access code: guessing is limited, and only the app origin gets CORS', async () => {
+  for (let i = 0; i < 10; i++) assert.equal((await call(signinApi, { method: 'POST', body: { pin: 'NR-ABCD-EFGH' }, ip: '9.9.9.9' })).status, 401);
+  assert.equal((await call(signinApi, { method: 'POST', body: { pin: 'NR-ABCD-EFGH' }, ip: '9.9.9.9' })).status, 429);
+  const g = await call(accessApi, { method: 'POST', gate: true, body: { action: 'grant', code: 'ABC123' } });
+  const pin = (await call(accessApi, { method: 'POST', gate: true, body: { action: 'rotate', code: 'ABC123' } })).json.results[0].pin;
+  assert.equal((await call(signinApi, { method: 'POST', body: { pin }, ip: '9.9.9.9' })).status, 429, 'even the right code is refused while limited');
+  assert.equal((await call(signinApi, { method: 'GET', ip: '8.8.8.8' })).status, 405);
+  assert.ok(g.json.results[0].status);
 });
