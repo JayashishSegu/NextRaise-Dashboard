@@ -1,19 +1,21 @@
 'use strict';
 // One fake creator, in the shapes the sheet sync and PostHog return. Used by the tests and the dev stub.
+// The pipeline tab copies the real monthly sheets (Aug, Sep, Oct 2026): a group-header row, then the column row.
+
+const HEAD = ['Status Tag', 'Name', 'IG Handle', 'Email', 'Fee (Rs)', 'Deal Type', 'Referral Code', 'Pipeline Stage', 'Video Live Date', 'Video Link', 'Views', 'Likes', 'Comments', 'Payment Status', 'Payment Date', 'Commission Earned (Rs)', 'Payment status', 'Date', 'Commission Earned (Rs) (2)', 'Payment Status (2)', 'Date', 'Internal Notes'];
+const row = (o) => HEAD.map((h, i) => (o[i] === undefined ? '' : o[i]));
 
 const months = [
   {
     month: '2026-10',
     pipeline: [
-      ['Name', 'IG Handle', 'Referral Code', 'Fee (Rs)', 'Fixed Fee (Rs)', 'Bonus Earned (Rs)', 'Commission Earned (Rs)', 'Total Payout (Rs)', 'Payment Status', 'Payment Date', 'Video Live Date', 'Commission %'],
-      ['Sample Creator', '@sample', 'abc123', '450/video', '2,500', '0', '0', '2,500', 'Paid', '10/01/2026', '10/11/2026', '25'],
-      ['Someone Else', '@else', 'ZZZ999', '', '9,999', '', '', '9,999', 'Paid', '10/02/2026', '10/12/2026', ''],
+      ['', 'PROFILE', '', '', 'FEE', '', 'ATTRIBUTION'],
+      HEAD,
+      // Sample Creator: 2,500 fee paid 10/01, first commission block paid 10/05 (Rs 400), 25% commission in the notes.
+      row({ 0: 'LIVE', 1: 'Sample Creator', 2: '@sample', 4: '2,500', 5: '2500 + commission', 6: 'abc123', 7: 'Live - Paid', 8: '10/11/2026', 9: 'https://www.instagram.com/reel/AAA/?igsh=x', 10: '22,028', 11: '369', 12: '106', 13: 'Paid', 14: '10/01/2026', 15: '400', 16: 'Paid', 17: '10/05/2026', 21: '1R. 25% commission, no bonus. 10% audience discount.' }),
+      row({ 1: 'Someone Else', 2: '@else', 4: '9,999', 6: 'ZZZ999', 8: '10/12/2026', 9: 'https://www.instagram.com/reel/BBB/', 10: '1', 13: 'Paid', 14: '10/02/2026' }),
     ],
-    videos: [
-      ['Creator', 'Video Link', 'Campaign', 'Video Live Date', 'Views', 'Likes', 'Comments'],
-      ['Sample Creator', 'https://www.instagram.com/reel/AAA/?igsh=x', 'c', '10/11/2026', '22,028', '369', '106'],
-      ['Someone Else', 'https://www.instagram.com/reel/BBB/', 'c', '10/12/2026', '1', '1', '1'],
-    ],
+    videos: [],
   },
 ];
 
@@ -37,4 +39,4 @@ const raw = {
   ]),
 };
 
-module.exports = { months, raw };
+module.exports = { months, raw, HEAD };

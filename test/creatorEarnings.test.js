@@ -43,7 +43,10 @@ test('sheet deal: only this creator, by referral code', () => {
   assert.equal(d.reels.length, 1);
   assert.equal(d.reels[0].views, 22028);
   assert.equal(d.reels[0].link, 'https://www.instagram.com/reel/AAA');
-  assert.deepEqual(d.payouts, [{ date: '2026-10-01', reference: 'Paid by NextRaise', amount: 2500 }]);
+  assert.deepEqual(d.payouts, [
+    { date: '2026-10-05', reference: 'Paid by NextRaise', amount: 400 },
+    { date: '2026-10-01', reference: 'Paid by NextRaise', amount: 2500 },
+  ]);
   const none = E.sheetDeal(months, 'NOPE00');
   assert.equal(none.found, false);
   assert.equal(none.fees.length + none.payouts.length + none.reels.length, 0);
@@ -54,7 +57,7 @@ test('payload: money, kinds, sources, fees, terms', () => {
   const p = E.buildPayload(raw, sheet, { fxUsdInr: 95, now: '2026-10-13T12:00:00Z' });
   assert.equal(p.creator.name, 'Sample');
   assert.deepEqual(p.terms, { commissionPct: 25, refundWindowDays: 7, minPayout: 500, payoutDay: 15 });
-  assert.equal(p.paidUpTo, '2026-10-01');
+  assert.equal(p.paidUpTo, '2026-10-05');
   // USD converted at the given rate and rounded.
   assert.equal(p.payments.find((x) => x.plan === '5 months').amount, Math.round(47.19 * 95));
   // First payment is new, the same person's second is a renewal.
@@ -71,7 +74,7 @@ test('payload: money, kinds, sources, fees, terms', () => {
   assert.deepEqual(p.days.find((d) => d.date === '2026-10-11'), { date: '2026-10-11', signups: 2, bySource: { 'reel-2026-10-11': 2 } });
   // The fee lands on the reel's live day and releases after the 48 hour check.
   assert.deepEqual(p.fees, [{ id: 'fee-2026-10-11', title: 'Reel · 11 Oct', date: '2026-10-11', amount: 2500, releasesOn: '2026-10-13', source: 'reel-2026-10-11' }]);
-  assert.deepEqual(p.payouts, [{ date: '2026-10-01', reference: 'Paid by NextRaise', amount: 2500 }]);
+  assert.deepEqual(p.payouts.map((x) => [x.date, x.amount]), [['2026-10-05', 400], ['2026-10-01', 2500]]);
 });
 
 test('payload: no sheet row falls back to env defaults and still works', () => {
@@ -108,4 +111,25 @@ test('PostHog loader: validates the code, scopes every query to the creator, sur
   for (const s of seen.filter((x) => x.name !== 'nr-creator:who')) assert.ok(s.sql.includes("'id-123'"), s.name + ' is scoped to the creator');
   await assert.rejects(() => E.loadFromPostHog(run, "x' OR '1'='1"), (e) => e.status === 400);
   await assert.rejects(() => E.loadFromPostHog(async () => ({ results: [] }), 'NOPE00'), (e) => e.status === 404);
+});
+
+test('sheet layout: rate from notes, fee and commission blocks paid separately, reel stats from the pipeline row', () => {
+  const d = E.sheetDeal(months, 'ABC123');
+  assert.equal(d.commissionPct, 25, 'read from "25% commission" in the notes, not from the 10% audience discount');
+  assert.equal(d.reels[0].views, 22028);
+  assert.equal(d.reels[0].likes, 369);
+  assert.equal(d.reels[0].comments, 106);
+  // An unpaid block is not a payout.
+  const unpaid = JSON.parse(JSON.stringify(months));
+  unpaid[0].pipeline[2][13] = 'Pending';
+  assert.deepEqual(E.sheetDeal(unpaid, 'ABC123').payouts.map((x) => x.amount), [400]);
+});
+
+test('sheet layout: a separate videos tab still fills in reels the pipeline row does not carry', () => {
+  const old = JSON.parse(JSON.stringify(months));
+  old[0].pipeline[2][9] = '';
+  old[0].videos = [['Creator', 'Video Link', 'Campaign', 'Video Live Date', 'Views', 'Likes', 'Comments'], ['Sample Creator', 'https://www.instagram.com/reel/CCC/', 'c', '10/11/2026', '5,000', '1', '1']];
+  const d = E.sheetDeal(old, 'ABC123');
+  assert.equal(d.reels.length, 1);
+  assert.equal(d.reels[0].views, 5000);
 });
