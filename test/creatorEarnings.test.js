@@ -162,3 +162,10 @@ test('rows with no referral code are matched by the account email, never by some
   assert.deepEqual(E.sheetDeal(all, 'ABC123').fees.map((f) => f.amount), [2500]);
   assert.deepEqual(E.sheetDeal(all, 'ABC123', { email: 'nobody@x.test' }).fees.map((f) => f.amount), [2500]);
 });
+
+test('a slow optional lookup is cut off instead of holding the page up', async () => {
+  const slow = new Promise((r) => setTimeout(() => r('late'), 300));
+  await assert.rejects(() => E.withTimeout(slow, 20), /timed out/);
+  assert.equal(await E.withTimeout(Promise.resolve('fast'), 200), 'fast');
+  await assert.rejects(() => E.withTimeout(Promise.reject(new Error('boom')), 200), /boom/);
+});
