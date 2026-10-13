@@ -113,6 +113,7 @@ function fakeKv(seed) {
     hdel: async (k, f) => hash(k).delete(f),
     incr: async (k) => { counters.set(k, (counters.get(k) || 0) + 1); return counters.get(k); },
     expire: async () => 1,
+    get: async (k) => counters.get(k) ?? null,
   };
 }
 
@@ -259,10 +260,12 @@ test('sign-in by referral code: only creators who are switched on, and it ends w
   assert.equal((await call(signinApi, { method: 'POST', body: { code: 'ABC123' }, ip: '5.5.5.5' })).status, 200);
 });
 
-test('sign-in by referral code: guessing is limited, and only the app origin gets CORS', async () => {
+test('sign-in by referral code: only failed guesses are limited, and only the app origin gets CORS', async () => {
   for (let i = 0; i < 10; i++) assert.equal((await call(signinApi, { method: 'POST', body: { code: 'NOBODY' + i }, ip: '9.9.9.9' })).status, 401);
   assert.equal((await call(signinApi, { method: 'POST', body: { code: 'NOBODY9' }, ip: '9.9.9.9' })).status, 429);
   assert.equal((await call(signinApi, { method: 'POST', body: { code: 'ABC123' }, ip: '9.9.9.9' })).status, 429, 'even a real code is refused while limited');
+  // Many correct sign-ins from one shared address are never blocked.
+  for (let i = 0; i < 15; i++) assert.equal((await call(signinApi, { method: 'POST', body: { code: 'ABC123' }, ip: '7.7.7.7' })).status, 200);
   assert.equal((await call(signinApi, { method: 'DELETE', ip: '8.8.8.8' })).status, 405);
   assert.equal((await call(signinApi, { method: 'GET', ip: '8.8.8.8' })).status, 401, 'a plain GET is the earnings page and needs a session');
 });
