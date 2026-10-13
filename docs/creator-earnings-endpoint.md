@@ -8,7 +8,8 @@
 | Sign-ups per IST day | PostHog warehouse `postgres.users` where `referred_by_id` = the creator's id (internal and test emails excluded, same filters as the Overview) |
 | Payments, plans | `postgres.payments`, `status='completed'`, for those people. USD converted with `lib/fx.js` (the rate the whole dashboard uses). First payment per person is "new", later ones "renewal" |
 | Which reel a sign-up came from | PostHog `persons` first-touch `$initial_utm_campaign`, read as `..._reel_YYYY_MM_DD`. Best effort: if the lookup fails the money is unaffected |
-| Deal: reel fee, commission % | Google Sheets pipeline tab (via the Apps Script into Redis `influencer:sheets:v1`), matched on **Referral Code**. Optional column `Commission %`; else `CREATOR_COMMISSION_PCT` (30) |
+| Deal: reel fee | Google Sheets pipeline tab (via the Apps Script into Redis `influencer:sheets:v1`), matched on **Referral Code**, or on the account email when the row has no code. Fees can be free text ("4000 flat", "350/video") plus Bonus Earned |
+| Commission rate | One rate for every creator: `CREATOR_COMMISSION_PCT`, default 30 (confirmed 14 Oct 2026). Sheet notes and the Commission % column are ignored on purpose |
 | Reels and Instagram views | Sheets "Video Stats" tab (creator, video link, live date, views). No live Instagram call: creators' reels are not on NextRaise's connected Instagram account |
 | Payouts, "Lifetime paid" | Sheets payments already marked Paid for that code. Everything on or before the latest payout day shows as Paid |
 

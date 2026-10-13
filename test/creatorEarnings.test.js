@@ -56,7 +56,7 @@ test('payload: money, kinds, sources, fees, terms', () => {
   const sheet = E.sheetDeal(months, 'ABC123');
   const p = E.buildPayload(raw, sheet, { fxUsdInr: 95, now: '2026-10-13T12:00:00Z' });
   assert.equal(p.creator.name, 'Sample');
-  assert.deepEqual(p.terms, { commissionPct: 25, refundWindowDays: 7, minPayout: 500, payoutDay: 15 });
+  assert.deepEqual(p.terms, { commissionPct: 30, refundWindowDays: 7, minPayout: 500, payoutDay: 15 }, 'every creator gets the one 30% rate, even if the sheet note says 25%');
   assert.equal(p.paidUpTo, '2026-10-05');
   // USD converted at the given rate and rounded.
   assert.equal(p.payments.find((x) => x.plan === '5 months').amount, Math.round(47.19 * 95));
