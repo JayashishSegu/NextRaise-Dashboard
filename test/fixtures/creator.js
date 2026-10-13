@@ -20,7 +20,7 @@ const months = [
 ];
 
 const raw = {
-  creator: { id: 'u1', name: 'Sample Creator' },
+  creator: { id: 'u1', name: 'Sample Creator', email: 'sample@creator.test' },
   users: [
     { email: 'ku@gmail.com', day: '2026-10-11' },
     { email: 'ay@gmail.com', day: '2026-10-11' },
@@ -39,4 +39,25 @@ const raw = {
   ]),
 };
 
-module.exports = { months, raw, HEAD };
+// September and October share a layout with Commission %, Fixed Fee, Bonus Earned and a lump Total Payout.
+// Many rows there have no Referral Code, only an Email. July has no Referral Code column at all.
+const SEP_HEAD = ['Status Tag', 'Name', 'IG Handle', 'Email', 'Fee (Rs)', 'Deal Type', 'Commission %', 'Performance Bonus', 'Referral Code', 'Pipeline Stage', 'Video Live Date', 'Video Link', 'Views', 'Likes', 'Comments', 'Payment Status', 'Payment Date', 'Fixed Fee (Rs)', 'Bonus Earned (Rs)', 'Commission Earned (Rs)', 'Total Payout (Rs)'];
+const sepRow = (o) => SEP_HEAD.map((h, i) => (o[i] === undefined ? '' : o[i]));
+const septemberMonth = {
+  month: '2026-09',
+  pipeline: [
+    ['', 'PROFILE'],
+    SEP_HEAD,
+    sepRow({ 1: 'Sample Creator', 3: 'Sample@Creator.test', 4: '4000 flat', 6: '30%', 10: '09/01/2026', 11: 'https://www.instagram.com/reel/SEP1/', 12: '5,000', 15: 'Paid', 16: '09/10/2026', 20: '4,000' }),
+    sepRow({ 1: 'Not Them', 3: 'other@creator.test', 4: '9999', 8: '', 10: '09/02/2026', 15: 'Paid', 16: '09/11/2026', 20: '9,999' }),
+  ],
+  videos: [],
+};
+const JUL_HEAD = ['Status Tag', 'Name', 'Email', 'Fee (Rs)', 'Video Live Date', 'Payment Status', 'Payment Date'];
+const julyMonth = {
+  month: '2026-07',
+  pipeline: [['', 'PROFILE'], JUL_HEAD, ['LIVE', 'Sample Creator', 'sample@creator.test', '1,000', '07/05/2026', 'Paid', '07/06/2026']],
+  videos: [],
+};
+
+module.exports = { months, raw, HEAD, septemberMonth, julyMonth };

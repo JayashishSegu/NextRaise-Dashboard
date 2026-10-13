@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const E = require('../lib/creatorEarnings');
-const { months, raw } = require('./fixtures/creator');
+const { months, raw, septemberMonth, julyMonth } = require('./fixtures/creator');
 
 const SECRET = 'test-secret';
 const NOW = Date.parse('2026-10-13T12:00:00Z');
@@ -132,4 +132,32 @@ test('sheet layout: a separate videos tab still fills in reels the pipeline row 
   const d = E.sheetDeal(old, 'ABC123');
   assert.equal(d.reels.length, 1);
   assert.equal(d.reels[0].views, 5000);
+});
+
+test('fee and percent cells are free text', () => {
+  assert.equal(E.feeAmount('3000'), 3000);
+  assert.equal(E.feeAmount('2,500'), 2500);
+  assert.equal(E.feeAmount('4000 flat'), 4000);
+  assert.equal(E.feeAmount('700 fixed (Aug deal)'), 700);
+  assert.equal(E.feeAmount('350/video'), 350);
+  assert.equal(E.feeAmount('3000 + commission'), 3000);
+  for (const none of ['only commission', 'TBC', '', 'free', null, undefined]) assert.equal(E.feeAmount(none), 0, String(none));
+  assert.equal(E.pctValue('30%'), 30);
+  assert.equal(E.pctValue('30'), 30);
+  assert.equal(E.pctValue('0.3'), 30);
+  assert.equal(E.pctValue('abc'), null);
+  assert.equal(E.pctValue('150'), null);
+});
+
+test('rows with no referral code are matched by the account email, never by someone else\'s', () => {
+  const all = [julyMonth, septemberMonth, ...months];
+  const d = E.sheetDeal(all, 'ABC123', { email: 'Sample@creator.test' });
+  assert.deepEqual(d.fees.map((f) => [f.date, f.amount]), [['2026-07-05', 1000], ['2026-09-01', 4000], ['2026-10-11', 2500]]);
+  // September is a lump-payout month: its 4,000 is read from Total Payout, and the other creator's 9,999 is not ours.
+  assert.deepEqual(d.payouts.map((p) => [p.date, p.amount]), [['2026-10-05', 400], ['2026-10-01', 2500], ['2026-09-10', 4000], ['2026-07-06', 1000]]);
+  assert.equal(d.commissionPct, 25, 'the latest month wins');
+  assert.ok(d.reels.find((r) => r.link === 'https://www.instagram.com/reel/SEP1' && r.views === 5000));
+  // Without the email, the code-less rows are not ours.
+  assert.deepEqual(E.sheetDeal(all, 'ABC123').fees.map((f) => f.amount), [2500]);
+  assert.deepEqual(E.sheetDeal(all, 'ABC123', { email: 'nobody@x.test' }).fees.map((f) => f.amount), [2500]);
 });

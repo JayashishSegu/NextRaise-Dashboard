@@ -72,7 +72,7 @@ module.exports = async function handler(req, res) {
       resolveFx().catch(() => ({ rate: FX_FALLBACK })),
       kv ? kv.hgetall(SHEETS_KEY).catch(() => null) : Promise.resolve(null),
     ]);
-    const sheet = sheetDeal(Object.values(sheetsMap || {}), code);
+    const sheet = sheetDeal(Object.values(sheetsMap || {}), code, { email: raw.creator.email });
     const payload = buildPayload(raw, sheet, {
       fxUsdInr: fx.rate,
       commissionPct: int(process.env.CREATOR_COMMISSION_PCT, 30),
