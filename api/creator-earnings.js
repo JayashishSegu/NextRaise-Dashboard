@@ -4,8 +4,8 @@
 // Builds one EarningsPayload (lib/creatorEarnings.js) from PostHog (sign-ups, payments, which reel they came from) and
 // the synced Google Sheets (deal, reels with their Instagram views, what was already paid out).
 //
-// A creator can only ever read the code their link was minted for (scripts/creator-link.js signs it with
-// CREATOR_LINK_SECRET). Emails are masked here, before anything leaves the server. The response is never cached by a
+// A creator can only ever read the code their link was minted for (signed with CREATOR_LINK_SECRET), and only while the
+// team's access registry (lib/creatorAccess.js, managed from /creator-program) lets that link through. Emails are masked here, before anything leaves the server. The response is never cached by a
 // shared cache, and a warm instance remembers it for 3 minutes so a creator refreshing the page does not spend the
 // PostHog read budget.
 //
@@ -15,6 +15,7 @@ const { requireGate } = require('../lib/gate');
 const { makeRunner, PostHogBudgetError } = require('../lib/overview');
 const { resolveFx, FX_FALLBACK } = require('../lib/fx');
 const { CODE_RE, verifyToken, sheetDeal, loadFromPostHog, buildPayload } = require('../lib/creatorEarnings');
+const A = require('../lib/creatorAccess');
 
 const SHEETS_KEY = 'influencer:sheets:v1';
 const TTL_MS = 3 * 60 * 1000;
@@ -49,8 +50,15 @@ module.exports = async function handler(req, res) {
   if (token) {
     const secret = process.env.CREATOR_LINK_SECRET;
     if (!secret) return res.status(503).json({ error: 'CREATOR_LINK_SECRET is not configured on this deployment' });
-    code = verifyToken(secret, token);
-    if (!code) return res.status(401).json({ error: 'This link is invalid or has expired. Ask the NextRaise team for a new one.' });
+    const t = verifyToken(secret, token);
+    if (!t) return res.status(401).json({ error: 'This link is invalid or has expired. Ask the NextRaise team for a new one.' });
+    code = t.code;
+    // The link is genuine; the team must also still allow it (not revoked, not replaced by a newer link).
+    const kv0 = store();
+    if (!kv0) return res.status(503).json({ error: 'Access is not available right now. Try again in a minute.' });
+    const entry = await A.load(kv0, code).catch(() => null);
+    if (!A.canOpen(entry, t.ver)) return res.status(401).json({ error: 'This link no longer works. Ask the NextRaise team for a new one.' });
+    A.save(kv0, A.touch(entry, Date.now())).catch(() => {});
   } else if (req.query.code) {
     if (!requireGate(req, res)) return;
     code = req.query.code.toString().toUpperCase();

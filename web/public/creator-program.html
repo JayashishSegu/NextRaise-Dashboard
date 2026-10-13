@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>NextRaise · Creator program</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#0065F4;--ink:#0A0A0A;--ink2:#4B5563;--ink3:#6B7280;--line:#E5E7EB;--soft:#F7F8FA;--green:#047857;--greent:#ECFDF5;--amber:#B45309;--ambert:#FEF3C7;--red:#B91C1C;--redt:#FEE2E2;--slate:#374151;--slatet:#F3F4F6}
+*{box-sizing:border-box;margin:0}
+body{font-family:Inter,system-ui,sans-serif;color:var(--ink);background:#fff;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px}
+main{max-width:1320px;margin:0 auto;padding:28px 24px 80px}
+h1{font-size:28px;letter-spacing:-.02em}
+.sub{color:var(--ink3);font-size:14px;margin-top:4px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pills{display:flex;gap:6px}
+button,input{font:500 13px Inter,sans-serif}
+.pill{border:1px solid var(--line);background:#fff;color:var(--ink2);border-radius:99px;padding:8px 14px;cursor:pointer;min-height:36px}
+.pill[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 14px;cursor:pointer;color:var(--ink);min-height:36px}
+.btn:hover{background:var(--soft)}.btn:disabled{opacity:.45;cursor:default}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:#0050C4}
+.btn.sm{padding:5px 10px;min-height:30px;font-size:12px}
+.btn.danger{color:var(--red)}
+input[type=search],input[type=password]{border:1px solid var(--line);border-radius:9px;padding:8px 12px;min-height:36px;min-width:220px}
+.chk{display:flex;gap:6px;align-items:center;color:var(--ink2);font-size:13px;cursor:pointer}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:24px}
+.kpi{padding:16px 14px 16px 0}.kpi+.kpi{padding-left:16px;border-left:1px solid var(--line)}
+.kpi .l{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);font-weight:500}
+.kpi .v{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:4px}
+.kpi .n{font-size:12px;color:var(--ink3);margin-top:2px}
+.tw{overflow-x:auto;border-bottom:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);font-weight:500;text-align:right;padding:10px 10px;border-bottom:1px solid var(--line);white-space:nowrap;cursor:pointer;user-select:none;background:#fff;position:sticky;top:0}
+th[aria-sort]{color:var(--ink)}
+td{padding:12px 10px;text-align:right;border-bottom:1px solid #F1F3F5;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;padding-left:0;position:sticky;left:0;background:#fff}
+tbody tr:nth-child(odd) td{background:var(--soft)}
+td.name b{display:block;font-weight:600}td.name span{color:var(--ink3);font-size:12px}
+td.act{text-align:left;white-space:normal;min-width:180px;color:var(--ink2);font-size:12.5px}
+td.ctl{text-align:left;white-space:normal;min-width:240px}
+td.ctl .btn{margin:2px 4px 2px 0}
+.pos{color:var(--green);font-weight:600}.neg{color:var(--red);font-weight:600}
+.b{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;border-radius:99px;padding:3px 10px}
+.b::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.b.active{background:var(--greent);color:var(--green)}.b.none{background:var(--slatet);color:var(--slate)}.b.revoked{background:var(--redt);color:var(--red)}.b.nocode{background:var(--ambert);color:var(--amber)}
+.seen{display:block;color:var(--ink3);font-size:11.5px;margin-top:3px}
+.note{color:var(--ink3);font-size:12.5px;line-height:1.6;margin-top:14px;max-width:920px}
+.lock{max-width:380px;margin:120px auto;text-align:center}
+.lock p{color:var(--ink3);margin:8px 0 18px;font-size:14px}
+.lock input{width:100%;margin-bottom:10px}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw}
+.toast.on{opacity:1}
+.err{color:var(--red);font-size:13px;margin-top:8px;min-height:18px}
+.empty{text-align:center;color:var(--ink3);padding:40px 0}
+@media(max-width:900px){main{padding:18px 14px 60px}.kpis{grid-template-columns:1fr 1fr}.kpi:nth-child(odd){border-left:0;padding-left:0}.kpi:nth-child(n+3){border-top:1px solid var(--line)}}
+@media(prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+'use strict';
+const $ = (s, el = document) => el.querySelector(s);
+const inr = (n) => '₹' + Math.round(n).toLocaleString('en-IN');
+const el = (tag, props = {}, ...kids) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === 'class') e.className = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else if (v !== false && v != null) e.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of kids.flat()) if (c != null) e.append(c.nodeType ? c : document.createTextNode(String(c)));
+  return e;
+};
+let toastT;
+const toast = (m) => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 3200); };
+async function copy(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch (_) { window.prompt('Copy this:', text); return false; }
+}
+
+const state = { range: '30d', data: null, sort: { key: 'cost', dir: -1 }, q: '', onlyNoAccess: false, links: new Map() };
+
+async function api(path, opts) {
+  const r = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...opts });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(j.error || `Request failed (${r.status})`), { status: r.status, code: j.code });
+  return j;
+}
+
+function lockScreen(message) {
+  const err = el('div', { class: 'err', role: 'alert' }, message || '');
+  const input = el('input', { type: 'password', placeholder: 'Access code', 'aria-label': 'Access code', autocomplete: 'current-password' });
+  const go = async () => {
+    try { await api('/api/unlock', { method: 'POST', body: JSON.stringify({ code: input.value }) }); load(); } catch (e) { err.textContent = e.message; }
+  };
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+  $('#app').replaceChildren(el('div', { class: 'lock' }, el('h1', {}, 'Creator program'), el('p', {}, 'Enter the dashboard access code to manage creators and their access.'), input, el('button', { class: 'btn primary', style: 'width:100%', onclick: go }, 'Unlock'), err));
+  input.focus();
+}
+
+async function load() {
+  $('#app').replaceChildren(el('div', { class: 'empty', 'aria-busy': 'true' }, 'Loading the creator program. The first load can take a few seconds.'));
+  try {
+    state.data = await api('/api/creator-program?range=' + state.range);
+    render();
+  } catch (e) {
+    if (e.status === 401) return lockScreen();
+    $('#app').replaceChildren(el('div', { class: 'empty', role: 'alert' }, e.message + ' ', el('button', { class: 'btn', onclick: load }, 'Try again')));
+  }
+}
+
+const COLS = [
+  ['name', 'Creator', (r) => r.name.toLowerCase()],
+  ['access', 'Access', (r) => ({ active: 3, none: 1, revoked: 0, nocode: -1 })[r.access.status]],
+  ['signups', 'Sign-ups'], ['payers', 'Paying users'], ['revenue', 'Pro revenue'], ['fees', 'Reel fees'], ['commission', 'Commission'],
+  ['cost', 'Cost'], ['roi', 'Return'], ['owed', 'Owed'],
+];
+
+function sorted() {
+  const { key, dir } = state.sort;
+  const col = COLS.find((c) => c[0] === key);
+  const val = (r) => (col && col[2] ? col[2](r) : r[key]);
+  const q = state.q.trim().toLowerCase();
+  return state.data.rows
+    .filter((r) => (!q || r.name.toLowerCase().includes(q) || (r.code || '').toLowerCase().includes(q)) && (!state.onlyNoAccess || r.access.status === 'none'))
+    .slice().sort((a, b) => (val(a) > val(b) ? 1 : val(a) < val(b) ? -1 : 0) * dir);
+}
+
+const seenText = (a) => (a.status !== 'active' ? '' : a.lastSeenAt ? `Opened ${a.opens}x, last ${new Date(a.lastSeenAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : 'Not opened yet');
+
+async function act(action, row, extra = {}) {
+  try {
+    const r = await api('/api/creator-access', { method: 'POST', body: JSON.stringify({ action, code: row.code }) });
+    const res = r.results[0];
+    if (res.error) { toast(res.error); return null; }
+    if (res.link) state.links.set(row.code, res.link);
+    return res;
+  } catch (e) {
+    if (e.status === 401) return lockScreen('Your session ended. Enter the code again.');
+    toast(e.message); return null;
+  }
+}
+
+const first = (n) => (String(n).split(/\s+/)[0] || 'there');
+const messageFor = (row, link) => `Hi ${first(row.name)}, here is your personal NextRaise earnings page: ${link}\nIt shows your sign-ups, Pro users, revenue and commission day by day. Please keep the link private.`;
+
+function controls(r) {
+  const s = r.access.status;
+  const reload = async () => { state.data = await api('/api/creator-program?range=' + state.range); render(); };
+  if (s === 'nocode') return el('span', { class: 'seen' }, 'No referral code yet');
+  if (s === 'none' || s === 'revoked') {
+    return el('button', { class: 'btn sm primary', onclick: async () => { const x = await act('grant', r); if (x) { await copy(x.link); toast(`Access given to ${r.name}. Link copied.`); await reload(); } } }, s === 'revoked' ? 'Restore access' : 'Give access');
+  }
+  return el('span', {},
+    el('button', { class: 'btn sm', onclick: async () => { const x = await act('link', r); if (x) toast((await copy(x.link)) ? 'Link copied.' : 'Copy the link from the box.'); } }, 'Copy link'),
+    el('button', { class: 'btn sm', onclick: async () => { const x = await act('link', r); if (x) toast((await copy(messageFor(r, x.link))) ? 'Message copied. Paste it in WhatsApp or Instagram.' : 'Copy the message from the box.'); } }, 'Copy message'),
+    el('button', { class: 'btn sm', title: 'Makes a new link and stops the old one working', onclick: async () => { if (!confirm(`Make a new link for ${r.name}? Their old link stops working.`)) return; const x = await act('rotate', r); if (x) { await copy(x.link); toast('New link copied. The old one no longer works.'); await reload(); } } }, 'New link'),
+    el('button', { class: 'btn sm danger', onclick: async () => { if (!confirm(`Remove ${r.name}'s access? Their link stops working right away.`)) return; const x = await act('revoke', r); if (x) { toast(`${r.name} no longer has access.`); await reload(); } } }, 'Revoke'));
+}
+
+async function giveAll() {
+  const todo = state.data.rows.filter((r) => r.code && r.access.status === 'none');
+  if (!todo.length) return toast('Everyone with a referral code already has access.');
+  if (!confirm(`Give ${todo.length} creator${todo.length === 1 ? '' : 's'} access to their earnings page?\n\nThis only creates their links. Nothing is sent to anyone. You will get a file with every link to share yourself.`)) return;
+  const out = [];
+  try {
+    for (let i = 0; i < todo.length; i += 100) {
+      const r = await api('/api/creator-access', { method: 'POST', body: JSON.stringify({ action: 'grant-all', codes: todo.slice(i, i + 100).map((x) => x.code) }) });
+      out.push(...r.results);
+    }
+  } catch (e) { return e.status === 401 ? lockScreen('Your session ended. Enter the code again.') : toast(e.message); }
+  const ok = out.filter((x) => x.link);
+  csv(ok.map((x) => ({ name: x.name, code: x.code, link: x.link })), 'nextraise-creator-links.csv');
+  toast(`${ok.length} creator${ok.length === 1 ? '' : 's'} now have access. Links downloaded.`);
+  load();
+}
+
+function csv(rows, name) {
+  const q = (v) => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const keys = Object.keys(rows[0] || { name: 1, code: 1, link: 1 });
+  const url = URL.createObjectURL(new Blob([[keys.join(','), ...rows.map((r) => keys.map((k) => q(r[k])).join(','))].join('\n')], { type: 'text/csv' }));
+  const a = el('a', { href: url, download: name }); a.click(); URL.revokeObjectURL(url);
+}
+
+function render() {
+  const d = state.data, t = d.totals;
+  const active = d.rows.filter((r) => r.access.status === 'active').length;
+  const withCode = d.rows.filter((r) => r.code).length;
+  const kpi = (l, v, n) => el('div', { class: 'kpi' }, el('div', { class: 'l' }, l), el('div', { class: 'v' }, v), el('div', { class: 'n' }, n));
+  const range = state.range === 'all' ? 'All time' : `${d.from} to ${d.to}`;
+  const pills = el('div', { class: 'pills', role: 'group', 'aria-label': 'Date range' }, [['30d', 'Last 30 days'], ['90d', 'Last 90 days'], ['all', 'All time']].map(([k, l]) => el('button', { class: 'pill', 'aria-pressed': String(state.range === k), onclick: () => { state.range = k; load(); } }, l)));
+
+  const head = el('tr', {}, COLS.map(([k, l]) => {
+    const on = state.sort.key === k;
+    return el('th', { scope: 'col', tabindex: '0', 'aria-sort': on ? (state.sort.dir > 0 ? 'ascending' : 'descending') : null, onclick: () => { state.sort = { key: k, dir: on ? -state.sort.dir : (k === 'name' ? 1 : -1) }; render(); }, onkeydown: (e) => { if (e.key === 'Enter') e.target.click(); } }, l + (on ? (state.sort.dir > 0 ? ' ▲' : ' ▼') : ''));
+  }).concat(el('th', { style: 'cursor:default;text-align:left' }, 'Suggested action'), el('th', { style: 'cursor:default;text-align:left' }, 'Manage access')));
+
+  const body = sorted().map((r) => el('tr', {},
+    el('td', { class: 'name' }, el('b', {}, r.name), el('span', {}, r.code || 'no code')),
+    el('td', {}, el('span', { class: 'b ' + r.access.status }, ({ active: 'Active', none: 'No access', revoked: 'Revoked', nocode: 'No code' })[r.access.status]), el('span', { class: 'seen' }, seenText(r.access))),
+    el('td', {}, r.signups), el('td', {}, r.payers), el('td', {}, inr(r.revenue)), el('td', {}, r.fees ? inr(r.fees) : '-'), el('td', {}, inr(r.commission)),
+    el('td', {}, inr(r.cost)),
+    el('td', { class: r.cost ? (r.roi < 1 ? 'neg' : 'pos') : '' }, r.cost ? r.roi.toFixed(1) + 'x' : '-'),
+    el('td', { class: r.owed ? 'pos' : '' }, r.owed ? inr(r.owed) : '-'),
+    el('td', { class: 'act' }, r.action),
+    el('td', { class: 'ctl' }, controls(r))));
+
+  const search = el('input', { type: 'search', placeholder: 'Search name or code', 'aria-label': 'Search creators', value: state.q, oninput: (e) => { state.q = e.target.value; const pos = e.target.selectionStart; render(); const n = $('input[type=search]'); n.focus(); n.setSelectionRange(pos, pos); } });
+  $('#app').replaceChildren(
+    el('div', { class: 'top' },
+      el('div', {}, el('h1', {}, 'Creator program'), el('div', { class: 'sub' }, `${range} · ${t.creators} creators · give each one access to their own earnings page`)),
+      el('div', { class: 'bar' }, pills, el('button', { class: 'btn primary', onclick: giveAll }, 'Give access to everyone'), el('button', { class: 'btn', onclick: () => csv(sorted().map((r) => ({ name: r.name, code: r.code, access: r.access.status, signups: r.signups, paying_users: r.payers, revenue_inr: r.revenue, reel_fees_inr: r.fees, commission_inr: r.commission, cost_inr: r.cost, return_x: r.roi.toFixed(2), owed_inr: r.owed })), 'nextraise-creator-program.csv') }, 'Download table'))),
+    el('div', { class: 'kpis' },
+      kpi('Pro revenue', inr(t.revenue), `${t.payers} paying users from ${t.signups} sign-ups`),
+      kpi('Creator cost', inr(t.cost), `${inr(t.fees)} fees · ${inr(t.commission)} commission`),
+      kpi('Blended return', t.roi.toFixed(1) + 'x', 'revenue per ₹1 spent'),
+      kpi('Cost per paying user', inr(t.costPerPayer), 'all creators'),
+      kpi('Owed to creators', inr(t.owed), 'earned minus paid out, all time'),
+      kpi('Creators with access', `${active} of ${withCode}`, 'have a working link')),
+    el('div', { class: 'bar', style: 'margin-bottom:12px' }, search, el('label', { class: 'chk' }, el('input', { type: 'checkbox', checked: state.onlyNoAccess, onchange: (e) => { state.onlyNoAccess = e.target.checked; render(); } }), 'Only creators without access')),
+    el('div', { class: 'tw' }, el('table', {}, el('thead', {}, head), el('tbody', {}, body.length ? body : el('tr', {}, el('td', { colspan: COLS.length + 2, class: 'empty' }, 'No creators match.'))))),
+    el('p', { class: 'note' }, 'Cost is reel fees earned in the range plus 30% commission on what their people paid in the range. Return is Pro revenue divided by cost. Owed is everything ever earned (commission and fees) minus what the sheets say was paid out, so it can include money still inside the 7 day holding period. Paying users are people who paid at least once in the range. A creator\'s own page shows the day-by-day detail. Revoking removes access immediately; "New link" replaces a link that was shared by mistake.'));
+}
+
+load();
+</script>
+</body>
+</html>

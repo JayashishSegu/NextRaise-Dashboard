@@ -8,18 +8,19 @@ const { months, raw, septemberMonth, julyMonth } = require('./fixtures/creator')
 const SECRET = 'test-secret';
 const NOW = Date.parse('2026-10-13T12:00:00Z');
 
-test('tokens: valid, forged, expired, malformed', () => {
-  const t = E.mintToken(SECRET, 'JAVM8S', 30, NOW);
-  assert.equal(E.verifyToken(SECRET, t, NOW), 'JAVM8S');
+test('tokens: valid, forged, expired, malformed, version', () => {
+  const t = E.mintToken(SECRET, 'JAVM8S', { ver: 3, ttlDays: 30, now: NOW });
+  assert.deepEqual(E.verifyToken(SECRET, t, NOW), { code: 'JAVM8S', ver: 3 });
   assert.equal(E.verifyToken('other-secret', t, NOW), null);
   assert.equal(E.verifyToken(SECRET, t, NOW + 31 * 86400e3), null);
-  const [code, exp, sig] = t.split('.');
-  assert.equal(E.verifyToken(SECRET, `OTHER1.${exp}.${sig}`, NOW), null, 'a signature cannot be moved to another code');
-  assert.equal(E.verifyToken(SECRET, `${code}.${Number(exp) + 99999}.${sig}`, NOW), null, 'expiry cannot be extended');
-  for (const bad of ['', 'a.b', 'a.b.c.d', null, undefined]) assert.equal(E.verifyToken(SECRET, bad, NOW), null);
+  const [code, ver, exp, sig] = t.split('.');
+  assert.equal(E.verifyToken(SECRET, `OTHER1.${ver}.${exp}.${sig}`, NOW), null, 'a signature cannot be moved to another code');
+  assert.equal(E.verifyToken(SECRET, `${code}.${ver}.${Number(exp) + 99999}.${sig}`, NOW), null, 'expiry cannot be extended');
+  assert.equal(E.verifyToken(SECRET, `${code}.${Number(ver) + 1}.${exp}.${sig}`, NOW), null, 'the version cannot be raised');
+  for (const bad of ['', 'a.b', 'a.b.c', 'a.b.c.d.e', null, undefined]) assert.equal(E.verifyToken(SECRET, bad, NOW), null);
   assert.equal(E.verifyToken('', t, NOW), null);
-  assert.throws(() => E.mintToken(SECRET, "x'; DROP", 1, NOW));
-  assert.throws(() => E.mintToken('', 'ABC123', 1, NOW));
+  assert.throws(() => E.mintToken(SECRET, "x'; DROP", {}, NOW));
+  assert.throws(() => E.mintToken('', 'ABC123', {}));
 });
 
 test('masking, plan labels and reel sources', () => {
