@@ -13,10 +13,15 @@
 | Reels and Instagram views | Sheets "Video Stats" tab (creator, video link, live date, views). No live Instagram call: creators' reels are not on NextRaise's connected Instagram account |
 | Payouts, "Lifetime paid" | Sheets payments already marked Paid for that code. Everything on or before the latest payout day shows as Paid |
 
-## Access
-Each creator gets a link: `CREATOR_LINK_SECRET=... node scripts/creator-link.js ABC123 --days 365 --base https://<app>`. The token is `CODE.expiry.signature`, so a creator can only read the code it was minted for. Changing `CREATOR_LINK_SECRET` revokes every link. Emails are masked before they leave the server. Responses are `private, no-store`; a warm instance keeps one for 3 minutes.
+## Access (managed from the admin page)
+The team gives influencers access at **`/creator-program`** on the dashboard (unlock code, same as the other private screens). It lists every creator with sign-ups, Pro revenue, fees, commission, return and what is owed, and per row: **Give access** (creates the link and copies it), **Copy link**, **Copy message** (a ready WhatsApp text), **New link** (replaces a link shared by mistake), **Revoke**. **Give access to everyone** creates links for every creator with a referral code and downloads a CSV (name, code, link); nothing is sent to anyone.
+
+How it holds together: the registry (`lib/creatorAccess.js`, Redis hash `creator:access:v1`) records who has access and at which version. A link is `CODE.version.expiry.signature` (signed with `CREATOR_LINK_SECRET`) and `/api/creator-earnings` answers only while the registry says that creator is active at that version, so Revoke and New link work immediately, and a link for one code can never read another. Opens and last-opened are recorded. Links are returned only by `POST /api/creator-access` to someone who has unlocked the dashboard; the listing (`GET /api/creator-program`) never contains one. Emails are masked before they leave the server. Responses are `private, no-store`; a warm instance keeps one creator's page for 3 minutes and the program table for 5.
+
+`scripts/creator-link.js` still mints a link for testing, but it only works if the creator has been given access on the admin page at that version.
 
 ## To go live (not done yet)
+(Steps 1 to 3 below are done as of 14 Oct 2026.)
 1. Vercel env on the dashboard project: `CREATOR_LINK_SECRET` (long random), `CREATOR_APP_ORIGINS` (the app's origin), and check `PH_API_KEY` and `KV_*` are already set. Optional: `CREATOR_HOLD_DAYS` (7), `CREATOR_MIN_PAYOUT` (500), `CREATOR_PAYOUT_DAY` (15).
 2. Deploy the dashboard repo, host `app/` (set `VITE_EARNINGS_API=https://<dashboard>/api/creator-earnings` at build).
 3. Mint a link per creator and test with one before sending.
