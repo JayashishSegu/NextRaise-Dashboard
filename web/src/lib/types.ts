@@ -19,7 +19,9 @@ export type OverviewData = {
   todayPay: Array<[string, number, number, number, number]>; // [day, cnt, payers, inr, usd]
   sources: Array<[string, string, number, number]>; // [source, medium, signups, proCohort]
   payersBySource: Array<[string, string, number]>;
-  visitorsBySource: Array<[string, string, number]>;
+  // [source, medium, visitors, v_mobile, v_desktop, v_both, v_tablet, s_mobile, s_desktop, s_both, s_tablet]
+  // The device columns are missing on snapshots computed before the device split existed.
+  visitorsBySource: Array<[string, string, number, ...number[]]>;
   influencers: Array<[string, number, number]>; // [campaign, signups, pro]
   signups: Array<[string, string, string, string]>; // [email, name, plan, createdAt]
   payments: Array<[string, string, string, string, number, string]>; // [email, name, plan, createdAt, amount, currency]

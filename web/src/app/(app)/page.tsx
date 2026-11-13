@@ -18,7 +18,8 @@ import { AnimatedNumber } from "@/components/dash/animated-number";
 import { CHANNEL_COLOR, channelOf, planLabel } from "@/lib/channels";
 import { agoUtc, fmtINR, fmtINRCompact, fmtN, fmtPct, pctChange, safeDiv } from "@/lib/format";
 import { firstName, initials, maskEmail } from "@/lib/mask";
-import { prevRevenue, revenueSeries, signupSeries, totalPayments, totalRevenue, totalVisitors } from "@/lib/derive";
+import { deviceSplit, prevRevenue, revenueSeries, signupSeries, totalPayments, totalRevenue, totalVisitors } from "@/lib/derive";
+import { DevicePanel } from "@/components/dash/device-panel";
 import { cn } from "@/lib/utils";
 
 type Tab = "revenue" | "signups";
@@ -58,6 +59,7 @@ export default function OverviewPage() {
       payments: totalPayments(d),
       activePro: d.counts?.[7] ?? 0,
       allUsers: d.counts?.[0] ?? 0,
+      devices: deviceSplit(d),
     };
   }, [d, usdToInr]);
 
@@ -185,6 +187,8 @@ export default function OverviewPage() {
                 </table>
               </Panel>
             </div>
+
+            <DevicePanel split={m.devices} rangeLabel={rangeLabel} />
 
             <div className="grid gap-4 lg:grid-cols-2">
               <Panel title="Recent signups" subtitle="Newest accounts, emails masked">
