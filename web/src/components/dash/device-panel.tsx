@@ -12,9 +12,10 @@ const DEVICE: Record<DeviceKey, { label: string; hint: string; color: string; Ic
 };
 const NO_PAGEVIEW = { label: "No page view seen", color: "#4a4a50" };
 
-type Segment = { key: string; label: string; value: number; color: string };
+export type Segment = { key: string; label: string; value: number; color: string };
 
-function ShareBar({ title, total, segments }: { title: string; total: number; segments: Segment[] }) {
+/** Labelled 100% bar plus legend; shared with the Locations card. */
+export function ShareBar({ title, total, segments }: { title: string; total: number; segments: Segment[] }) {
   const shown = segments.filter((s) => s.value > 0);
   return (
     <div>

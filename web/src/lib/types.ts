@@ -22,6 +22,10 @@ export type OverviewData = {
   // [source, medium, visitors, v_mobile, v_desktop, v_both, v_tablet, s_mobile, s_desktop, s_both, s_tablet]
   // The device columns are missing on snapshots computed before the device split existed.
   visitorsBySource: Array<[string, string, number, ...number[]]>;
+  // Visitors by location (first page view in the range). pro = paid in the range, the Payers card's people.
+  // Both are missing on snapshots computed before the location split existed.
+  visitorsByCountry?: Array<[string, number, number, number]>; // [countryCode, visitors, signups, pro], every country
+  visitorsByCity?: Array<[string, string, number, number, number]>; // [countryCode, city, visitors, signups, pro], top 300 cities
   influencers: Array<[string, number, number]>; // [campaign, signups, pro]
   signups: Array<[string, string, string, string]>; // [email, name, plan, createdAt]
   payments: Array<[string, string, string, string, number, string]>; // [email, name, plan, createdAt, amount, currency]

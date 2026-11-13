@@ -54,6 +54,50 @@ export function deviceSplit(d: OverviewData): DeviceSplit | null {
   };
 }
 
+export type GeoRow = { key: string; cc: string; city: string | null; visitors: number; signups: number; pro: number };
+export type GeoSplit = {
+  /** Every country seen in the range, most visitors first. */
+  countries: GeoRow[];
+  /** Top 300 cities by visitors (city "" = location found but no city). */
+  cities: GeoRow[];
+  /** Sum of the country rows: every visitor with a page view in the range. */
+  visitors: number;
+  /** Same figure as the Signups card. */
+  signups: number;
+  /** Same figure as the Payers card (people who paid in the range). */
+  pro: number;
+  /** Signups and payers with no page view in the range, so no location; makes the rows add up to the cards. */
+  signupsUnseen: number;
+  proUnseen: number;
+};
+
+/** Visitors, signups and Pro by country and city. null when the snapshot predates the location split. */
+export function geoSplit(d: OverviewData): GeoSplit | null {
+  if (!d.visitorsByCountry) return null;
+  const row = (cc: unknown, city: string | null, v: unknown, s: unknown, p: unknown): GeoRow => ({
+    key: `${cc ?? ""}|${city ?? ""}`,
+    cc: String(cc ?? ""),
+    city,
+    visitors: Number(v) || 0,
+    signups: Number(s) || 0,
+    pro: Number(p) || 0,
+  });
+  const countries = d.visitorsByCountry.map(([cc, v, s, p]) => row(cc, null, v, s, p));
+  const cities = (d.visitorsByCity ?? []).map(([cc, city, v, s, p]) => row(cc, String(city ?? ""), v, s, p));
+  const sum = (k: "visitors" | "signups" | "pro") => countries.reduce((a, r) => a + r[k], 0);
+  const signups = d.curSignups ?? 0;
+  const pro = d.revPayers ?? 0;
+  return {
+    countries,
+    cities,
+    visitors: sum("visitors"),
+    signups,
+    pro,
+    signupsUnseen: Math.max(0, signups - sum("signups")),
+    proUnseen: Math.max(0, pro - sum("pro")),
+  };
+}
+
 /** IST calendar facts for run-rate maths. */
 export function istToday() {
   const t = new Date(Date.now() + 5.5 * 3600000);
