@@ -246,7 +246,7 @@ export function GeoPanel({ split, rangeLabel }: { split: GeoSplit | null; rangeL
         </div>
       </div>
       <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
-        Location is where each visitor&apos;s first page view in this period came from, looked up from their IP address. Pro
+        Location is where each visitor&apos;s page views in this period came from, looked up from their IP address. Pro
         counts people who paid in this period, the same people as the Payers card. Signups and Pro buyers with no page view in
         this period have no location. Cities list the top 300 by visitors.
       </p>

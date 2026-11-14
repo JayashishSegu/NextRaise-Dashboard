@@ -71,7 +71,7 @@ export type GeoSplit = {
   proUnseen: number;
 };
 
-/** Visitors, signups and Pro by country and city. null when the snapshot predates the location split. */
+/** Visitors, signups and Pro by country and city (from their page views in the range). null when the snapshot predates the location split. */
 export function geoSplit(d: OverviewData): GeoSplit | null {
   if (!d.visitorsByCountry) return null;
   const row = (cc: unknown, city: string | null, v: unknown, s: unknown, p: unknown): GeoRow => ({
